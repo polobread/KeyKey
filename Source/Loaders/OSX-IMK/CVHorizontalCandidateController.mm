@@ -2,6 +2,7 @@
 
 #import "CVHorizontalCandidateController.h"
 #import "CVCandidateWindowGeometry.h"
+#import "CVCandidateWindowScale.h"
 #import "NSColor+LFColorExtensions.h"
 
 static void CVSetScaledCandidateWindowFrame(NSWindow *window, NSRect scaledFrame,
@@ -263,7 +264,7 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 
 - (void)setCandidateWindowScale:(float)scale
 {
-	_candidateWindowScale = (scale >= 0.75 && scale <= 3.5) ? scale : 1.0;
+	_candidateWindowScale = CVValidCandidateWindowScale(scale);
 }
 
 @end

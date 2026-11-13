@@ -7,6 +7,7 @@ file for terms.
 
 #import "TakaoGlobal.h"
 #import "TakaoHelper.h"
+#import "../../Loaders/OSX-IMK/CVCandidateWindowScale.h"
 
 @interface TakaoGlobal(Private)
 - (NSString *)_shortenedFilename:(NSString *)filename maxLength:(int)maxLength;
@@ -100,11 +101,7 @@ file for terms.
 	[_candidateWindowScalePopUpButton addItemWithTitle:LFLSTR(@"Follow display (Default)")];
 	[[[_candidateWindowScalePopUpButton menu] itemAtIndex:0] setRepresentedObject:@"system"];
 
-	NSArray *percentages = [NSArray arrayWithObjects:@"75", @"90", @"100", @"125",
-		@"150", @"175", @"200", @"225", @"250", @"300", @"350", nil];
-	NSEnumerator *enumerator = [percentages objectEnumerator];
-	NSString *percentage;
-	while (percentage = [enumerator nextObject]) {
+	for (NSString *percentage in CVCandidateWindowScalePercentages()) {
 		[_candidateWindowScalePopUpButton addItemWithTitle:[percentage stringByAppendingString:@"%"]];
 		[[[_candidateWindowScalePopUpButton menu] itemAtIndex:
 			[[_candidateWindowScalePopUpButton menu] numberOfItems] - 1]
@@ -319,7 +316,8 @@ file for terms.
 	else
 		[_candidateWindowStyleMatrix selectCellAtRow:0 column:0];		
 
-	NSString *candidateWindowScale = [_takaoDictionary valueForKey:@"CandidateWindowScalePercent"];
+	NSString *candidateWindowScale = CVNormalizedCandidateWindowScale(
+		[_takaoDictionary valueForKey:@"CandidateWindowScalePercent"]);
 	NSMenuItem *scaleItem = nil;
 	NSEnumerator *scaleItems = [[_candidateWindowScalePopUpButton itemArray] objectEnumerator];
 	NSMenuItem *item;

@@ -7,6 +7,7 @@
 #import <os/log.h>
 #import "CVEmojiData.generated.h"
 #import "CVCandidateWindowGeometry.h"
+#import "CVCandidateWindowScale.h"
 
 @implementation CVSymbolController
 
@@ -153,7 +154,7 @@
 
 - (void)setCandidateWindowScale:(float)scale
 {
-	float value = (scale >= 0.75 && scale <= 3.5) ? scale : 1.0;
+	float value = CVValidCandidateWindowScale(scale);
 	if (_candidateWindowScale == value)
 		return;
 	_candidateWindowScale = value;

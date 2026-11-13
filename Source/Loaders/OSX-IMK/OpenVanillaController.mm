@@ -3,6 +3,7 @@
 #import "OpenVanillaController.h"
 #import "CVApplicationController.h"
 #import "CVNotifyController.h"
+#import "CVCandidateWindowScale.h"
 #import "IMKInputMode.h"
 #import "GuanyinmaMacAdapter.h"
 #import <AudioToolbox/AudioToolbox.h>
@@ -83,21 +84,9 @@ static BOOL OVCShouldEnterEngine(const OVKey& key)
 
 static float OVCCandidateWindowScale(const string& value)
 {
-	if (value == "system" || value.empty())
-		return 1.0;
-
-	char *end = 0;
-	long percentage = strtol(value.c_str(), &end, 10);
-	if (!end || *end)
-		return 1.0;
-
-	switch (percentage) {
-		case 75: case 90: case 100: case 125: case 150: case 175: case 200:
-		case 225: case 250: case 300: case 350:
-			return (float)percentage / 100.0;
-	}
-
-	return 1.0;
+	NSString *setting = CVNormalizedCandidateWindowScale(
+		[NSString stringWithUTF8String:value.c_str()]);
+	return [setting isEqualToString:@"system"] ? 1.0f : [setting floatValue] / 100.0f;
 }
 
 static void OVCLaunchApplication(const string& value)

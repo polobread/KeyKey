@@ -98,6 +98,9 @@ int main(int argc, char **argv) {
         NSString *output = [NSString stringWithUTF8String:argv[2]];
         NSString *caseName = [NSString stringWithUTF8String:argv[3]];
         serviceThrows = strcmp(argv[4], "throw") == 0;
+        if (serviceThrows)
+            Require([@{@"CandidateWindowScalePercent": @"350"} writeToFile:profilePath atomically:YES],
+                @"seed the legacy 350% preference");
         [NSApplication sharedApplication];
         [NSApp setActivationPolicy:NSApplicationActivationPolicyProhibited];
         method_exchangeImplementations(
@@ -120,6 +123,17 @@ int main(int argc, char **argv) {
         NSPopUpButton *reference = [global valueForKey:@"_highlightColorPopUpButton"];
         NSPopUpButton *startup = [global valueForKey:@"_defaultInputModePopUpButton"];
         Require(startup != nil, @"startup input mode control instantiated");
+        NSPopUpButton *scale = [global valueForKey:@"_candidateWindowScalePopUpButton"];
+        NSArray *scaleOptions = @[@"system", @"70", @"75", @"80", @"90", @"100", @"110",
+            @"120", @"125", @"130", @"150", @"175", @"200", @"225", @"250", @"300"];
+        Require([[scale.itemArray valueForKey:@"representedObject"] isEqualToArray:scaleOptions],
+            @"display default and fixed candidate scales appear in order");
+        Require([scale.selectedItem.representedObject isEqual:(serviceThrows ? @"300" : @"system")],
+            @"the default follows the display and legacy 350% selects 300%");
+        [scale selectItemAtIndex:1];
+        Require([NSApp sendAction:scale.action to:scale.target from:scale], @"select 70% in preferences");
+        Require([[[NSDictionary dictionaryWithContentsOfFile:profilePath]
+            objectForKey:@"CandidateWindowScalePercent"] isEqual:@"70"], @"save the new 70% setting");
         Require(![global respondsToSelector:NSSelectorFromString(@"setInputCore:")], @"single-core preferences expose no core switch action");
         Snapshot(window, output, [caseName stringByAppendingString:@"-initial"]);
         Require(window.toolbar != nil && window.toolbar.items.count >= 7, @"real toolbar attached");
@@ -154,7 +168,7 @@ int main(int argc, char **argv) {
         NSButton *shift = [global valueForKey:@"_useShiftToggleInputMode"];
         Require([[shift cell] cellSize].width <= NSWidth(shift.frame) + 0.5,
             @"localized Shift checkbox fits");
-        for (NSPopUpButton *popup in @[startup])
+        for (NSPopUpButton *popup in @[startup, scale])
             for (NSMenuItem *item in popup.itemArray)
                 Require([item.title sizeWithAttributes:@{NSFontAttributeName: popup.font}].width
                         <= NSWidth(popup.frame) - 25.0,

@@ -2,6 +2,7 @@
 
 #import "CVVerticalCandidateController.h"
 #import "CVCandidateWindowGeometry.h"
+#import "CVCandidateWindowScale.h"
 #import "NSColor+LFColorExtensions.h"
 
 static void CVSetScaledCandidateWindowFrame(NSWindow *window, NSRect scaledFrame,
@@ -133,6 +134,7 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 	[_promptTextField setTextColor:_foregroundColor];
 
 	[_tableView setBackgroundColor:[NSColor clearColor]];
+	[_tableView setIntercellSpacing:NSMakeSize(8.0, [_tableView intercellSpacing].height)];
 	[_tableView setAction:@selector(sendKey:)];
 
 	[_previousButton setHidden:YES];
@@ -257,7 +259,7 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 	NSTableColumn *candidateColumn = [_tableView tableColumnWithIdentifier:@"candidate"];
 	CGFloat keyColumnWidth = 20.0;
 	CGFloat columnSpacing = [_tableView intercellSpacing].width;
-	CGFloat candidateColumnWidth = MAX(40.0, _width + 8.0);
+	CGFloat candidateColumnWidth = MAX(40.0, _width + 23.0);
 	CGFloat windowWidth = keyColumnWidth + columnSpacing + candidateColumnWidth + 4.0;
 	CGFloat promptLeading = pageCount > 1 ? 26.0 : 6.0;
 	if ([prompt length])
@@ -288,7 +290,12 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 	// Finish resizing the window and its logical coordinate system before laying
 	// out any children. Their XIB autoresizing masks must not inherit an
 	// intermediate size from the previous candidate window.
-	CVSetScaledCandidateWindowFrame([self window], windowFrame, unscaledWindowSize);
+	NSWindow *window = [self window];
+	BOOL outlineChanged = !NSEqualSizes([window frame].size, windowFrame.size) ||
+		!NSEqualSizes([[window contentView] bounds].size, unscaledWindowSize);
+	CVSetScaledCandidateWindowFrame(window, windowFrame, unscaledWindowSize);
+	if (outlineChanged)
+		[[window contentView] setNeedsDisplay:YES];
 
 	[keyColumn setWidth:keyColumnWidth];
 	[candidateColumn setWidth:tableWidth - keyColumnWidth - columnSpacing];
@@ -337,7 +344,9 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 	[_scrollView reflectScrolledClipView:clipView];
 	if (needsScrolling && panel->isInControl() && highlightedIndex < count && revealHighlighted)
 		[_tableView scrollRowToVisible:(NSInteger)highlightedIndex];
-	[[self window] display];
+	[window display];
+	if (outlineChanged)
+		[window invalidateShadow];
     
     // show if it's visible--after update
 	if (panel->isVisible())
@@ -401,7 +410,7 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 
 - (void)setCandidateWindowScale:(float)scale
 {
-	_candidateWindowScale = (scale >= 0.75 && scale <= 3.5) ? scale : 1.0;
+	_candidateWindowScale = CVValidCandidateWindowScale(scale);
 }
 
 #pragma mark TableView delegate

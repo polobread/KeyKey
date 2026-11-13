@@ -38,6 +38,18 @@ int main() {
             Check(LoadFrontendSettings().symbolPanelShortcutEnabled == (std::string(value) == "true"),
                   "Symbol shortcut preference not read");
         }
+        const auto checkScale = [&](const char* saved, int expected) {
+            { std::ofstream out(loader); out << "<plist><dict><key>CandidateWindowScalePercent</key><string>"
+                << saved << "</string></dict></plist>"; }
+            Check(LoadFrontendSettings().candidateScalePercent == expected,
+                  "Candidate window scale was not applied correctly");
+        };
+        for (int percent : {70, 80, 110, 120, 130, 300}) {
+            checkScale(std::to_string(percent).c_str(), percent);
+        }
+        checkScale("350", 300);
+        checkScale("system", 0);
+        checkScale("69", 0);
         for (const auto* value : {"English", "Chinese", "invalid", ""}) {
             { std::ofstream out(loader); out << "<plist><dict><key>DefaultInputMode</key><string>"
                 << value << "</string></dict></plist>"; }

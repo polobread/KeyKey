@@ -176,7 +176,7 @@ int main(int argc, char **argv) {
             [popup selectItemAtIndex:17]; [controller toggleSymbol:popup];
             NSView *root = controller.window.contentView;
             CGFloat originalWidth = root.frame.size.width;
-            for (NSNumber *ratio in @[@1.5, @0.75, @3.5, @1.0]) {
+            for (NSNumber *ratio in @[@1.5, @0.70, @0.75, @3.0, @1.0]) {
                 [controller setCandidateWindowScale:ratio.floatValue];
                 Check(popup.indexOfSelectedItem == 17, @"rescaling preserves the selected category");
                 CheckLayout(controller);
