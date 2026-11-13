@@ -332,7 +332,7 @@ cd Source\Loaders\Android-IME
 .\gradlew.bat lintDebug testDebugUnitTest assembleDebug
 ```
 
-建置從 `DataSource/McBopomofo` 與 `DataSource/chichi77Collection` 的 29 個公開分類詞庫
+建置從 `DataSource/McBopomofo` 與 `DataSource/chichi77Collection` 的 33 個公開分類詞庫
 產生關聯詞 `.kki` 索引，並把預先產生的共用 `KeyKey.db` 加入 APK，供 Rust 四種輸入法
 唯讀使用；關聯詞索引在背景載入。平台建置不重建模型。
 Debug APK 位於

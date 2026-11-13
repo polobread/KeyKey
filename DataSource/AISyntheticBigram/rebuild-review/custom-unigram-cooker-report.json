@@ -3281,7 +3281,7 @@
       "line": 420,
       "reading": "ㄐㄧˊ ㄐㄧˊ",
       "source_count": 20,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "吉吉"
     },
     {
@@ -9181,7 +9181,7 @@
       "line": 1194,
       "reading": "ㄇㄨˋ ㄇㄨˋ",
       "source_count": 12,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "木木"
     },
     {
@@ -9352,7 +9352,7 @@
       "line": 1213,
       "reading": "ㄕㄢ ㄩㄢˊ",
       "source_count": 14,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "杉元"
     },
     {
@@ -16654,7 +16654,7 @@
       "line": 2141,
       "reading": "ㄔˋ ㄊㄨㄥˊ",
       "source_count": 18,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "赤瞳"
     },
     {
@@ -17600,7 +17600,7 @@
       "line": 2269,
       "reading": "ㄅㄢˇ ㄅㄣˇ",
       "source_count": 11,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "阪本"
     },
     {
@@ -18410,7 +18410,7 @@
       "line": 2369,
       "reading": "ㄐㄧㄥˋ ㄒㄧㄤ",
       "source_count": 19,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "靜香"
     },
     {
@@ -19857,7 +19857,7 @@
   ],
   "anime_policy": "excluded from training; count <=0.01; 100x below existing complete homophones, without a split-path floor",
   "anime_words": 2209,
-  "collision_rows": 456,
+  "collision_rows": 720,
   "convenience": [
     {
       "reading": "ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ",
@@ -23197,7 +23197,7 @@
       "line": 420,
       "reading": "ㄐㄧˊ ㄐㄧˊ",
       "source_count": 20,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "吉吉"
     },
     {
@@ -29097,7 +29097,7 @@
       "line": 1194,
       "reading": "ㄇㄨˋ ㄇㄨˋ",
       "source_count": 12,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "木木"
     },
     {
@@ -29268,7 +29268,7 @@
       "line": 1213,
       "reading": "ㄕㄢ ㄩㄢˊ",
       "source_count": 14,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "杉元"
     },
     {
@@ -36570,7 +36570,7 @@
       "line": 2141,
       "reading": "ㄔˋ ㄊㄨㄥˊ",
       "source_count": 18,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "赤瞳"
     },
     {
@@ -37516,7 +37516,7 @@
       "line": 2269,
       "reading": "ㄅㄢˇ ㄅㄣˇ",
       "source_count": 11,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "阪本"
     },
     {
@@ -38326,7 +38326,7 @@
       "line": 2369,
       "reading": "ㄐㄧㄥˋ ㄒㄧㄤ",
       "source_count": 19,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "靜香"
     },
     {
@@ -39780,6 +39780,123 @@
       "word": "劑型"
     },
     {
+      "category": "中國觀光景點",
+      "file": "phrase.china.tsv",
+      "line": 143,
+      "reading": "ㄨˇ ㄊㄞˊ ㄕㄢ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "五臺山"
+    },
+    {
+      "category": "中國觀光景點",
+      "file": "phrase.china.tsv",
+      "line": 210,
+      "reading": "ㄩˋ ㄩㄢˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "豫園"
+    },
+    {
+      "category": "中國口語",
+      "file": "phrase.china.tsv",
+      "line": 237,
+      "reading": "ㄅㄚ ㄕˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "巴適"
+    },
+    {
+      "category": "中國生活用語",
+      "file": "phrase.china.tsv",
+      "line": 258,
+      "reading": "ㄏㄨˋ ㄌㄧㄢˊ ㄨㄤˇ",
+      "source_count": 1,
+      "target_count": 0.009999999999999978,
+      "word": "互聯網"
+    },
+    {
+      "category": "中國生活用語",
+      "file": "phrase.china.tsv",
+      "line": 302,
+      "reading": "ㄧ ㄅㄠˇ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "醫保"
+    },
+    {
+      "category": "中國企業簡稱",
+      "file": "phrase.china.tsv",
+      "line": 365,
+      "reading": "ㄏㄨㄚˊ ㄨㄟˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "華為"
+    },
+    {
+      "category": "中國大專院校簡稱",
+      "file": "phrase.china.tsv",
+      "line": 380,
+      "reading": "ㄖㄣˊ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "人大"
+    },
+    {
+      "category": "中國大專院校簡稱",
+      "file": "phrase.china.tsv",
+      "line": 395,
+      "reading": "ㄐㄧˊ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "吉大"
+    },
+    {
+      "category": "中國大專院校簡稱",
+      "file": "phrase.china.tsv",
+      "line": 404,
+      "reading": "ㄒㄧㄚˋ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "廈大"
+    },
+    {
+      "category": "中國大專院校簡稱",
+      "file": "phrase.china.tsv",
+      "line": 407,
+      "reading": "ㄨˇ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "武大"
+    },
+    {
+      "category": "中國大專院校簡稱",
+      "file": "phrase.china.tsv",
+      "line": 408,
+      "reading": "ㄓㄜˋ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "浙大"
+    },
+    {
+      "category": "中國大專院校簡稱",
+      "file": "phrase.china.tsv",
+      "line": 409,
+      "reading": "ㄕㄣ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "深大"
+    },
+    {
+      "category": "中國大專院校簡稱",
+      "file": "phrase.china.tsv",
+      "line": 420,
+      "reading": "ㄒㄧ ㄉㄧㄢˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "西電"
+    },
+    {
       "category": "中文",
       "file": "phrase.chinese.tsv",
       "line": 12,
@@ -39812,7 +39929,7 @@
       "line": 43,
       "reading": "ㄊㄢˋ ㄘˊ",
       "source_count": 11,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "嘆詞"
     },
     {
@@ -39839,7 +39956,7 @@
       "line": 51,
       "reading": "ㄒㄧㄥˊ ㄒㄩㄣˋ",
       "source_count": 12,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "形訓"
     },
     {
@@ -40041,6 +40158,474 @@
       "word": "課綱"
     },
     {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 3,
+      "reading": "ㄓˋ ㄇㄧㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "志明"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 4,
+      "reading": "ㄐㄧㄢˋ ㄏㄨㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "建宏"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 6,
+      "reading": "ㄐㄩㄣˋ ㄏㄨㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "俊宏"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 7,
+      "reading": "ㄓˋ ㄏㄠˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "志豪"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 8,
+      "reading": "ㄓˋ ㄨㄟˇ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "志偉"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 9,
+      "reading": "ㄔㄥˊ ㄏㄢˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "承翰"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 11,
+      "reading": "ㄓˋ ㄑㄧㄤˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "志強"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 13,
+      "reading": "ㄓˋ ㄏㄨㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "志宏"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 16,
+      "reading": "ㄨㄣˊ ㄒㄩㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "文雄"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 17,
+      "reading": "ㄔㄥˊ ㄣ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "承恩"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 19,
+      "reading": "ㄨㄣˊ ㄅㄧㄣ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "文彬"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 20,
+      "reading": "ㄓㄥˋ ㄒㄩㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "正雄"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 21,
+      "reading": "ㄇㄧㄥˊ ㄏㄨㄟ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "明輝"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 26,
+      "reading": "ㄐㄧㄣ ㄕㄥ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "金生"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 27,
+      "reading": "ㄨˇ ㄒㄩㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "武雄"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 28,
+      "reading": "ㄐㄧㄣˋ ㄘㄞˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "進財"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 30,
+      "reading": "ㄧㄡˋ ㄊㄧㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "宥廷"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 31,
+      "reading": "ㄆㄧㄣˇ ㄖㄨㄟˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "品睿"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 32,
+      "reading": "ㄣ ㄕㄨㄛˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "恩碩"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 33,
+      "reading": "ㄗˇ ㄖㄨㄟˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "子睿"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 35,
+      "reading": "ㄍㄨㄛˊ ㄒㄩㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "國雄"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 37,
+      "reading": "ㄅㄛˊ ㄏㄢˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "柏翰"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 38,
+      "reading": "ㄅㄛˊ ㄩˇ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "柏宇"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 39,
+      "reading": "ㄧㄢˋ ㄊㄧㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "彥廷"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 40,
+      "reading": "ㄕㄨˊ ㄈㄣ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "淑芬"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 41,
+      "reading": "ㄕㄨˊ ㄏㄨㄟˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "淑惠"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 42,
+      "reading": "ㄇㄟˇ ㄌㄧㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "美玲"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 43,
+      "reading": "ㄌㄧˋ ㄏㄨㄚˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "麗華"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 44,
+      "reading": "ㄇㄟˇ ㄏㄨㄟˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "美惠"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 45,
+      "reading": "ㄕㄨˊ ㄓㄣ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "淑貞"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 47,
+      "reading": "ㄒㄧㄡˋ ㄧㄥ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "秀英"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 48,
+      "reading": "ㄕㄨˊ ㄐㄩㄢ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "淑娟"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 49,
+      "reading": "ㄒㄧㄡˋ ㄑㄧㄣˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "秀琴"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 51,
+      "reading": "ㄇㄟˇ ㄏㄨㄚˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "美華"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 53,
+      "reading": "ㄕㄨˊ ㄏㄨㄚˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "淑華"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 56,
+      "reading": "ㄒㄧㄡˋ ㄌㄢˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "秀蘭"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 57,
+      "reading": "ㄕㄨˊ ㄇㄟˇ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "淑美"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 58,
+      "reading": "ㄒㄧㄡˋ ㄈㄥˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "秀鳳"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 59,
+      "reading": "ㄇㄟˇ ㄓㄨ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "美珠"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 60,
+      "reading": "ㄩˋ ㄧㄥ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "玉英"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 62,
+      "reading": "ㄧㄚˇ ㄨㄣˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "雅雯"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 64,
+      "reading": "ㄧˊ ㄓㄣ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "宜蓁"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 65,
+      "reading": "ㄒㄧㄣ ㄩˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "欣妤"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 66,
+      "reading": "ㄕ ㄏㄢˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "詩涵"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 67,
+      "reading": "ㄆㄧㄣˇ ㄧㄢˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "品妍"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 68,
+      "reading": "ㄗˇ ㄑㄧㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "子晴"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 69,
+      "reading": "ㄩㄥˇ ㄑㄧㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "詠晴"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 70,
+      "reading": "ㄧˇ ㄈㄟ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "苡菲"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 71,
+      "reading": "ㄩˇ ㄈㄟ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "雨霏"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 73,
+      "reading": "ㄆㄟˋ ㄕㄢ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "佩珊"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 74,
+      "reading": "ㄙ ㄩˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "思妤"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 75,
+      "reading": "ㄨㄢˇ ㄊㄧㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "婉婷"
+    },
+    {
       "category": "公務員公文",
       "file": "phrase.government.tsv",
       "line": 16,
@@ -40095,12 +40680,201 @@
       "word": "魏晉"
     },
     {
+      "category": "香港地名",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 26,
+      "reading": "ㄩㄢˊ ㄌㄤˇ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "元朗"
+    },
+    {
+      "category": "香港地名",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 39,
+      "reading": "ㄨㄤˋ ㄐㄧㄠˇ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "旺角"
+    },
+    {
+      "category": "香港地名",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 50,
+      "reading": "ㄈㄣˇ ㄌㄧㄥˇ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "粉嶺"
+    },
+    {
+      "category": "香港地名",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 61,
+      "reading": "ㄔㄤˊ ㄓㄡ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "長洲"
+    },
+    {
+      "category": "香港觀光景點",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 99,
+      "reading": "ㄉㄚˋ ㄍㄨㄢˇ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "大館"
+    },
+    {
+      "category": "香港口語",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 132,
+      "reading": "ㄨˊ ㄒㄧˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "唔係"
+    },
+    {
+      "category": "香港口語",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 134,
+      "reading": "ㄨˊ ㄓ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "唔知"
+    },
+    {
+      "category": "香港口語",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 137,
+      "reading": "ㄓˊ ㄕㄥ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "執生"
+    },
+    {
+      "category": "香港口語",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 140,
+      "reading": "ㄧㄥˇ ㄒㄧㄤˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "影相"
+    },
+    {
+      "category": "香港口語",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 144,
+      "reading": "ㄨㄣˋ ㄍㄨㄥ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "搵工"
+    },
+    {
+      "category": "香港口語",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 152,
+      "reading": "ㄈㄢˇ ㄍㄨㄥ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "返工"
+    },
+    {
+      "category": "香港飲食用語",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 159,
+      "reading": "ㄅㄧㄥ ㄕˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "冰室"
+    },
+    {
+      "category": "香港企業簡稱",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 178,
+      "reading": "ㄐㄧㄡˇ ㄅㄚ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "九巴"
+    },
+    {
+      "category": "香港企業簡稱",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 195,
+      "reading": "ㄏㄨㄟˋ ㄈㄥ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "滙豐"
+    },
+    {
+      "category": "香港企業簡稱",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 196,
+      "reading": "ㄅㄞˇ ㄐㄧㄚ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "百佳"
+    },
+    {
+      "category": "香港企業簡稱",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 198,
+      "reading": "ㄕㄚ ㄕㄚ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "莎莎"
+    },
+    {
+      "category": "香港大專院校簡稱",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 203,
+      "reading": "ㄖㄣˊ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "仁大"
+    },
+    {
+      "category": "香港大專院校簡稱",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 204,
+      "reading": "ㄔㄥˊ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "城大"
+    },
+    {
+      "category": "香港大專院校簡稱",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 207,
+      "reading": "ㄐㄧㄠˋ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "教大"
+    },
+    {
+      "category": "澳門口語與飲食",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 297,
+      "reading": "ㄕㄡˇ ㄒㄧㄣˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "手信"
+    },
+    {
+      "category": "港澳生活用語",
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 313,
+      "reading": "ㄉㄧˊ ㄕˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "的士"
+    },
+    {
       "category": "工業工程",
       "file": "phrase.industrial-engineering.tsv",
       "line": 16,
       "reading": "ㄑㄧㄢˊ ㄓˋ",
       "source_count": 12,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "前置"
     },
     {
@@ -40217,7 +40991,7 @@
       "line": 131,
       "reading": "ㄔㄣˊ ㄐㄧㄤˋ",
       "source_count": 12,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "沉降"
     },
     {
@@ -40271,7 +41045,7 @@
       "line": 7,
       "reading": "ㄢ ㄅㄟˋ ㄐㄧㄣˋ ㄙㄢ",
       "source_count": 13,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "安倍晉三"
     },
     {
@@ -40280,7 +41054,7 @@
       "line": 12,
       "reading": "ㄉㄞˋ ㄗ ㄧㄥˇ",
       "source_count": 18,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "戴資穎"
     },
     {
@@ -40289,7 +41063,7 @@
       "line": 13,
       "reading": "ㄅㄞˋ ㄉㄥ",
       "source_count": 13,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "拜登"
     },
     {
@@ -40298,7 +41072,7 @@
       "line": 24,
       "reading": "ㄇㄟˊ ㄎㄜˋ ㄦˇ",
       "source_count": 13,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "梅克爾"
     },
     {
@@ -40307,7 +41081,7 @@
       "line": 52,
       "reading": "ㄏㄢˊ ㄍㄨㄛˊ ㄩˊ",
       "source_count": 13,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "韓國瑜"
     },
     {
@@ -40316,7 +41090,7 @@
       "line": 54,
       "reading": "ㄇㄚˇ ㄙ ㄎㄜˋ",
       "source_count": 41,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "馬斯克"
     },
     {
@@ -40325,7 +41099,7 @@
       "line": 57,
       "reading": "ㄏㄨㄤˊ ㄖㄣˊ ㄒㄩㄣ",
       "source_count": 43,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "黃仁勳"
     },
     {
@@ -40334,7 +41108,7 @@
       "line": 23,
       "reading": "ㄊㄨˊ ㄌㄧㄥˊ",
       "source_count": 11,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "圖靈"
     },
     {
@@ -40343,7 +41117,7 @@
       "line": 156,
       "reading": "ㄏㄨㄛˋ ㄐㄧㄣ",
       "source_count": 11,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "霍金"
     },
     {
@@ -40352,7 +41126,7 @@
       "line": 165,
       "reading": "ㄈㄥˊ ㄋㄧㄡˇ ㄇㄢˋ",
       "source_count": 11,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "馮紐曼"
     },
     {
@@ -40397,7 +41171,7 @@
       "line": 91,
       "reading": "ㄐㄧˊ ㄐㄧˊ",
       "source_count": 9,
-      "target_count": 0.01,
+      "target_count": 0.009999999999999978,
       "word": "汲極"
     },
     {
@@ -40417,22 +41191,499 @@
       "source_count": 10,
       "target_count": 0.01,
       "word": "鰭式"
+    },
+    {
+      "category": "台灣縣市",
+      "file": "phrase.taiwan.tsv",
+      "line": 18,
+      "reading": "ㄊㄞˊ ㄓㄨㄥ ㄕˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "臺中市"
+    },
+    {
+      "category": "台灣縣市",
+      "file": "phrase.taiwan.tsv",
+      "line": 19,
+      "reading": "ㄊㄞˊ ㄅㄟˇ ㄕˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "臺北市"
+    },
+    {
+      "category": "台灣縣市",
+      "file": "phrase.taiwan.tsv",
+      "line": 20,
+      "reading": "ㄊㄞˊ ㄋㄢˊ ㄕˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "臺南市"
+    },
+    {
+      "category": "台灣縣市",
+      "file": "phrase.taiwan.tsv",
+      "line": 21,
+      "reading": "ㄊㄞˊ ㄉㄨㄥ ㄒㄧㄢˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "臺東縣"
+    },
+    {
+      "category": "台灣鄉鎮市區",
+      "file": "phrase.taiwan.tsv",
+      "line": 43,
+      "reading": "ㄓㄨㄥ ㄌㄧˋ ㄑㄩ",
+      "source_count": 1,
+      "target_count": 0.009999999999999978,
+      "word": "中壢區"
+    },
+    {
+      "category": "台灣鄉鎮市區",
+      "file": "phrase.taiwan.tsv",
+      "line": 128,
+      "reading": "ㄉㄚˋ ㄔㄥˊ ㄒㄧㄤ",
+      "source_count": 1,
+      "target_count": 0.009999999999999978,
+      "word": "大城鄉"
+    },
+    {
+      "category": "台灣鄉鎮市區",
+      "file": "phrase.taiwan.tsv",
+      "line": 300,
+      "reading": "ㄊㄞˊ ㄉㄨㄥ ㄕˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "臺東市"
+    },
+    {
+      "category": "觀光景點",
+      "file": "phrase.taiwan.tsv",
+      "line": 891,
+      "reading": "ㄌㄢˊ ㄊㄢˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "蘭潭"
+    },
+    {
+      "category": "觀光景點",
+      "file": "phrase.taiwan.tsv",
+      "line": 904,
+      "reading": "ㄔㄜ ㄔㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "車埕"
+    },
+    {
+      "category": "觀光景點",
+      "file": "phrase.taiwan.tsv",
+      "line": 925,
+      "reading": "ㄅㄛˊ ㄦˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "駁二"
+    },
+    {
+      "category": "台灣口語",
+      "file": "phrase.taiwan.tsv",
+      "line": 950,
+      "reading": "ㄞ ㄧㄛ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "唉唷"
+    },
+    {
+      "category": "台灣口語",
+      "file": "phrase.taiwan.tsv",
+      "line": 955,
+      "reading": "ㄏㄟ ㄧㄚ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "嘿呀"
+    },
+    {
+      "category": "台灣上市公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 999,
+      "reading": "ㄓㄨㄥ ㄉㄧㄥˇ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "中鼎"
+    },
+    {
+      "category": "台灣上市公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1007,
+      "reading": "ㄧˋ ㄈㄥ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "億豐"
+    },
+    {
+      "category": "台灣上市公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1008,
+      "reading": "ㄖㄨˊ ㄏㄨㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "儒鴻"
+    },
+    {
+      "category": "台灣上市公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1014,
+      "reading": "ㄌㄧˋ ㄔㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "力成"
+    },
+    {
+      "category": "台灣上市公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1020,
+      "reading": "ㄋㄢˊ ㄉㄧㄢˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "南電"
+    },
+    {
+      "category": "台灣上市公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1021,
+      "reading": "ㄅㄨˇ ㄈㄥ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "卜蜂"
+    },
+    {
+      "category": "台灣上市公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1023,
+      "reading": "ㄎㄜˇ ㄔㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "可成"
+    },
+    {
+      "category": "台灣上市公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1044,
+      "reading": "ㄕˋ ㄉㄧㄢˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "士電"
+    },
+    {
+      "category": "台灣上市公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1058,
+      "reading": "ㄐㄧˋ ㄐㄧㄚ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "技嘉"
+    },
+    {
+      "category": "台灣上市公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1063,
+      "reading": "ㄐㄧㄥ ㄏㄨㄚˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "晶華"
+    },
+    {
+      "category": "台灣上市公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1069,
+      "reading": "ㄒㄧㄣ ㄒㄧㄥ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "欣興"
+    },
+    {
+      "category": "台灣上市公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1070,
+      "reading": "ㄓㄥˋ ㄒㄧㄣ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "正新"
+    },
+    {
+      "category": "台灣上市公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1085,
+      "reading": "ㄈㄨˊ ㄒㄧㄥ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "福興"
+    },
+    {
+      "category": "台灣上櫃公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1136,
+      "reading": "ㄌㄧˋ ㄨㄤˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "力旺"
+    },
+    {
+      "category": "台灣上櫃公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1140,
+      "reading": "ㄩㄢˊ ㄒㄧㄤˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "原相"
+    },
+    {
+      "category": "台灣上櫃公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1148,
+      "reading": "ㄐㄧㄚ ㄉㄥ",
+      "source_count": 1,
+      "target_count": 0.009999999999999978,
+      "word": "家登"
+    },
+    {
+      "category": "台灣上櫃公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1151,
+      "reading": "ㄏㄨㄥˊ ㄙㄨˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "弘塑"
+    },
+    {
+      "category": "台灣上櫃公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1153,
+      "reading": "ㄒㄧㄣ ㄆㄨˇ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "新普"
+    },
+    {
+      "category": "台灣上櫃公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1156,
+      "reading": "ㄕˋ ㄈㄤ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "是方"
+    },
+    {
+      "category": "台灣上櫃公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1158,
+      "reading": "ㄓˋ ㄊㄨㄥ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "智通"
+    },
+    {
+      "category": "台灣上櫃公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1160,
+      "reading": "ㄒㄧㄣ ㄑㄩㄢˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "欣銓"
+    },
+    {
+      "category": "台灣上櫃公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1165,
+      "reading": "ㄏㄨㄥˊ ㄊㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "竑騰"
+    },
+    {
+      "category": "台灣上櫃公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1172,
+      "reading": "ㄌㄧㄤˊ ㄨㄟˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "良維"
+    },
+    {
+      "category": "台灣上櫃公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1177,
+      "reading": "ㄒㄧㄣ ㄒㄧㄤˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "鈊象"
+    },
+    {
+      "category": "台灣上櫃公司",
+      "file": "phrase.taiwan.tsv",
+      "line": 1179,
+      "reading": "ㄔㄤˊ ㄎㄜ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "長科"
+    },
+    {
+      "category": "台灣知名企業",
+      "file": "phrase.taiwan.tsv",
+      "line": 1191,
+      "reading": "ㄐㄧㄚ ㄉㄜˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "佳德"
+    },
+    {
+      "category": "台灣知名企業",
+      "file": "phrase.taiwan.tsv",
+      "line": 1208,
+      "reading": "ㄊㄞˊ ㄐㄧㄡˇ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "台酒"
+    },
+    {
+      "category": "台灣知名企業",
+      "file": "phrase.taiwan.tsv",
+      "line": 1231,
+      "reading": "ㄧㄢˊ ㄧㄤˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "研揚"
+    },
+    {
+      "category": "台灣知名企業",
+      "file": "phrase.taiwan.tsv",
+      "line": 1234,
+      "reading": "ㄨㄟˊ ㄌㄧˋ",
+      "source_count": 1,
+      "target_count": 0.009999999999999978,
+      "word": "維力"
+    },
+    {
+      "category": "台灣知名企業",
+      "file": "phrase.taiwan.tsv",
+      "line": 1235,
+      "reading": "ㄇㄟˇ ㄌㄧㄢˊ ㄕㄜˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "美廉社"
+    },
+    {
+      "category": "台灣知名企業",
+      "file": "phrase.taiwan.tsv",
+      "line": 1239,
+      "reading": "ㄊㄞˊ ㄨㄢ ㄧㄣˊ ㄏㄤˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "臺灣銀行"
+    },
+    {
+      "category": "台灣知名企業",
+      "file": "phrase.taiwan.tsv",
+      "line": 1240,
+      "reading": "ㄊㄞˊ ㄊㄧㄝˇ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "臺鐵"
+    },
+    {
+      "category": "台灣知名企業",
+      "file": "phrase.taiwan.tsv",
+      "line": 1243,
+      "reading": "ㄒㄩㄣˋ ㄌㄧㄢˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "訊連"
+    },
+    {
+      "category": "台灣大專院校簡稱",
+      "file": "phrase.taiwan.tsv",
+      "line": 1295,
+      "reading": "ㄐㄧㄚ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "嘉大"
+    },
+    {
+      "category": "台灣大專院校簡稱",
+      "file": "phrase.taiwan.tsv",
+      "line": 1302,
+      "reading": "ㄉㄚˋ ㄧㄝˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "大葉"
+    },
+    {
+      "category": "台灣大專院校簡稱",
+      "file": "phrase.taiwan.tsv",
+      "line": 1304,
+      "reading": "ㄧˊ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "宜大"
+    },
+    {
+      "category": "台灣大專院校簡稱",
+      "file": "phrase.taiwan.tsv",
+      "line": 1320,
+      "reading": "ㄐㄧˋ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "暨大"
+    },
+    {
+      "category": "台灣大專院校簡稱",
+      "file": "phrase.taiwan.tsv",
+      "line": 1334,
+      "reading": "ㄧˋ ㄕㄡˇ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "義守"
+    },
+    {
+      "category": "台灣大專院校簡稱",
+      "file": "phrase.taiwan.tsv",
+      "line": 1341,
+      "reading": "ㄊㄞˊ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "臺大"
+    },
+    {
+      "category": "台灣大專院校簡稱",
+      "file": "phrase.taiwan.tsv",
+      "line": 1344,
+      "reading": "ㄊㄞˊ ㄎㄜ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "臺科大"
+    },
+    {
+      "category": "台灣大專院校簡稱",
+      "file": "phrase.taiwan.tsv",
+      "line": 1353,
+      "reading": "ㄐㄧㄣ ㄉㄚˋ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "金大"
     }
   ],
-  "convenience_words": 2290,
+  "convenience_words": 2429,
   "cooker": {
-    "bigram_rows": 870579,
+    "bigram_rows": 870514,
     "cin_reading_frequencies": {
       "entries": 3863,
       "file": "/Users/paulcp/.codex/worktrees/mobile-hanyu-pinyin/KeyKey/DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv",
       "sha256": "2c9b9bb3d99516b401188311a87dc5b41e14b4f25b13978afccef7e2a25426fb"
     },
     "sentences": 325113,
-    "tokens": 1525284,
-    "unigram_rows": 116869,
-    "unigram_total_count": 22609580.0
+    "tokens": 1524883,
+    "unigram_rows": 118318,
+    "unigram_total_count": 22611029.0
   },
-  "excluded_source_rows": 2188,
+  "excluded_source_rows": 2803,
   "low_ranked_words": [
     "一之瀨四季",
     "一之瀨琴美",
@@ -40488,6 +41739,7 @@
     "中務椿",
     "中原中也",
     "中原瑞希",
+    "中壢區",
     "中山春樹",
     "中島敦",
     "中川圭一",
@@ -40498,6 +41750,7 @@
     "中野五月",
     "中野四葉",
     "中野梓",
+    "中鼎",
     "丹特麗安",
     "丹生谷森夏",
     "乃木英樹",
@@ -40515,6 +41768,7 @@
     "乙木守仁",
     "乙正",
     "乙骨憂太",
+    "九巴",
     "九條可憐",
     "九能帶刀",
     "九頭龍八一",
@@ -40527,6 +41781,7 @@
     "二藤尚哉",
     "二階堂咲",
     "二階堂大和",
+    "互聯網",
     "五代裕作",
     "五十嵐雙葉",
     "五條悟",
@@ -40534,6 +41789,7 @@
     "五河士道",
     "五河琴里",
     "五等分",
+    "五臺山",
     "五郎",
     "井上織姬",
     "井之上瀧奈",
@@ -40556,9 +41812,11 @@
     "亞連沃克",
     "亞魯雷特",
     "交響詩篇",
+    "人大",
     "人生清單",
     "人衣一體",
     "仁坂悠介",
+    "仁大",
     "今井綠",
     "今村耕平",
     "今泉俊輔",
@@ -40608,6 +41866,7 @@
     "你的名字",
     "你的名字是",
     "你的謊言",
+    "佳德",
     "來堂",
     "來自深淵",
     "侍奉社",
@@ -40634,7 +41893,10 @@
     "傑特布萊克",
     "傑瑞米亞",
     "傑諾斯",
+    "億豐",
+    "儒鴻",
     "優娜",
+    "元朗",
     "先島光",
     "光秀",
     "光罩",
@@ -40681,6 +41943,7 @@
     "冬月梓",
     "冬獅郎",
     "冰上的尤里",
+    "冰室",
     "冰菓",
     "凪誠士郎",
     "凸守早苗",
@@ -40708,6 +41971,8 @@
     "劍宗次朗",
     "劍持勇",
     "劑型",
+    "力成",
+    "力旺",
     "加洛提莫斯",
     "加納咢",
     "加賀靜子",
@@ -40752,6 +42017,8 @@
     "南春香",
     "南雲",
     "南雲始",
+    "南電",
+    "卜蜂",
     "卡佳里",
     "卡塔雷特",
     "卡多斯",
@@ -40766,6 +42033,7 @@
     "卷島裕介",
     "厄卡倫",
     "厄德",
+    "原相",
     "及川徹",
     "友人帳",
     "古屋純",
@@ -40785,9 +42053,11 @@
     "只野仁人",
     "叫我達令",
     "召喚獸",
+    "可成",
     "可能性之獸",
     "可蕾娜",
     "可魯貝洛斯",
+    "台酒",
     "史卡雷特",
     "史坦菲爾德",
     "史比勒",
@@ -40802,6 +42072,7 @@
     "各務原撫子",
     "吉井明久",
     "吉吉",
+    "吉大",
     "吉岡雙葉",
     "吉川由紀",
     "吉爾伽美什",
@@ -40841,8 +42112,11 @@
     "哈特菲利亞",
     "哈魯",
     "哥布林殺手",
+    "唉唷",
     "唐之杜志恩",
     "唐澤",
+    "唔係",
+    "唔知",
     "喜多川海夢",
     "喜多郁代",
     "喜歡你",
@@ -40858,8 +42132,10 @@
     "喵帕斯",
     "嗚咕",
     "嘆詞",
+    "嘉大",
     "嘉德麗雅",
     "嘴平伊之助",
+    "嘿呀",
     "噬魂者",
     "四乃山",
     "四之宮",
@@ -40872,6 +42148,7 @@
     "國崎往人",
     "國木田獨步",
     "國木田花丸",
+    "國雄",
     "園原杏里",
     "園崎詩音",
     "園崎魅音",
@@ -40900,11 +42177,13 @@
     "埃爾",
     "埃爾梅羅",
     "城之內克也",
+    "城大",
     "城太郎",
     "城惠",
     "城戶丈",
     "城次郎",
     "埴之塚光邦",
+    "執生",
     "基利艾拉特",
     "基爾伯特",
     "基爾巴奈特",
@@ -40924,6 +42203,7 @@
     "塞爾堤",
     "境界之輪迴",
     "士遠",
+    "士電",
     "壬氏",
     "壬生浪士組",
     "夏娜",
@@ -40966,16 +42246,19 @@
     "大和凜子",
     "大垣千明",
     "大城光",
+    "大城鄉",
     "大場奈奈",
     "大學生活",
     "大宮忍",
     "大崎娜娜",
     "大木大樹",
     "大江奏",
+    "大葉",
     "大賢者",
     "大路餅藏",
     "大道寺知世",
     "大門兄弟",
+    "大館",
     "天下大將軍",
     "天國大魔境",
     "天堂之吻",
@@ -41041,6 +42324,7 @@
     "娜美",
     "娜貝拉爾",
     "嬴政",
+    "子晴",
     "字級",
     "字距",
     "字重",
@@ -41080,6 +42364,7 @@
     "宗像禮司",
     "宗像草太",
     "定語",
+    "宜大",
     "宜野座伸元",
     "室井靜信",
     "宮內一穗",
@@ -41094,6 +42379,7 @@
     "宮水四葉",
     "宮澤謙吾",
     "宮田一郎",
+    "家登",
     "宿海仁太",
     "寄生獸",
     "富岡義勇",
@@ -41209,6 +42495,7 @@
     "巴特",
     "巴納吉",
     "巴衛",
+    "巴適",
     "巴魯",
     "巴麻美",
     "巽幸太郎",
@@ -41263,9 +42550,11 @@
     "庫洛魔法使",
     "庫魯斯",
     "庸子",
+    "廈大",
     "弓原紗季",
     "弗利沙",
     "弗爾伏朗托",
+    "弘塑",
     "弧次郎",
     "張五飛",
     "強風吹拂",
@@ -41278,6 +42567,7 @@
     "影山律",
     "影山茂夫",
     "影山飛雄",
+    "影相",
     "後藤",
     "後藤一里",
     "徒然喜歡你",
@@ -41295,10 +42585,13 @@
     "心愛智乃",
     "忍野忍",
     "志人",
+    "志偉",
     "志喜屋夢子",
+    "志宏",
     "志志雄真實",
     "志摩凜",
     "志摩聰介",
+    "志明",
     "志村新八",
     "忠邦",
     "快充",
@@ -41350,11 +42643,13 @@
     "戶塚彩加",
     "戶山香澄",
     "戶愚呂弟",
+    "手信",
     "手塚國光",
     "托席",
     "托爾芬",
     "托爾茲",
     "找到你了",
+    "技嘉",
     "投手丘",
     "折原臨也",
     "折木奉太郎",
@@ -41384,6 +42679,7 @@
     "提耶利亞",
     "換裝娃娃",
     "搖曳露營",
+    "搵工",
     "摩訶亞爾邦",
     "撒旦之子",
     "播磨拳兒",
@@ -41391,6 +42687,7 @@
     "政府通知",
     "敕使",
     "敗北女角",
+    "教大",
     "散華禮彌",
     "數碼寶貝",
     "文學少女",
@@ -41402,6 +42699,7 @@
     "斯雷因",
     "斯露",
     "新垣綾瀨",
+    "新普",
     "新條直輝",
     "新條茜",
     "新機動",
@@ -41423,6 +42721,7 @@
     "早坂紫",
     "早川秋",
     "旭日之心",
+    "旺角",
     "昆阿圭羅",
     "明智健悟",
     "明神彌彥",
@@ -41436,16 +42735,20 @@
     "星馳阿魯斯",
     "映像研",
     "春野櫻",
+    "是方",
     "時崎狂三",
     "時雄",
     "晨曦公主",
     "普利謝茨基",
     "普魯托",
+    "晶華",
     "智將",
     "智慧之神",
+    "智通",
     "暗殺教室",
     "暗殺時間",
     "暗殺者",
+    "暨大",
     "曉美焰",
     "更科瑠夏",
     "曼恩",
@@ -41532,6 +42835,7 @@
     "架印",
     "柊司",
     "柊鏡",
+    "柏宇",
     "柏崎茜",
     "柯魯特奧",
     "柳之",
@@ -41603,13 +42907,18 @@
     "櫻遙",
     "櫻野栗夢",
     "次清",
+    "欣妤",
     "欣梅爾",
+    "欣興",
+    "欣銓",
     "欺負我",
     "歐爾麥特",
     "歐畢",
     "歐索娜",
+    "正新",
     "武之內空",
     "武內樹",
+    "武大",
     "武田晴海",
     "武藤遊戲",
     "武裝偵探社",
@@ -41681,6 +42990,7 @@
     "津島善子",
     "津田隆利",
     "流川楓",
+    "浙大",
     "浦飯幽助",
     "海因里",
     "海坊主",
@@ -41693,6 +43003,8 @@
     "涼宮春日",
     "涼風青葉",
     "淀治",
+    "淑貞",
+    "深大",
     "深澄真",
     "深部",
     "淺右",
@@ -41717,6 +43029,7 @@
     "溫水和彥",
     "溫莉",
     "溫蒂瑪貝爾",
+    "滙豐",
     "滿艦飾真子",
     "漢吉佐耶",
     "漩渦鳴人",
@@ -41803,6 +43116,7 @@
     "獻出心臟",
     "玉子市場",
     "玉木真理",
+    "玉英",
     "玉葉妃",
     "玉藻京介",
     "王宮藥劑師",
@@ -41865,7 +43179,9 @@
     "白銀御行",
     "白鳥愛羅",
     "白龍",
+    "百佳",
     "百鬼夜行抄",
+    "的士",
     "皇后崎迅",
     "監獄學園",
     "盧各圖哈德",
@@ -41914,6 +43230,7 @@
     "石神千空",
     "砂川愛",
     "砂川誠",
+    "研揚",
     "碇源堂",
     "碇真嗣",
     "碓冰拓海",
@@ -41943,6 +43260,7 @@
     "神隱少女",
     "福星小子",
     "福羅倫斯",
+    "福興",
     "福部里志",
     "秋名山",
     "秋山澪",
@@ -41971,6 +43289,7 @@
     "立花瀧",
     "立華奏",
     "立野廣",
+    "竑騰",
     "競技歌牌",
     "竹本祐太",
     "笑面男",
@@ -41997,6 +43316,7 @@
     "米特奧拉",
     "米莉亞",
     "米蒂",
+    "粉嶺",
     "粕壁隼",
     "糞作獵人",
     "糟糕念頭",
@@ -42032,6 +43352,7 @@
     "綠谷出久",
     "綠間真太郎",
     "維克托",
+    "維力",
     "維夏",
     "維多利加",
     "維拉爾",
@@ -42061,9 +43382,12 @@
     "美代吉",
     "美奈",
     "美少女戰士",
+    "美廉社",
     "美樹沙耶香",
+    "美玲",
     "美美姬",
     "美遊",
+    "義守",
     "義符",
     "羽川翼",
     "羽衣狐",
@@ -42083,10 +43407,20 @@
     "自來也",
     "自動人偶",
     "自私鬼",
+    "臺中市",
+    "臺北市",
+    "臺南市",
+    "臺大",
+    "臺東市",
+    "臺東縣",
     "臺灣史",
+    "臺灣銀行",
+    "臺科大",
+    "臺鐵",
     "與太郎",
     "航海王",
     "船井讓次",
+    "良維",
     "艾冉",
     "艾利亞斯",
     "艾利斯",
@@ -42144,6 +43478,7 @@
     "芹澤朋也",
     "芹澤蕾拉",
     "芽亞里",
+    "苡菲",
     "若月妮可",
     "若本真吾",
     "若狹悠里",
@@ -42184,6 +43519,7 @@
     "莉莉露卡",
     "莉莎霍克愛",
     "莎米哈伊",
+    "莎莎",
     "莫奇馬茲",
     "莫娜",
     "莫里亞蒂",
@@ -42196,6 +43532,7 @@
     "菜月昴",
     "華倫斯坦",
     "華斯",
+    "華為",
     "菱形窗",
     "菲洛",
     "菲特泰斯",
@@ -42252,6 +43589,7 @@
     "蘇菲",
     "蘇西曼",
     "蘭佩洛基",
+    "蘭潭",
     "蘭頓薩斯頓",
     "虎杖悠仁",
     "虛構推理",
@@ -42285,12 +43623,14 @@
     "西索",
     "西莉卡",
     "西谷夕",
+    "西電",
     "要圭",
     "要死",
     "見崎鳴",
     "親權",
     "解魯",
     "言峰綺禮",
+    "訊連",
     "訛文",
     "詞祈艾",
     "詩乃",
@@ -42314,6 +43654,7 @@
     "譚雅",
     "豐濱和香",
     "豪瑟",
+    "豫園",
     "豬熊陽子",
     "豬股大喜",
     "貓咪老師",
@@ -42360,6 +43701,7 @@
     "路克賽科爾",
     "路茲",
     "躍動青春",
+    "車埕",
     "車田鐵一",
     "車貸",
     "輔助踢細胞",
@@ -42377,6 +43719,7 @@
     "辛耶諾贊",
     "辰石幸次",
     "近藤勇",
+    "返工",
     "迦勒底",
     "迪亞布羅",
     "迪奧布蘭度",
@@ -42406,6 +43749,7 @@
     "鄉下女孩",
     "鄰座",
     "酷拉皮卡",
+    "醫保",
     "里包恩",
     "里歐弗提亞",
     "里維阿卡曼",
@@ -42419,13 +43763,16 @@
     "野崎梅太郎",
     "野田妹",
     "野田惠",
+    "金大",
     "金恩",
     "金木研",
     "金森沙耶加",
+    "金生",
     "金田一",
     "金田一一",
     "釘崎野薔薇",
     "針目縫",
+    "鈊象",
     "鈴井涼太",
     "鈴屋什造",
     "鈴芽之旅",
@@ -42443,8 +43790,10 @@
     "鑽石王牌",
     "長名馴染",
     "長月早苗",
+    "長洲",
     "長瀞同學",
     "長瀞早瀨",
+    "長科",
     "長野原美緒",
     "長門有希",
     "閃電霹靂車",
@@ -42500,12 +43849,14 @@
     "隸變",
     "雀斑公主",
     "雅兒貝德",
+    "雅雯",
     "雙極",
     "雙葉杏",
     "雙葉理央",
     "雛鶴愛",
     "雨和雪",
     "雨流美彌音",
+    "雨霏",
     "雪之下雪乃",
     "雪女冰麗",
     "雪姬",
@@ -42595,6 +43946,7 @@
     "馬魯克",
     "馮提古",
     "馳井靜句",
+    "駁二",
     "駒場一郎",
     "騙人布",
     "驅魔少年",
@@ -42673,6 +44025,7 @@
     "鹿目圓",
     "鹿野千夏",
     "麗日御茶子",
+    "麗華",
     "麥斯威爾",
     "麻中蓬",
     "麻倉葉",
@@ -42715,16 +44068,484 @@
     "龍與虎",
     "龜派氣功"
   ],
-  "partial_overlap_rows": 13937,
+  "partial_overlap_rows": 17068,
   "partial_span_characters": 2,
   "people": [
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 3,
+      "reading": "ㄓˋ ㄇㄧㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "志明"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 4,
+      "reading": "ㄐㄧㄢˋ ㄏㄨㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "建宏"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 6,
+      "reading": "ㄐㄩㄣˋ ㄏㄨㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "俊宏"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 7,
+      "reading": "ㄓˋ ㄏㄠˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "志豪"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 8,
+      "reading": "ㄓˋ ㄨㄟˇ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "志偉"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 9,
+      "reading": "ㄔㄥˊ ㄏㄢˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "承翰"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 11,
+      "reading": "ㄓˋ ㄑㄧㄤˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "志強"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 13,
+      "reading": "ㄓˋ ㄏㄨㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "志宏"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 16,
+      "reading": "ㄨㄣˊ ㄒㄩㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "文雄"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 17,
+      "reading": "ㄔㄥˊ ㄣ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "承恩"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 19,
+      "reading": "ㄨㄣˊ ㄅㄧㄣ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "文彬"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 20,
+      "reading": "ㄓㄥˋ ㄒㄩㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "正雄"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 21,
+      "reading": "ㄇㄧㄥˊ ㄏㄨㄟ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "明輝"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 26,
+      "reading": "ㄐㄧㄣ ㄕㄥ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "金生"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 27,
+      "reading": "ㄨˇ ㄒㄩㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "武雄"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 28,
+      "reading": "ㄐㄧㄣˋ ㄘㄞˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "進財"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 30,
+      "reading": "ㄧㄡˋ ㄊㄧㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "宥廷"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 31,
+      "reading": "ㄆㄧㄣˇ ㄖㄨㄟˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "品睿"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 32,
+      "reading": "ㄣ ㄕㄨㄛˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "恩碩"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 33,
+      "reading": "ㄗˇ ㄖㄨㄟˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "子睿"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 35,
+      "reading": "ㄍㄨㄛˊ ㄒㄩㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "國雄"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 37,
+      "reading": "ㄅㄛˊ ㄏㄢˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "柏翰"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 38,
+      "reading": "ㄅㄛˊ ㄩˇ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "柏宇"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 39,
+      "reading": "ㄧㄢˋ ㄊㄧㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "彥廷"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 40,
+      "reading": "ㄕㄨˊ ㄈㄣ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "淑芬"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 41,
+      "reading": "ㄕㄨˊ ㄏㄨㄟˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "淑惠"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 42,
+      "reading": "ㄇㄟˇ ㄌㄧㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "美玲"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 43,
+      "reading": "ㄌㄧˋ ㄏㄨㄚˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "麗華"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 44,
+      "reading": "ㄇㄟˇ ㄏㄨㄟˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "美惠"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 45,
+      "reading": "ㄕㄨˊ ㄓㄣ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "淑貞"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 47,
+      "reading": "ㄒㄧㄡˋ ㄧㄥ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "秀英"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 48,
+      "reading": "ㄕㄨˊ ㄐㄩㄢ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "淑娟"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 49,
+      "reading": "ㄒㄧㄡˋ ㄑㄧㄣˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "秀琴"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 51,
+      "reading": "ㄇㄟˇ ㄏㄨㄚˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "美華"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 53,
+      "reading": "ㄕㄨˊ ㄏㄨㄚˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "淑華"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 56,
+      "reading": "ㄒㄧㄡˋ ㄌㄢˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "秀蘭"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 57,
+      "reading": "ㄕㄨˊ ㄇㄟˇ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "淑美"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 58,
+      "reading": "ㄒㄧㄡˋ ㄈㄥˋ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "秀鳳"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 59,
+      "reading": "ㄇㄟˇ ㄓㄨ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "美珠"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 60,
+      "reading": "ㄩˋ ㄧㄥ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "玉英"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 62,
+      "reading": "ㄧㄚˇ ㄨㄣˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "雅雯"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 64,
+      "reading": "ㄧˊ ㄓㄣ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "宜蓁"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 65,
+      "reading": "ㄒㄧㄣ ㄩˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "欣妤"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 66,
+      "reading": "ㄕ ㄏㄢˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "詩涵"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 67,
+      "reading": "ㄆㄧㄣˇ ㄧㄢˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "品妍"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 68,
+      "reading": "ㄗˇ ㄑㄧㄥˊ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "子晴"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 69,
+      "reading": "ㄩㄥˇ ㄑㄧㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "詠晴"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 70,
+      "reading": "ㄧˇ ㄈㄟ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "苡菲"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 71,
+      "reading": "ㄩˇ ㄈㄟ",
+      "source_count": 1,
+      "target_count": 0.01,
+      "word": "雨霏"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 73,
+      "reading": "ㄆㄟˋ ㄕㄢ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "佩珊"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 74,
+      "reading": "ㄙ ㄩˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "思妤"
+    },
+    {
+      "category": "人名-常見名字",
+      "file": "phrase.given-names.tsv",
+      "line": 75,
+      "reading": "ㄨㄢˇ ㄊㄧㄥˊ",
+      "source_count": 1,
+      "target_count": 0.9999999999999998,
+      "word": "婉婷"
+    },
     {
       "category": "人名-當代",
       "file": "phrase.people-contemporary.tsv",
       "line": 7,
       "reading": "ㄢ ㄅㄟˋ ㄐㄧㄣˋ ㄙㄢ",
       "source_count": 13,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "安倍晉三"
     },
     {
@@ -42733,7 +44554,7 @@
       "line": 12,
       "reading": "ㄉㄞˋ ㄗ ㄧㄥˇ",
       "source_count": 18,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "戴資穎"
     },
     {
@@ -42742,7 +44563,7 @@
       "line": 13,
       "reading": "ㄅㄞˋ ㄉㄥ",
       "source_count": 13,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "拜登"
     },
     {
@@ -42751,7 +44572,7 @@
       "line": 24,
       "reading": "ㄇㄟˊ ㄎㄜˋ ㄦˇ",
       "source_count": 13,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "梅克爾"
     },
     {
@@ -42760,7 +44581,7 @@
       "line": 52,
       "reading": "ㄏㄢˊ ㄍㄨㄛˊ ㄩˊ",
       "source_count": 13,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "韓國瑜"
     },
     {
@@ -42769,7 +44590,7 @@
       "line": 54,
       "reading": "ㄇㄚˇ ㄙ ㄎㄜˋ",
       "source_count": 41,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "馬斯克"
     },
     {
@@ -42778,7 +44599,7 @@
       "line": 57,
       "reading": "ㄏㄨㄤˊ ㄖㄣˊ ㄒㄩㄣ",
       "source_count": 43,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "黃仁勳"
     },
     {
@@ -42787,7 +44608,7 @@
       "line": 23,
       "reading": "ㄊㄨˊ ㄌㄧㄥˊ",
       "source_count": 11,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "圖靈"
     },
     {
@@ -42796,7 +44617,7 @@
       "line": 156,
       "reading": "ㄏㄨㄛˋ ㄐㄧㄣ",
       "source_count": 11,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "霍金"
     },
     {
@@ -42805,7 +44626,7 @@
       "line": 165,
       "reading": "ㄈㄥˊ ㄋㄧㄡˇ ㄇㄢˋ",
       "source_count": 11,
-      "target_count": 1,
+      "target_count": 0.9999999999999998,
       "word": "馮紐曼"
     }
   ],
@@ -42815,30 +44636,30 @@
     "phrase.people-history.tsv",
     "phrase.people-oldnews.tsv"
   ],
-  "people_words": 10,
+  "people_words": 62,
   "policy": "mcp-homophones-retained-low-ranked-long-partial-diagnostic-v3",
   "refinement": {
-    "base_database_sha256": "3273ed4f8618a702141b5327515e08758d49ca46b501fe9cfcdf0ed357433ae8",
+    "base_database_sha256": "ad4ca476d326dc0534e5e7b928e9a3295acbc1dd6b5fa81b1668baa47a8e1acc",
     "collection_supplement": null,
-    "database_sha256": "59b143b781c6795ea749aa41e72afa1a675e826afaf88f2b367a95643ebef76e",
+    "database_sha256": "53e216e5abd5a61f8d74e98be5e6e5e731f17e51c70734591043d6e766d4ccbc",
     "document_frequency_bands": {
-      "five_plus": 44972,
-      "one": 380250,
-      "two_to_four": 106308,
+      "five_plus": 44966,
+      "one": 380301,
+      "two_to_four": 106304,
       "zero": 19857
     },
     "formula": "1 + log2(max(1, document_frequency))",
     "prior_strength": 1000.0,
-    "protected_bigram_rows": 204031,
+    "protected_bigram_rows": 203944,
     "protected_characters": 122,
     "protected_queries": 191,
     "rows": {
-      "bigrams": 870579,
-      "unigrams": 116869
+      "bigrams": 870514,
+      "unigrams": 118318
     },
     "search_trend_existing": 141,
     "search_trend_inserted": 0,
-    "semantic_sha256": "8fa50bf82d498425162989bd672cb1a6d76853e626f74d67acb5735be334b267",
+    "semantic_sha256": "d48a4d489226404df27929b5a5724e50b5bc3729f865252a870b733e3f05f0ff",
     "supplemented_unigrams": 7,
     "training_articles": 2300,
     "training_sources": [
@@ -42888,7 +44709,7 @@
     },
     {
       "file": "DataSource/CINReadingFrequency/standalone-composition-weights.json",
-      "sha256": "eea55dfd30078f6d47b26b278975f3061845e124dd2cdae5a26c1a242713346c"
+      "sha256": "db6c71442fe7b3625aeba9a2b501328b039a95a9f03681783122008804342166"
     },
     {
       "file": "DataSource/CINReadingFrequency/standalone-composition-review.tsv",

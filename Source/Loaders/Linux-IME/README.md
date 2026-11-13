@@ -39,7 +39,7 @@ eleventh commits the first whole word. The native frontend also provides
 Chinese/English switching, full/half-width output, Traditional-to-Simplified
 conversion, typing-error sound, and per-context state.
 
-Associated phrases use the McBopomofo base plus 29 category collections. Each
+Associated phrases use the McBopomofo base plus 33 category collections. Each
 collection has a Boolean option in the `[AssociatedPhrases]` section. The base is
 enabled initially, and disabling every collection disables associated phrases.
 `Shift+1–9` selects a suggested suffix. Candidate size, font, scale, and colors

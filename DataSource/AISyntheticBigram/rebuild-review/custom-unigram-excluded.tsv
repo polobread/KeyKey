@@ -505,6 +505,146 @@ phrase.business.tsv	178	關係人	關係人	ㄍㄨㄢ ㄒㄧˋ ㄖㄣˊ	existing
 phrase.business.tsv	180	預測	預測	ㄩˋ ㄘㄜˋ	existing				預測				
 phrase.business.tsv	181	顧客	顧客	ㄍㄨˋ ㄎㄜˋ	existing				顧客				
 phrase.business.tsv	184	風險	風險	ㄈㄥ ㄒㄧㄢˇ	existing				風險				
+phrase.china.tsv	2	上海市	上海市	ㄕㄤˋ ㄏㄞˇ ㄕˋ	existing				上海市				
+phrase.china.tsv	3	內蒙古	內蒙古	ㄋㄟˋ ㄇㄥˊ ㄍㄨˇ	existing				內蒙古				
+phrase.china.tsv	4	北京市	北京市	ㄅㄟˇ ㄐㄧㄥ ㄕˋ	existing				北京市				
+phrase.china.tsv	5	吉林省	吉林省	ㄐㄧˊ ㄌㄧㄣˊ ㄕㄥˇ	existing				吉林省				
+phrase.china.tsv	6	四川省	四川省	ㄙˋ ㄔㄨㄢ ㄕㄥˇ	existing				四川省				
+phrase.china.tsv	7	天津市	天津市	ㄊㄧㄢ ㄐㄧㄣ ㄕˋ	existing				天津市				
+phrase.china.tsv	8	安徽省	安徽省	ㄢ ㄏㄨㄟ ㄕㄥˇ	existing				安徽省				
+phrase.china.tsv	9	寧夏	寧夏	ㄋㄧㄥˊ ㄒㄧㄚˋ	existing				寧夏				
+phrase.china.tsv	10	山東省	山東省	ㄕㄢ ㄉㄨㄥ ㄕㄥˇ	existing				山東省				
+phrase.china.tsv	11	山西省	山西省	ㄕㄢ ㄒㄧ ㄕㄥˇ	existing				山西省				
+phrase.china.tsv	12	廣東省	廣東省	ㄍㄨㄤˇ ㄉㄨㄥ ㄕㄥˇ	existing				廣東省				
+phrase.china.tsv	13	廣西	廣西	ㄍㄨㄤˇ ㄒㄧ	existing				廣西				
+phrase.china.tsv	14	新疆	新疆	ㄒㄧㄣ ㄐㄧㄤ	existing				新疆				
+phrase.china.tsv	15	江蘇省	江蘇省	ㄐㄧㄤ ㄙㄨ ㄕㄥˇ	existing				江蘇省				
+phrase.china.tsv	16	江西省	江西省	ㄐㄧㄤ ㄒㄧ ㄕㄥˇ	existing				江西省				
+phrase.china.tsv	17	河北省	河北省	ㄏㄜˊ ㄅㄟˇ ㄕㄥˇ	existing				河北省				
+phrase.china.tsv	18	河南省	河南省	ㄏㄜˊ ㄋㄢˊ ㄕㄥˇ	existing				河南省				
+phrase.china.tsv	19	浙江省	浙江省	ㄓㄜˋ ㄐㄧㄤ ㄕㄥˇ	existing				浙江省				
+phrase.china.tsv	21	湖北省	湖北省	ㄏㄨˊ ㄅㄟˇ ㄕㄥˇ	existing				湖北省				
+phrase.china.tsv	22	湖南省	湖南省	ㄏㄨˊ ㄋㄢˊ ㄕㄥˇ	existing				湖南省				
+phrase.china.tsv	23	甘肅省	甘肅省	ㄍㄢ ㄙㄨˋ ㄕㄥˇ	existing				甘肅省				
+phrase.china.tsv	24	福建省	福建省	ㄈㄨˊ ㄐㄧㄢˋ ㄕㄥˇ	existing				福建省				
+phrase.china.tsv	25	西藏	西藏	ㄒㄧ ㄗㄤˋ	existing				西藏				
+phrase.china.tsv	26	貴州省	貴州省	ㄍㄨㄟˋ ㄓㄡ ㄕㄥˇ	existing				貴州省				
+phrase.china.tsv	27	遼寧省	遼寧省	ㄌㄧㄠˊ ㄋㄧㄥˊ ㄕㄥˇ	existing				遼寧省				
+phrase.china.tsv	28	重慶市	重慶市	ㄔㄨㄥˊ ㄑㄧㄥˋ ㄕˋ	existing				重慶市				
+phrase.china.tsv	29	陝西省	陝西省	ㄕㄢˇ ㄒㄧ ㄕㄥˇ	existing				陝西省				
+phrase.china.tsv	30	雲南省	雲南省	ㄩㄣˊ ㄋㄢˊ ㄕㄥˇ	existing				雲南省				
+phrase.china.tsv	31	青海省	青海省	ㄑㄧㄥ ㄏㄞˇ ㄕㄥˇ	existing				青海省				
+phrase.china.tsv	34	佛山	佛山	ㄈㄛˊ ㄕㄢ	existing				佛山				
+phrase.china.tsv	35	南京	南京	ㄋㄢˊ ㄐㄧㄥ	existing				南京				
+phrase.china.tsv	36	南寧	南寧	ㄋㄢˊ ㄋㄧㄥˊ	existing				南寧				
+phrase.china.tsv	37	南昌	南昌	ㄋㄢˊ ㄔㄤ	existing				南昌				
+phrase.china.tsv	38	合肥	合肥	ㄏㄜˊ ㄈㄟˊ	existing				合肥				
+phrase.china.tsv	39	吐魯番	吐魯番	ㄊㄨˇ ㄌㄨˇ ㄈㄢ	existing				吐魯番				
+phrase.china.tsv	40	呼和浩特	呼和浩特	ㄏㄨ ㄏㄜˊ ㄏㄠˋ ㄊㄜˋ	existing				呼和浩特				
+phrase.china.tsv	41	哈爾濱	哈爾濱	ㄏㄚ ㄦˇ ㄅㄧㄣ	existing				哈爾濱				
+phrase.china.tsv	43	大同	大同	ㄉㄚˋ ㄊㄨㄥˊ	existing				大同				
+phrase.china.tsv	44	大理	大理	ㄉㄚˋ ㄌㄧˇ	existing				大理				
+phrase.china.tsv	45	大連	大連	ㄉㄚˋ ㄌㄧㄢˊ	existing				大連				
+phrase.china.tsv	46	太原	太原	ㄊㄞˋ ㄩㄢˊ	existing				太原				
+phrase.china.tsv	47	寧波	寧波	ㄋㄧㄥˊ ㄅㄛ	existing				寧波				
+phrase.china.tsv	48	廈門	廈門	ㄒㄧㄚˋ ㄇㄣˊ	existing				廈門				
+phrase.china.tsv	49	廣州	廣州	ㄍㄨㄤˇ ㄓㄡ	existing				廣州				
+phrase.china.tsv	50	成都	成都	ㄔㄥˊ ㄉㄨ	existing				成都				
+phrase.china.tsv	51	拉薩	拉薩	ㄌㄚ ㄙㄚˋ	existing				拉薩				
+phrase.china.tsv	52	揚州	揚州	ㄧㄤˊ ㄓㄡ	existing				揚州				
+phrase.china.tsv	53	昆明	昆明	ㄎㄨㄣ ㄇㄧㄥˊ	existing				昆明				
+phrase.china.tsv	54	杭州	杭州	ㄏㄤˊ ㄓㄡ	existing				杭州				
+phrase.china.tsv	55	東莞	東莞	ㄉㄨㄥ ㄍㄨㄢˇ	existing				東莞				
+phrase.china.tsv	56	桂林	桂林	ㄍㄨㄟˋ ㄌㄧㄣˊ	existing				桂林				
+phrase.china.tsv	57	武漢	武漢	ㄨˇ ㄏㄢˋ	existing				武漢				
+phrase.china.tsv	58	汕頭	汕頭	ㄕㄢˋ ㄊㄡˊ	existing				汕頭				
+phrase.china.tsv	59	泉州	泉州	ㄑㄩㄢˊ ㄓㄡ	existing				泉州				
+phrase.china.tsv	60	洛陽	洛陽	ㄌㄨㄛˋ ㄧㄤˊ	existing				洛陽				
+phrase.china.tsv	61	海口	海口	ㄏㄞˇ ㄎㄡˇ	existing				海口				
+phrase.china.tsv	62	深圳	深圳	ㄕㄣ ㄓㄣˋ	existing				深圳				
+phrase.china.tsv	63	濟南	濟南	ㄐㄧˇ ㄋㄢˊ	existing				濟南				
+phrase.china.tsv	64	瀋陽	瀋陽	ㄕㄣˇ ㄧㄤˊ	existing				瀋陽				
+phrase.china.tsv	65	烏魯木齊	烏魯木齊	ㄨ ㄌㄨˇ ㄇㄨˋ ㄑㄧˊ	existing				烏魯木齊				
+phrase.china.tsv	66	無錫	無錫	ㄨˊ ㄒㄧˊ	existing				無錫				
+phrase.china.tsv	67	珠海	珠海	ㄓㄨ ㄏㄞˇ	existing				珠海				
+phrase.china.tsv	68	石家莊	石家莊	ㄕˊ ㄐㄧㄚ ㄓㄨㄤ	existing				石家莊				
+phrase.china.tsv	69	福州	福州	ㄈㄨˊ ㄓㄡ	existing				福州				
+phrase.china.tsv	70	蘇州	蘇州	ㄙㄨ ㄓㄡ	existing				蘇州				
+phrase.china.tsv	71	蘭州	蘭州	ㄌㄢˊ ㄓㄡ	existing				蘭州				
+phrase.china.tsv	72	西安	西安	ㄒㄧ ㄢ	existing				西安				
+phrase.china.tsv	73	西寧	西寧	ㄒㄧ ㄋㄧㄥˊ	existing				西寧				
+phrase.china.tsv	74	貴陽	貴陽	ㄍㄨㄟˋ ㄧㄤˊ	existing				貴陽				
+phrase.china.tsv	75	鄭州	鄭州	ㄓㄥˋ ㄓㄡ	existing				鄭州				
+phrase.china.tsv	76	銀川	銀川	ㄧㄣˊ ㄔㄨㄢ	existing				銀川				
+phrase.china.tsv	77	長春	長春	ㄔㄤˊ ㄔㄨㄣ	existing				長春				
+phrase.china.tsv	78	長沙	長沙	ㄔㄤˊ ㄕㄚ	existing				長沙				
+phrase.china.tsv	79	青島	青島	ㄑㄧㄥ ㄉㄠˇ	existing				青島				
+phrase.china.tsv	109	南京東路	南京東路	ㄋㄢˊ ㄐㄧㄥ ㄉㄨㄥ ㄌㄨˋ	existing				南京東路				
+phrase.china.tsv	110	南京西路	南京西路	ㄋㄢˊ ㄐㄧㄥ ㄒㄧ ㄌㄨˋ	existing				南京西路				
+phrase.china.tsv	135	長安街	長安街	ㄔㄤˊ ㄢ ㄐㄧㄝ	existing				長安街				
+phrase.china.tsv	141	九寨溝	九寨溝	ㄐㄧㄡˇ ㄓㄞˋ ㄍㄡ	existing				九寨溝				
+phrase.china.tsv	147	兵馬俑	兵馬俑	ㄅㄧㄥ ㄇㄚˇ ㄩㄥˇ	existing				兵馬俑				
+phrase.china.tsv	150	千島湖	千島湖	ㄑㄧㄢ ㄉㄠˇ ㄏㄨˊ	existing				千島湖				
+phrase.china.tsv	152	嘉峪關	嘉峪關	ㄐㄧㄚ ㄩˋ ㄍㄨㄢ	existing				嘉峪關				
+phrase.china.tsv	153	圓明園	圓明園	ㄩㄢˊ ㄇㄧㄥˊ ㄩㄢˊ	existing				圓明園				
+phrase.china.tsv	158	天壇	天壇	ㄊㄧㄢ ㄊㄢˊ	existing				天壇				
+phrase.china.tsv	159	天安門	天安門	ㄊㄧㄢ ㄢ ㄇㄣˊ	existing				天安門				
+phrase.china.tsv	160	天安門廣場	天安門廣場	ㄊㄧㄢ ㄢ ㄇㄣˊ ㄍㄨㄤˇ ㄔㄤˇ	existing				天安門廣場				
+phrase.china.tsv	161	天涯海角	天涯海角	ㄊㄧㄢ ㄧㄚˊ ㄏㄞˇ ㄐㄧㄠˇ	existing				天涯海角				
+phrase.china.tsv	164	寒山寺	寒山寺	ㄏㄢˊ ㄕㄢ ㄙˋ	existing				寒山寺				
+phrase.china.tsv	165	少林寺	少林寺	ㄕㄠˋ ㄌㄧㄣˊ ㄙˋ	existing				少林寺				
+phrase.china.tsv	166	山海關	山海關	ㄕㄢ ㄏㄞˇ ㄍㄨㄢ	existing				山海關				
+phrase.china.tsv	167	岳陽樓	岳陽樓	ㄩㄝˋ ㄧㄤˊ ㄌㄡˊ	existing				岳陽樓				
+phrase.china.tsv	170	布達拉宮	布達拉宮	ㄅㄨˋ ㄉㄚˊ ㄌㄚ ㄍㄨㄥ	existing				布達拉宮				
+phrase.china.tsv	173	廬山	廬山	ㄌㄨˊ ㄕㄢ	existing				廬山				
+phrase.china.tsv	177	故宮博物院	故宮博物院	ㄍㄨˋ ㄍㄨㄥ ㄅㄛˊ ㄨˋ ㄩㄢˋ	existing				故宮博物院				
+phrase.china.tsv	187	泰山	泰山	ㄊㄞˋ ㄕㄢ	existing				泰山				
+phrase.china.tsv	193	火焰山	火焰山	ㄏㄨㄛˇ ㄧㄢˋ ㄕㄢ	existing				火焰山				
+phrase.china.tsv	195	獅子林	獅子林	ㄕ ㄗ˙ ㄌㄧㄣˊ	existing				獅子林				
+phrase.china.tsv	201	紫禁城	紫禁城	ㄗˇ ㄐㄧㄣˋ ㄔㄥˊ	existing				紫禁城				
+phrase.china.tsv	203	莫高窟	莫高窟	ㄇㄛˋ ㄍㄠ ㄎㄨ	existing				莫高窟				
+phrase.china.tsv	204	華山	華山	ㄏㄨㄚˋ ㄕㄢ	existing				華山				
+phrase.china.tsv	205	華清池	華清池	ㄏㄨㄚˊ ㄑㄧㄥ ㄔˊ	existing				華清池				
+phrase.china.tsv	209	西雙版納	西雙版納	ㄒㄧ ㄕㄨㄤ ㄅㄢˇ ㄋㄚˋ	existing				西雙版納				
+phrase.china.tsv	214	都江堰	都江堰	ㄉㄨ ㄐㄧㄤ ㄧㄢˋ	existing				都江堰				
+phrase.china.tsv	215	長白山	長白山	ㄔㄤˊ ㄅㄞˊ ㄕㄢ	existing				長白山				
+phrase.china.tsv	217	陸家嘴	陸家嘴	ㄌㄨˋ ㄐㄧㄚ ㄗㄨㄟˇ	existing				陸家嘴				
+phrase.china.tsv	219	雷峰塔	雷峰塔	ㄌㄟˊ ㄈㄥ ㄊㄚˇ	existing				雷峰塔				
+phrase.china.tsv	220	靈隱寺	靈隱寺	ㄌㄧㄥˊ ㄧㄣˇ ㄙˋ	existing				靈隱寺				
+phrase.china.tsv	222	頤和園	頤和園	ㄧˊ ㄏㄜˊ ㄩㄢˊ	existing				頤和園				
+phrase.china.tsv	225	黃山	黃山	ㄏㄨㄤˊ ㄕㄢ	existing				黃山				
+phrase.china.tsv	227	黃鶴樓	黃鶴樓	ㄏㄨㄤˊ ㄏㄜˋ ㄌㄡˊ	existing				黃鶴樓				
+phrase.china.tsv	231	一會兒	一會兒	ㄧ ㄏㄨㄟˇ ㄦ	existing				一會兒				
+phrase.china.tsv	235	咱們	咱們	ㄗㄢˊ ㄇㄣ˙	existing				咱們				
+phrase.china.tsv	236	安逸	安逸	ㄢ ㄧˋ	existing				安逸				
+phrase.china.tsv	238	抬槓	抬槓	ㄊㄞˊ ㄍㄤˋ	existing				抬槓				
+phrase.china.tsv	244	曉得	曉得	ㄒㄧㄠˇ ㄉㄜ˙	existing				曉得				
+phrase.china.tsv	247	歇會兒	歇會兒	ㄒㄧㄝ ㄏㄨㄟˇ ㄦˊ	existing				歇會兒				
+phrase.china.tsv	253	要得	要得	ㄧㄠˋ ㄉㄜˊ	existing				要得				
+phrase.china.tsv	255	逗樂	逗樂	ㄉㄡˋ ㄌㄜˋ	existing				逗樂				
+phrase.china.tsv	259	信息	信息	ㄒㄧㄣˋ ㄒㄧˊ	existing				信息				
+phrase.china.tsv	263	公積金	公積金	ㄍㄨㄥ ㄐㄧ ㄐㄧㄣ	existing				公積金				
+phrase.china.tsv	264	共享單車	共享單車	ㄍㄨㄥˋ ㄒㄧㄤˇ ㄉㄢ ㄔㄜ	existing				共享單車				
+phrase.china.tsv	268	團購	團購	ㄊㄨㄢˊ ㄍㄡˋ	existing				團購				
+phrase.china.tsv	269	地鐵	地鐵	ㄉㄧˋ ㄊㄧㄝˇ	existing				地鐵				
+phrase.china.tsv	271	堵車	堵車	ㄉㄨˇ ㄔㄜ	existing				堵車				
+phrase.china.tsv	274	家政	家政	ㄐㄧㄚ ㄓㄥˋ	existing				家政				
+phrase.china.tsv	277	小區	小區	ㄒㄧㄠˇ ㄑㄩ	existing				小區				
+phrase.china.tsv	280	快遞	快遞	ㄎㄨㄞˋ ㄉㄧˋ	existing				快遞				
+phrase.china.tsv	290	激光	激光	ㄐㄧ ㄍㄨㄤ	existing				激光				
+phrase.china.tsv	292	班主任	班主任	ㄅㄢ ㄓㄨˇ ㄖㄣˋ	existing				班主任				
+phrase.china.tsv	306	刀削麵	刀削麵	ㄉㄠ ㄒㄧㄠ ㄇㄧㄢˋ	existing				刀削麵				
+phrase.china.tsv	313	水煎包	水煎包	ㄕㄨㄟˇ ㄐㄧㄢ ㄅㄠ	existing				水煎包				
+phrase.china.tsv	315	炸醬麵	炸醬麵	ㄓㄚˊ ㄐㄧㄤˋ ㄇㄧㄢˋ	existing				炸醬麵				
+phrase.china.tsv	319	糖葫蘆	糖葫蘆	ㄊㄤˊ ㄏㄨˊ ㄌㄨˊ	existing				糖葫蘆				
+phrase.china.tsv	353	快手	快手	ㄎㄨㄞˋ ㄕㄡˇ	existing				快手				
+phrase.china.tsv	372	騰訊	騰訊	ㄊㄥˊ ㄒㄩㄣˋ	existing				騰訊				
+phrase.china.tsv	384	北大	北大	ㄅㄟˇ ㄉㄚˋ	existing				北大				
+phrase.china.tsv	393	南開	南開	ㄋㄢˊ ㄎㄞ	existing				南開				
+phrase.china.tsv	401	天大	天大	ㄊㄧㄢ ㄉㄚˋ	existing				天大				
+phrase.china.tsv	405	復旦	復旦	ㄈㄨˋ ㄉㄢˋ	existing				復旦				
+phrase.china.tsv	410	清華	清華	ㄑㄧㄥ ㄏㄨㄚˊ	existing				清華				
+phrase.china.tsv	421	重大	重大	ㄔㄨㄥˊ ㄉㄚˋ	existing				重大				
 phrase.chinese.tsv	15	余光中	余光中	ㄩˊ ㄍㄨㄤ ㄓㄨㄥ	existing				余光中				
 phrase.chinese.tsv	48	屈原	屈原	ㄑㄩ ㄩㄢˊ	existing				屈原				
 phrase.chinese.tsv	53	徐志摩	徐志摩	ㄒㄩˊ ㄓˋ ㄇㄛˊ	existing				徐志摩				
@@ -790,11 +930,13 @@ phrase.general.tsv	38	大型	大型	ㄉㄚˋ ㄒㄧㄥˊ	existing				大型
 phrase.general.tsv	40	學習歷程	學習歷程	ㄒㄩㄝˊ ㄒㄧˊ ㄌㄧˋ ㄔㄥˊ	existing				學習歷程				
 phrase.general.tsv	45	實況主	實況主	ㄕˊ ㄎㄨㄤˋ ㄓㄨˇ	existing				實況主				
 phrase.general.tsv	46	寶可夢	寶可夢	ㄅㄠˇ ㄎㄜˇ ㄇㄥˋ	existing				寶可夢				
+phrase.general.tsv	47	小紅書	小紅書	ㄒㄧㄠˇ ㄏㄨㄥˊ ㄕㄨ	duplicate				小紅書				
 phrase.general.tsv	49	居家辦公	居家辦公	ㄐㄩ ㄐㄧㄚ ㄅㄢˋ ㄍㄨㄥ	existing				居家辦公				
 phrase.general.tsv	51	影音平台	影音平台	ㄧㄥˇ ㄧㄣ ㄆㄧㄥˊ ㄊㄞˊ	existing				影音平台				
 phrase.general.tsv	53	志願序	志願序	ㄓˋ ㄩㄢˋ ㄒㄩˋ	existing				志願序				
 phrase.general.tsv	54	快充	快充	ㄎㄨㄞˋ ㄔㄨㄥ	existing				快充				
 phrase.general.tsv	60	手遊	手遊	ㄕㄡˇ ㄧㄡˊ	existing				手遊				
+phrase.general.tsv	61	抖音	抖音	ㄉㄡˇ ㄧㄣ	duplicate				抖音				
 phrase.general.tsv	64	排球少年	排球少年	ㄆㄞˊ ㄑㄧㄡˊ ㄕㄠˋ ㄋㄧㄢˊ	existing				排球少年				
 phrase.general.tsv	68	數位帳戶	數位帳戶	ㄕㄨˋ ㄨㄟˋ ㄓㄤˋ ㄏㄨˋ	existing				數位帳戶				
 phrase.general.tsv	75	晶片	晶片	ㄐㄧㄥ ㄆㄧㄢˋ	existing				晶片				
@@ -838,6 +980,28 @@ phrase.general.tsv	172	電動機車	電動機車	ㄉㄧㄢˋ ㄉㄨㄥˋ ㄐㄧ 
 phrase.general.tsv	173	電子支付	電子支付	ㄉㄧㄢˋ ㄗˇ ㄓ ㄈㄨˋ	existing				電子支付				
 phrase.general.tsv	174	電子發票	電子發票	ㄉㄧㄢˋ ㄗˇ ㄈㄚ ㄆㄧㄠˋ	existing				電子發票				
 phrase.general.tsv	177	鬼滅之刃	鬼滅之刃	ㄍㄨㄟˇ ㄇㄧㄝˋ ㄓ ㄖㄣˋ	existing				鬼滅之刃				
+phrase.given-names.tsv	2	家豪	家豪	ㄐㄧㄚ ㄏㄠˊ	existing				家豪				
+phrase.given-names.tsv	5	俊傑	俊傑	ㄐㄩㄣˋ ㄐㄧㄝˊ	existing				俊傑				
+phrase.given-names.tsv	10	冠宇	冠宇	ㄍㄨㄢˋ ㄩˇ	existing				冠宇				
+phrase.given-names.tsv	12	宗翰	宗翰	ㄗㄨㄥ ㄏㄢˋ	existing				宗翰				
+phrase.given-names.tsv	14	冠廷	冠廷	ㄍㄨㄢˋ ㄊㄧㄥˊ	existing				冠廷				
+phrase.given-names.tsv	15	志成	志成	ㄓˋ ㄔㄥˊ	existing				志成				
+phrase.given-names.tsv	18	金龍	金龍	ㄐㄧㄣ ㄌㄨㄥˊ	existing				金龍				
+phrase.given-names.tsv	22	德威	德威	ㄉㄜˊ ㄨㄟ	existing				德威				
+phrase.given-names.tsv	23	文山	文山	ㄨㄣˊ ㄕㄢ	existing				文山				
+phrase.given-names.tsv	24	丙丁	丙丁	ㄅㄧㄥˇ ㄉㄧㄥ	existing				丙丁				
+phrase.given-names.tsv	25	金水	金水	ㄐㄧㄣ ㄕㄨㄟˇ	existing				金水				
+phrase.given-names.tsv	29	榮華	榮華	ㄖㄨㄥˊ ㄏㄨㄚˊ	existing				榮華				
+phrase.given-names.tsv	34	明德	明德	ㄇㄧㄥˊ ㄉㄜˊ	existing				明德				
+phrase.given-names.tsv	36	彬彬	彬彬	ㄅㄧㄣ ㄅㄧㄣ	existing				彬彬				
+phrase.given-names.tsv	46	雅婷	雅婷	ㄧㄚˇ ㄊㄧㄥˊ	existing				雅婷				
+phrase.given-names.tsv	50	秀美	秀美	ㄒㄧㄡˋ ㄇㄟˇ	existing				秀美				
+phrase.given-names.tsv	52	怡君	怡君	ㄧˊ ㄐㄩㄣ	existing				怡君				
+phrase.given-names.tsv	54	美玉	美玉	ㄇㄟˇ ㄩˋ	existing				美玉				
+phrase.given-names.tsv	55	雅惠	雅惠	ㄧㄚˇ ㄏㄨㄟˋ	existing				雅惠				
+phrase.given-names.tsv	61	玉蘭	玉蘭	ㄩˋ ㄌㄢˊ	existing				玉蘭				
+phrase.given-names.tsv	63	怡婷	怡婷	ㄧˊ ㄊㄧㄥˊ	existing				怡婷				
+phrase.given-names.tsv	72	婷婷	婷婷	ㄊㄧㄥˊ ㄊㄧㄥˊ	existing				婷婷				
 phrase.government.tsv	3	交換	交換	ㄐㄧㄠ ㄏㄨㄢˋ	existing				交換				
 phrase.government.tsv	5	保護	保護	ㄅㄠˇ ㄏㄨˋ	existing				保護				
 phrase.government.tsv	6	保障	保障	ㄅㄠˇ ㄓㄤˋ	existing				保障				
@@ -912,6 +1076,41 @@ phrase.history.tsv	156	議會	議會	ㄧˋ ㄏㄨㄟˋ	existing				議會
 phrase.history.tsv	162	運動	運動	ㄩㄣˋ ㄉㄨㄥˋ	existing				運動				
 phrase.history.tsv	174	隋代	隋代	ㄙㄨㄟˊ ㄉㄞˋ	existing				隋代				
 phrase.history.tsv	179	飛彈	飛彈	ㄈㄟ ㄉㄢˋ	existing				飛彈				
+phrase.hongkong-macao.tsv	5	北區	北區	ㄅㄟˇ ㄑㄩ	existing				北區				
+phrase.hongkong-macao.tsv	6	南區	南區	ㄋㄢˊ ㄑㄩ	existing				南區				
+phrase.hongkong-macao.tsv	9	東區	東區	ㄉㄨㄥ ㄑㄩ	existing				東區				
+phrase.hongkong-macao.tsv	20	上水	上水	ㄕㄤˋ ㄕㄨㄟˇ	existing				上水				
+phrase.hongkong-macao.tsv	22	中環	中環	ㄓㄨㄥ ㄏㄨㄢˊ	existing				中環				
+phrase.hongkong-macao.tsv	23	九龍	九龍	ㄐㄧㄡˇ ㄌㄨㄥˊ	existing				九龍				
+phrase.hongkong-macao.tsv	24	九龍塘	九龍塘	ㄐㄧㄡˇ ㄌㄨㄥˊ ㄊㄤˊ	existing				九龍塘				
+phrase.hongkong-macao.tsv	31	大埔	大埔	ㄉㄚˋ ㄅㄨˇ	existing				大埔				
+phrase.hongkong-macao.tsv	36	尖沙咀	尖沙咀	ㄐㄧㄢ ㄕㄚ ㄐㄩˇ	existing				尖沙咀				
+phrase.hongkong-macao.tsv	38	新界	新界	ㄒㄧㄣ ㄐㄧㄝˋ	existing				新界				
+phrase.hongkong-macao.tsv	42	沙田	沙田	ㄕㄚ ㄊㄧㄢˊ	existing				沙田				
+phrase.hongkong-macao.tsv	45	淺水灣	淺水灣	ㄑㄧㄢˇ ㄕㄨㄟˇ ㄨㄢ	existing				淺水灣				
+phrase.hongkong-macao.tsv	47	灣仔	灣仔	ㄨㄢ ㄗㄞˇ	existing				灣仔				
+phrase.hongkong-macao.tsv	48	獅子山	獅子山	ㄕ ㄗ˙ ㄕㄢ	existing				獅子山				
+phrase.hongkong-macao.tsv	57	西貢	西貢	ㄒㄧ ㄍㄨㄥˋ	existing				西貢				
+phrase.hongkong-macao.tsv	59	金鐘	金鐘	ㄐㄧㄣ ㄓㄨㄥ	existing				金鐘				
+phrase.hongkong-macao.tsv	60	銅鑼灣	銅鑼灣	ㄊㄨㄥˊ ㄌㄨㄛˊ ㄨㄢ	existing				銅鑼灣				
+phrase.hongkong-macao.tsv	102	太平山頂	太平山頂	ㄊㄞˋ ㄆㄧㄥˊ ㄕㄢ ㄉㄧㄥˇ	existing				太平山頂				
+phrase.hongkong-macao.tsv	110	星光大道	星光大道	ㄒㄧㄥ ㄍㄨㄤ ㄉㄚˋ ㄉㄠˋ	existing				星光大道				
+phrase.hongkong-macao.tsv	138	多謝	多謝	ㄉㄨㄛ ㄒㄧㄝˋ	existing				多謝				
+phrase.hongkong-macao.tsv	145	收工	收工	ㄕㄡ ㄍㄨㄥ	existing				收工				
+phrase.hongkong-macao.tsv	150	街坊	街坊	ㄐㄧㄝ ㄈㄤ	existing				街坊				
+phrase.hongkong-macao.tsv	155	點算	點算	ㄉㄧㄢˇ ㄙㄨㄢˋ	existing				點算				
+phrase.hongkong-macao.tsv	160	叉燒飯	叉燒飯	ㄔㄚ ㄕㄠ ㄈㄢˋ	existing				叉燒飯				
+phrase.hongkong-macao.tsv	165	煲仔飯	煲仔飯	ㄅㄠ ㄗㄞˇ ㄈㄢˋ	existing				煲仔飯				
+phrase.hongkong-macao.tsv	168	絲襪奶茶	絲襪奶茶	ㄙ ㄨㄚˋ ㄋㄞˇ ㄔㄚˊ	existing				絲襪奶茶				
+phrase.hongkong-macao.tsv	169	茶餐廳	茶餐廳	ㄔㄚˊ ㄘㄢ ㄊㄧㄥ	existing				茶餐廳				
+phrase.hongkong-macao.tsv	171	菠蘿油	菠蘿油	ㄅㄛ ㄌㄨㄛˊ ㄧㄡˊ	existing				菠蘿油				
+phrase.hongkong-macao.tsv	183	大家樂	大家樂	ㄉㄚˋ ㄐㄧㄚ ㄌㄜˋ	existing				大家樂				
+phrase.hongkong-macao.tsv	186	屈臣氏	屈臣氏	ㄑㄩ ㄔㄣˊ ㄕˋ	existing				屈臣氏				
+phrase.hongkong-macao.tsv	224	澳門	澳門	ㄠˋ ㄇㄣˊ	existing				澳門				
+phrase.hongkong-macao.tsv	267	威尼斯人	威尼斯人	ㄨㄟ ㄋㄧˊ ㄙ ㄖㄣˊ	existing				威尼斯人				
+phrase.hongkong-macao.tsv	311	巴士	巴士	ㄅㄚ ㄕˋ	existing				巴士				
+phrase.hongkong-macao.tsv	312	泊車	泊車	ㄅㄛˊ ㄔㄜ	existing				泊車				
+phrase.hongkong-macao.tsv	314	街市	街市	ㄐㄧㄝ ㄕˋ	existing				街市				
 phrase.industrial-engineering.tsv	2	事件	事件	ㄕˋ ㄐㄧㄢˋ	existing				事件				
 phrase.industrial-engineering.tsv	3	人員	人員	ㄖㄣˊ ㄩㄢˊ	existing				人員				
 phrase.industrial-engineering.tsv	6	佈置	佈置	ㄅㄨˋ ㄓˋ	existing				佈置				
@@ -1757,6 +1956,422 @@ phrase.software.tsv	96	除錯	除錯	ㄔㄨˊ ㄘㄨㄛˋ	existing				除錯
 phrase.software.tsv	97	隔離	隔離	ㄍㄜˊ ㄌㄧˊ	existing				隔離				
 phrase.software.tsv	98	驅動	驅動	ㄑㄩ ㄉㄨㄥˋ	existing				驅動				
 phrase.software.tsv	99	驗證	驗證	ㄧㄢˋ ㄓㄥˋ	existing				驗證				
+phrase.taiwan.tsv	2	南投縣	南投縣	ㄋㄢˊ ㄊㄡˊ ㄒㄧㄢˋ	existing				南投縣				
+phrase.taiwan.tsv	3	台中市	台中市	ㄊㄞˊ ㄓㄨㄥ ㄕˋ	existing				台中市				
+phrase.taiwan.tsv	4	台北市	台北市	ㄊㄞˊ ㄅㄟˇ ㄕˋ	existing				台北市				
+phrase.taiwan.tsv	5	台南市	台南市	ㄊㄞˊ ㄋㄢˊ ㄕˋ	existing				台南市				
+phrase.taiwan.tsv	6	台東縣	台東縣	ㄊㄞˊ ㄉㄨㄥ ㄒㄧㄢˋ	existing				台東縣				
+phrase.taiwan.tsv	7	嘉義市	嘉義市	ㄐㄧㄚ ㄧˋ ㄕˋ	existing				嘉義市				
+phrase.taiwan.tsv	8	嘉義縣	嘉義縣	ㄐㄧㄚ ㄧˋ ㄒㄧㄢˋ	existing				嘉義縣				
+phrase.taiwan.tsv	9	基隆市	基隆市	ㄐㄧ ㄌㄨㄥˊ ㄕˋ	existing				基隆市				
+phrase.taiwan.tsv	10	宜蘭縣	宜蘭縣	ㄧˊ ㄌㄢˊ ㄒㄧㄢˋ	existing				宜蘭縣				
+phrase.taiwan.tsv	11	屏東縣	屏東縣	ㄆㄧㄥˊ ㄉㄨㄥ ㄒㄧㄢˋ	existing				屏東縣				
+phrase.taiwan.tsv	12	彰化縣	彰化縣	ㄓㄤ ㄏㄨㄚˋ ㄒㄧㄢˋ	existing				彰化縣				
+phrase.taiwan.tsv	13	新北市	新北市	ㄒㄧㄣ ㄅㄟˇ ㄕˋ	existing				新北市				
+phrase.taiwan.tsv	14	新竹市	新竹市	ㄒㄧㄣ ㄓㄨˊ ㄕˋ	existing				新竹市				
+phrase.taiwan.tsv	15	新竹縣	新竹縣	ㄒㄧㄣ ㄓㄨˊ ㄒㄧㄢˋ	existing				新竹縣				
+phrase.taiwan.tsv	16	桃園市	桃園市	ㄊㄠˊ ㄩㄢˊ ㄕˋ	existing				桃園市				
+phrase.taiwan.tsv	17	澎湖縣	澎湖縣	ㄆㄥˊ ㄏㄨˊ ㄒㄧㄢˋ	existing				澎湖縣				
+phrase.taiwan.tsv	22	花蓮縣	花蓮縣	ㄏㄨㄚ ㄌㄧㄢˊ ㄒㄧㄢˋ	existing				花蓮縣				
+phrase.taiwan.tsv	23	苗栗縣	苗栗縣	ㄇㄧㄠˊ ㄌㄧˋ ㄒㄧㄢˋ	existing				苗栗縣				
+phrase.taiwan.tsv	24	連江縣	連江縣	ㄌㄧㄢˊ ㄐㄧㄤ ㄒㄧㄢˋ	existing				連江縣				
+phrase.taiwan.tsv	25	金門縣	金門縣	ㄐㄧㄣ ㄇㄣˊ ㄒㄧㄢˋ	existing				金門縣				
+phrase.taiwan.tsv	26	雲林縣	雲林縣	ㄩㄣˊ ㄌㄧㄣˊ ㄒㄧㄢˋ	existing				雲林縣				
+phrase.taiwan.tsv	27	高雄市	高雄市	ㄍㄠ ㄒㄩㄥˊ ㄕˋ	existing				高雄市				
+phrase.taiwan.tsv	32	三峽區	三峽區	ㄙㄢ ㄒㄧㄚˊ ㄑㄩ	existing				三峽區				
+phrase.taiwan.tsv	33	三星鄉	三星鄉	ㄙㄢ ㄒㄧㄥ ㄒㄧㄤ	existing				三星鄉				
+phrase.taiwan.tsv	34	三民區	三民區	ㄙㄢ ㄇㄧㄣˊ ㄑㄩ	existing				三民區				
+phrase.taiwan.tsv	35	三灣鄉	三灣鄉	ㄙㄢ ㄨㄢ ㄒㄧㄤ	existing				三灣鄉				
+phrase.taiwan.tsv	36	三義鄉	三義鄉	ㄙㄢ ㄧˋ ㄒㄧㄤ	existing				三義鄉				
+phrase.taiwan.tsv	38	三重區	三重區	ㄙㄢ ㄔㄨㄥˊ ㄑㄩ	existing				三重區				
+phrase.taiwan.tsv	40	中區	中區	ㄓㄨㄥ ㄑㄩ	existing				中區				
+phrase.taiwan.tsv	41	中和區	中和區	ㄓㄨㄥ ㄏㄜˊ ㄑㄩ	existing				中和區				
+phrase.taiwan.tsv	42	中埔鄉	中埔鄉	ㄓㄨㄥ ㄆㄨˇ ㄒㄧㄤ	existing				中埔鄉				
+phrase.taiwan.tsv	44	中寮鄉	中寮鄉	ㄓㄨㄥ ㄌㄧㄠˊ ㄒㄧㄤ	existing				中寮鄉				
+phrase.taiwan.tsv	45	中山區	中山區	ㄓㄨㄥ ㄕㄢ ㄑㄩ	existing				中山區				
+phrase.taiwan.tsv	46	中正區	中正區	ㄓㄨㄥ ㄓㄥˋ ㄑㄩ	existing				中正區				
+phrase.taiwan.tsv	47	中西區	中西區	ㄓㄨㄥ ㄒㄧ ㄑㄩ	duplicate				中西區				
+phrase.taiwan.tsv	48	九如鄉	九如鄉	ㄐㄧㄡˇ ㄖㄨˊ ㄒㄧㄤ	existing				九如鄉				
+phrase.taiwan.tsv	50	二林鎮	二林鎮	ㄦˋ ㄌㄧㄣˊ ㄓㄣˋ	existing				二林鎮				
+phrase.taiwan.tsv	51	二水鄉	二水鄉	ㄦˋ ㄕㄨㄟˇ ㄒㄧㄤ	existing				二水鄉				
+phrase.taiwan.tsv	52	五峰鄉	五峰鄉	ㄨˇ ㄈㄥ ㄒㄧㄤ	existing				五峰鄉				
+phrase.taiwan.tsv	53	五結鄉	五結鄉	ㄨˇ ㄐㄧㄝˊ ㄒㄧㄤ	existing				五結鄉				
+phrase.taiwan.tsv	57	仁愛鄉	仁愛鄉	ㄖㄣˊ ㄞˋ ㄒㄧㄤ	existing				仁愛鄉				
+phrase.taiwan.tsv	59	伸港鄉	伸港鄉	ㄕㄣ ㄍㄤˇ ㄒㄧㄤ	existing				伸港鄉				
+phrase.taiwan.tsv	60	佳冬鄉	佳冬鄉	ㄐㄧㄚ ㄉㄨㄥ ㄒㄧㄤ	existing				佳冬鄉				
+phrase.taiwan.tsv	61	佳里區	佳里區	ㄐㄧㄚ ㄌㄧˇ ㄑㄩ	existing				佳里區				
+phrase.taiwan.tsv	62	來義鄉	來義鄉	ㄌㄞˊ ㄧˋ ㄒㄧㄤ	existing				來義鄉				
+phrase.taiwan.tsv	63	信義區	信義區	ㄒㄧㄣˋ ㄧˋ ㄑㄩ	existing				信義區				
+phrase.taiwan.tsv	66	光復鄉	光復鄉	ㄍㄨㄤ ㄈㄨˋ ㄒㄧㄤ	existing				光復鄉				
+phrase.taiwan.tsv	67	內埔鄉	內埔鄉	ㄋㄟˋ ㄆㄨˇ ㄒㄧㄤ	existing				內埔鄉				
+phrase.taiwan.tsv	68	內湖區	內湖區	ㄋㄟˋ ㄏㄨˊ ㄑㄩ	existing				內湖區				
+phrase.taiwan.tsv	72	公館鄉	公館鄉	ㄍㄨㄥ ㄍㄨㄢˇ ㄒㄧㄤ	existing				公館鄉				
+phrase.taiwan.tsv	76	冬山鄉	冬山鄉	ㄉㄨㄥ ㄕㄢ ㄒㄧㄤ	existing				冬山鄉				
+phrase.taiwan.tsv	77	前金區	前金區	ㄑㄧㄢˊ ㄐㄧㄣ ㄑㄩ	existing				前金區				
+phrase.taiwan.tsv	78	前鎮區	前鎮區	ㄑㄧㄢˊ ㄓㄣˋ ㄑㄩ	existing				前鎮區				
+phrase.taiwan.tsv	79	北區	北區	ㄅㄟˇ ㄑㄩ	existing				北區				
+phrase.taiwan.tsv	80	北埔鄉	北埔鄉	ㄅㄟˇ ㄆㄨˇ ㄒㄧㄤ	existing				北埔鄉				
+phrase.taiwan.tsv	82	北投區	北投區	ㄅㄟˇ ㄊㄡˊ ㄑㄩ	existing				北投區				
+phrase.taiwan.tsv	83	北斗鎮	北斗鎮	ㄅㄟˇ ㄉㄡˇ ㄓㄣˋ	existing				北斗鎮				
+phrase.taiwan.tsv	84	北港鎮	北港鎮	ㄅㄟˇ ㄍㄤˇ ㄓㄣˋ	existing				北港鎮				
+phrase.taiwan.tsv	87	卑南鄉	卑南鄉	ㄅㄟ ㄋㄢˊ ㄒㄧㄤ	existing				卑南鄉				
+phrase.taiwan.tsv	88	卓溪鄉	卓溪鄉	ㄓㄨㄛˊ ㄒㄧ ㄒㄧㄤ	existing				卓溪鄉				
+phrase.taiwan.tsv	91	南區	南區	ㄋㄢˊ ㄑㄩ	existing				南區				
+phrase.taiwan.tsv	94	南庄鄉	南庄鄉	ㄋㄢˊ ㄓㄨㄤ ㄒㄧㄤ	existing				南庄鄉				
+phrase.taiwan.tsv	95	南投市	南投市	ㄋㄢˊ ㄊㄡˊ ㄕˋ	existing				南投市				
+phrase.taiwan.tsv	96	南港區	南港區	ㄋㄢˊ ㄍㄤˇ ㄑㄩ	existing				南港區				
+phrase.taiwan.tsv	97	南澳鄉	南澳鄉	ㄋㄢˊ ㄠˋ ㄒㄧㄤ	existing				南澳鄉				
+phrase.taiwan.tsv	100	古坑鄉	古坑鄉	ㄍㄨˇ ㄎㄥ ㄒㄧㄤ	existing				古坑鄉				
+phrase.taiwan.tsv	101	台東市	台東市	ㄊㄞˊ ㄉㄨㄥ ㄕˋ	existing				台東市				
+phrase.taiwan.tsv	103	吉安鄉	吉安鄉	ㄐㄧˊ ㄢ ㄒㄧㄤ	existing				吉安鄉				
+phrase.taiwan.tsv	104	名間鄉	名間鄉	ㄇㄧㄥˊ ㄐㄧㄢ ㄒㄧㄤ	existing				名間鄉				
+phrase.taiwan.tsv	110	善化區	善化區	ㄕㄢˋ ㄏㄨㄚˋ ㄑㄩ	existing				善化區				
+phrase.taiwan.tsv	111	四湖鄉	四湖鄉	ㄙˋ ㄏㄨˊ ㄒㄧㄤ	existing				四湖鄉				
+phrase.taiwan.tsv	112	國姓鄉	國姓鄉	ㄍㄨㄛˊ ㄒㄧㄥˋ ㄒㄧㄤ	existing				國姓鄉				
+phrase.taiwan.tsv	113	土城區	土城區	ㄊㄨˇ ㄔㄥˊ ㄑㄩ	existing				土城區				
+phrase.taiwan.tsv	114	土庫鎮	土庫鎮	ㄊㄨˇ ㄎㄨˋ ㄓㄣˋ	existing				土庫鎮				
+phrase.taiwan.tsv	116	埔心鄉	埔心鄉	ㄆㄨˇ ㄒㄧㄣ ㄒㄧㄤ	existing				埔心鄉				
+phrase.taiwan.tsv	117	埔里鎮	埔里鎮	ㄆㄨˇ ㄌㄧˇ ㄓㄣˋ	existing				埔里鎮				
+phrase.taiwan.tsv	118	埔鹽鄉	埔鹽鄉	ㄆㄨˇ ㄧㄢˊ ㄒㄧㄤ	existing				埔鹽鄉				
+phrase.taiwan.tsv	119	埤頭鄉	埤頭鄉	ㄆㄧˊ ㄊㄡˊ ㄒㄧㄤ	existing				埤頭鄉				
+phrase.taiwan.tsv	120	士林區	士林區	ㄕˋ ㄌㄧㄣˊ ㄑㄩ	existing				士林區				
+phrase.taiwan.tsv	121	壯圍鄉	壯圍鄉	ㄓㄨㄤˋ ㄨㄟˊ ㄒㄧㄤ	existing				壯圍鄉				
+phrase.taiwan.tsv	122	壽豐鄉	壽豐鄉	ㄕㄡˋ ㄈㄥ ㄒㄧㄤ	existing				壽豐鄉				
+phrase.taiwan.tsv	125	大同區	大同區	ㄉㄚˋ ㄊㄨㄥˊ ㄑㄩ	existing				大同區				
+phrase.taiwan.tsv	130	大埤鄉	大埤鄉	ㄉㄚˋ ㄆㄧˊ ㄒㄧㄤ	existing				大埤鄉				
+phrase.taiwan.tsv	131	大安區	大安區	ㄉㄚˋ ㄢ ㄑㄩ	existing				大安區				
+phrase.taiwan.tsv	133	大村鄉	大村鄉	ㄉㄚˋ ㄘㄨㄣ ㄒㄧㄤ	existing				大村鄉				
+phrase.taiwan.tsv	134	大林鎮	大林鎮	ㄉㄚˋ ㄌㄧㄣˊ ㄓㄣˋ	existing				大林鎮				
+phrase.taiwan.tsv	144	太保市	太保市	ㄊㄞˋ ㄅㄠˇ ㄕˋ	existing				太保市				
+phrase.taiwan.tsv	153	宜蘭市	宜蘭市	ㄧˊ ㄌㄢˊ ㄕˋ	existing				宜蘭市				
+phrase.taiwan.tsv	155	寶山鄉	寶山鄉	ㄅㄠˇ ㄕㄢ ㄒㄧㄤ	existing				寶山鄉				
+phrase.taiwan.tsv	157	小港區	小港區	ㄒㄧㄠˇ ㄍㄤˇ ㄑㄩ	existing				小港區				
+phrase.taiwan.tsv	158	尖石鄉	尖石鄉	ㄐㄧㄢ ㄕˊ ㄒㄧㄤ	existing				尖石鄉				
+phrase.taiwan.tsv	159	屏東市	屏東市	ㄆㄧㄥˊ ㄉㄨㄥ ㄕˋ	existing				屏東市				
+phrase.taiwan.tsv	162	峨眉鄉	峨眉鄉	ㄜˊ ㄇㄟˊ ㄒㄧㄤ	existing				峨眉鄉				
+phrase.taiwan.tsv	163	崁頂鄉	崁頂鄉	ㄎㄢˇ ㄉㄧㄥˇ ㄒㄧㄤ	existing				崁頂鄉				
+phrase.taiwan.tsv	164	崙背鄉	崙背鄉	ㄌㄨㄣˊ ㄅㄟˋ ㄒㄧㄤ	existing				崙背鄉				
+phrase.taiwan.tsv	165	左營區	左營區	ㄗㄨㄛˇ ㄧㄥˊ ㄑㄩ	existing				左營區				
+phrase.taiwan.tsv	167	布袋鎮	布袋鎮	ㄅㄨˋ ㄉㄞˋ ㄓㄣˋ	existing				布袋鎮				
+phrase.taiwan.tsv	170	延平鄉	延平鄉	ㄧㄢˊ ㄆㄧㄥˊ ㄒㄧㄤ	existing				延平鄉				
+phrase.taiwan.tsv	172	彰化市	彰化市	ㄓㄤ ㄏㄨㄚˋ ㄕˋ	existing				彰化市				
+phrase.taiwan.tsv	174	後龍鎮	後龍鎮	ㄏㄡˋ ㄌㄨㄥˊ ㄓㄣˋ	existing				後龍鎮				
+phrase.taiwan.tsv	176	恆春鎮	恆春鎮	ㄏㄥˊ ㄔㄨㄣ ㄓㄣˋ	existing				恆春鎮				
+phrase.taiwan.tsv	177	成功鎮	成功鎮	ㄔㄥˊ ㄍㄨㄥ ㄓㄣˋ	existing				成功鎮				
+phrase.taiwan.tsv	178	文山區	文山區	ㄨㄣˊ ㄕㄢ ㄑㄩ	existing				文山區				
+phrase.taiwan.tsv	179	斗六市	斗六市	ㄉㄡˇ ㄌㄧㄡˋ ㄕˋ	existing				斗六市				
+phrase.taiwan.tsv	180	斗南鎮	斗南鎮	ㄉㄡˇ ㄋㄢˊ ㄓㄣˋ	existing				斗南鎮				
+phrase.taiwan.tsv	182	新園鄉	新園鄉	ㄒㄧㄣ ㄩㄢˊ ㄒㄧㄤ	existing				新園鄉				
+phrase.taiwan.tsv	183	新城鄉	新城鄉	ㄒㄧㄣ ㄔㄥˊ ㄒㄧㄤ	existing				新城鄉				
+phrase.taiwan.tsv	184	新埔鎮	新埔鎮	ㄒㄧㄣ ㄆㄨˇ ㄓㄣˋ	existing				新埔鎮				
+phrase.taiwan.tsv	185	新埤鄉	新埤鄉	ㄒㄧㄣ ㄆㄧˊ ㄒㄧㄤ	existing				新埤鄉				
+phrase.taiwan.tsv	187	新市區	新市區	ㄒㄧㄣ ㄕˋ ㄑㄩ	existing				新市區				
+phrase.taiwan.tsv	188	新店區	新店區	ㄒㄧㄣ ㄉㄧㄢˋ ㄑㄩ	existing				新店區				
+phrase.taiwan.tsv	189	新港鄉	新港鄉	ㄒㄧㄣ ㄍㄤˇ ㄒㄧㄤ	existing				新港鄉				
+phrase.taiwan.tsv	191	新社區	新社區	ㄒㄧㄣ ㄕㄜˋ ㄑㄩ	existing				新社區				
+phrase.taiwan.tsv	192	新興區	新興區	ㄒㄧㄣ ㄒㄧㄥ ㄑㄩ	existing				新興區				
+phrase.taiwan.tsv	193	新莊區	新莊區	ㄒㄧㄣ ㄓㄨㄤ ㄑㄩ	existing				新莊區				
+phrase.taiwan.tsv	194	新豐鄉	新豐鄉	ㄒㄧㄣ ㄈㄥ ㄒㄧㄤ	existing				新豐鄉				
+phrase.taiwan.tsv	196	旗津區	旗津區	ㄑㄧˊ ㄐㄧㄣ ㄑㄩ	existing				旗津區				
+phrase.taiwan.tsv	199	望安鄉	望安鄉	ㄨㄤˋ ㄢ ㄒㄧㄤ	existing				望安鄉				
+phrase.taiwan.tsv	200	朴子市	朴子市	ㄆㄨˊ ㄗˇ ㄕˋ	existing				朴子市				
+phrase.taiwan.tsv	202	東勢區	東勢區	ㄉㄨㄥ ㄕˋ ㄑㄩ	existing				東勢區				
+phrase.taiwan.tsv	204	東區	東區	ㄉㄨㄥ ㄑㄩ	existing				東區				
+phrase.taiwan.tsv	210	松山區	松山區	ㄙㄨㄥ ㄕㄢ ㄑㄩ	existing				松山區				
+phrase.taiwan.tsv	211	板橋區	板橋區	ㄅㄢˇ ㄑㄧㄠˊ ㄑㄩ	existing				板橋區				
+phrase.taiwan.tsv	212	枋寮鄉	枋寮鄉	ㄈㄤ ㄌㄧㄠˊ ㄒㄧㄤ	existing				枋寮鄉				
+phrase.taiwan.tsv	213	枋山鄉	枋山鄉	ㄈㄤ ㄕㄢ ㄒㄧㄤ	existing				枋山鄉				
+phrase.taiwan.tsv	214	林內鄉	林內鄉	ㄌㄧㄣˊ ㄋㄟˋ ㄒㄧㄤ	existing				林內鄉				
+phrase.taiwan.tsv	215	林口區	林口區	ㄌㄧㄣˊ ㄎㄡˇ ㄑㄩ	existing				林口區				
+phrase.taiwan.tsv	216	林園區	林園區	ㄌㄧㄣˊ ㄩㄢˊ ㄑㄩ	existing				林園區				
+phrase.taiwan.tsv	217	林邊鄉	林邊鄉	ㄌㄧㄣˊ ㄅㄧㄢ ㄒㄧㄤ	existing				林邊鄉				
+phrase.taiwan.tsv	221	梅山鄉	梅山鄉	ㄇㄟˊ ㄕㄢ ㄒㄧㄤ	existing				梅山鄉				
+phrase.taiwan.tsv	225	楠梓區	楠梓區	ㄋㄢˊ ㄗˇ ㄑㄩ	existing				楠梓區				
+phrase.taiwan.tsv	229	橫山鄉	橫山鄉	ㄏㄥˊ ㄕㄢ ㄒㄧㄤ	existing				橫山鄉				
+phrase.taiwan.tsv	232	水上鄉	水上鄉	ㄕㄨㄟˇ ㄕㄤˋ ㄒㄧㄤ	existing				水上鄉				
+phrase.taiwan.tsv	235	永和區	永和區	ㄩㄥˇ ㄏㄜˊ ㄑㄩ	existing				永和區				
+phrase.taiwan.tsv	238	永靖鄉	永靖鄉	ㄩㄥˇ ㄐㄧㄥˋ ㄒㄧㄤ	existing				永靖鄉				
+phrase.taiwan.tsv	250	湖口鄉	湖口鄉	ㄏㄨˊ ㄎㄡˇ ㄒㄧㄤ	existing				湖口鄉				
+phrase.taiwan.tsv	253	溪州鄉	溪州鄉	ㄒㄧ ㄓㄡ ㄒㄧㄤ	existing				溪州鄉				
+phrase.taiwan.tsv	254	溪湖鎮	溪湖鎮	ㄒㄧ ㄏㄨˊ ㄓㄣˋ	existing				溪湖鎮				
+phrase.taiwan.tsv	255	滿州鄉	滿州鄉	ㄇㄢˇ ㄓㄡ ㄒㄧㄤ	existing				滿州鄉				
+phrase.taiwan.tsv	267	玉里鎮	玉里鎮	ㄩˋ ㄌㄧˇ ㄓㄣˋ	existing				玉里鎮				
+phrase.taiwan.tsv	269	瑞穗鄉	瑞穗鄉	ㄖㄨㄟˋ ㄙㄨㄟˋ ㄒㄧㄤ	existing				瑞穗鄉				
+phrase.taiwan.tsv	271	瑪家鄉	瑪家鄉	ㄇㄚˇ ㄐㄧㄚ ㄒㄧㄤ	existing				瑪家鄉				
+phrase.taiwan.tsv	272	田中鎮	田中鎮	ㄊㄧㄢˊ ㄓㄨㄥ ㄓㄣˋ	existing				田中鎮				
+phrase.taiwan.tsv	274	田尾鄉	田尾鄉	ㄊㄧㄢˊ ㄨㄟˇ ㄒㄧㄤ	existing				田尾鄉				
+phrase.taiwan.tsv	277	白沙鄉	白沙鄉	ㄅㄞˊ ㄕㄚ ㄒㄧㄤ	existing				白沙鄉				
+phrase.taiwan.tsv	282	礁溪鄉	礁溪鄉	ㄐㄧㄠ ㄒㄧ ㄒㄧㄤ	existing				礁溪鄉				
+phrase.taiwan.tsv	283	社頭鄉	社頭鄉	ㄕㄜˋ ㄊㄡˊ ㄒㄧㄤ	existing				社頭鄉				
+phrase.taiwan.tsv	285	福興鄉	福興鄉	ㄈㄨˊ ㄒㄧㄥ ㄒㄧㄤ	existing				福興鄉				
+phrase.taiwan.tsv	288	竹北市	竹北市	ㄓㄨˊ ㄅㄟˇ ㄕˋ	existing				竹北市				
+phrase.taiwan.tsv	289	竹南鎮	竹南鎮	ㄓㄨˊ ㄋㄢˊ ㄓㄣˋ	existing				竹南鎮				
+phrase.taiwan.tsv	291	竹山鎮	竹山鎮	ㄓㄨˊ ㄕㄢ ㄓㄣˋ	existing				竹山鎮				
+phrase.taiwan.tsv	292	竹崎鄉	竹崎鄉	ㄓㄨˊ ㄑㄧˊ ㄒㄧㄤ	existing				竹崎鄉				
+phrase.taiwan.tsv	293	竹東鎮	竹東鎮	ㄓㄨˊ ㄉㄨㄥ ㄓㄣˋ	existing				竹東鎮				
+phrase.taiwan.tsv	294	竹田鄉	竹田鄉	ㄓㄨˊ ㄊㄧㄢˊ ㄒㄧㄤ	existing				竹田鄉				
+phrase.taiwan.tsv	297	羅東鎮	羅東鎮	ㄌㄨㄛˊ ㄉㄨㄥ ㄓㄣˋ	existing				羅東鎮				
+phrase.taiwan.tsv	298	美濃區	美濃區	ㄇㄟˇ ㄋㄨㄥˊ ㄑㄩ	existing				美濃區				
+phrase.taiwan.tsv	302	芎林鄉	芎林鄉	ㄑㄩㄥˊ ㄌㄧㄣˊ ㄒㄧㄤ	existing				芎林鄉				
+phrase.taiwan.tsv	303	芬園鄉	芬園鄉	ㄈㄣ ㄩㄢˊ ㄒㄧㄤ	existing				芬園鄉				
+phrase.taiwan.tsv	304	花壇鄉	花壇鄉	ㄏㄨㄚ ㄊㄢˊ ㄒㄧㄤ	existing				花壇鄉				
+phrase.taiwan.tsv	305	花蓮市	花蓮市	ㄏㄨㄚ ㄌㄧㄢˊ ㄕˋ	existing				花蓮市				
+phrase.taiwan.tsv	306	芳苑鄉	芳苑鄉	ㄈㄤ ㄩㄢˋ ㄒㄧㄤ	existing				芳苑鄉				
+phrase.taiwan.tsv	307	苑裡鎮	苑裡鎮	ㄩㄢˋ ㄌㄧˇ ㄓㄣˋ	existing				苑裡鎮				
+phrase.taiwan.tsv	308	苓雅區	苓雅區	ㄌㄧㄥˊ ㄧㄚˇ ㄑㄩ	existing				苓雅區				
+phrase.taiwan.tsv	309	苗栗市	苗栗市	ㄇㄧㄠˊ ㄌㄧˋ ㄕˋ	existing				苗栗市				
+phrase.taiwan.tsv	312	草屯鎮	草屯鎮	ㄘㄠˇ ㄊㄨㄣˊ ㄓㄣˋ	existing				草屯鎮				
+phrase.taiwan.tsv	314	莿桐鄉	莿桐鄉	ㄘˋ ㄊㄨㄥˊ ㄒㄧㄤ	existing				莿桐鄉				
+phrase.taiwan.tsv	316	萬巒鄉	萬巒鄉	ㄨㄢˋ ㄌㄨㄢˊ ㄒㄧㄤ	existing				萬巒鄉				
+phrase.taiwan.tsv	318	萬華區	萬華區	ㄨㄢˋ ㄏㄨㄚˊ ㄑㄩ	existing				萬華區				
+phrase.taiwan.tsv	320	蘆洲區	蘆洲區	ㄌㄨˊ ㄓㄡ ㄑㄩ	existing				蘆洲區				
+phrase.taiwan.tsv	322	蘇澳鎮	蘇澳鎮	ㄙㄨ ㄠˋ ㄓㄣˋ	existing				蘇澳鎮				
+phrase.taiwan.tsv	324	虎尾鎮	虎尾鎮	ㄏㄨˇ ㄨㄟˇ ㄓㄣˋ	existing				虎尾鎮				
+phrase.taiwan.tsv	325	褒忠鄉	褒忠鄉	ㄅㄠ ㄓㄨㄥ ㄒㄧㄤ	existing				褒忠鄉				
+phrase.taiwan.tsv	326	西區	西區	ㄒㄧ ㄑㄩ	existing				西區				
+phrase.taiwan.tsv	328	西嶼鄉	西嶼鄉	ㄒㄧ ㄩˇ ㄒㄧㄤ	existing				西嶼鄉				
+phrase.taiwan.tsv	330	西湖鄉	西湖鄉	ㄒㄧ ㄏㄨˊ ㄒㄧㄤ	existing				西湖鄉				
+phrase.taiwan.tsv	331	西螺鎮	西螺鎮	ㄒㄧ ㄌㄨㄛˊ ㄓㄣˋ	existing				西螺鎮				
+phrase.taiwan.tsv	334	豐濱鄉	豐濱鄉	ㄈㄥ ㄅㄧㄣ ㄒㄧㄤ	existing				豐濱鄉				
+phrase.taiwan.tsv	338	通霄鎮	通霄鎮	ㄊㄨㄥ ㄒㄧㄠ ㄓㄣˋ	existing				通霄鎮				
+phrase.taiwan.tsv	339	造橋鄉	造橋鄉	ㄗㄠˋ ㄑㄧㄠˊ ㄒㄧㄤ	existing				造橋鄉				
+phrase.taiwan.tsv	340	達仁鄉	達仁鄉	ㄉㄚˊ ㄖㄣˊ ㄒㄧㄤ	existing				達仁鄉				
+phrase.taiwan.tsv	343	金城鎮	金城鎮	ㄐㄧㄣ ㄔㄥˊ ㄓㄣˋ	existing				金城鎮				
+phrase.taiwan.tsv	349	銅鑼鄉	銅鑼鄉	ㄊㄨㄥˊ ㄌㄨㄛˊ ㄒㄧㄤ	existing				銅鑼鄉				
+phrase.taiwan.tsv	350	長治鄉	長治鄉	ㄔㄤˊ ㄓˋ ㄒㄧㄤ	existing				長治鄉				
+phrase.taiwan.tsv	351	長濱鄉	長濱鄉	ㄔㄤˊ ㄅㄧㄣ ㄒㄧㄤ	existing				長濱鄉				
+phrase.taiwan.tsv	354	關西鎮	關西鎮	ㄍㄨㄢ ㄒㄧ ㄓㄣˋ	existing				關西鎮				
+phrase.taiwan.tsv	356	阿里山鄉	阿里山鄉	ㄚ ㄌㄧˇ ㄕㄢ ㄒㄧㄤ	existing				阿里山鄉				
+phrase.taiwan.tsv	357	集集鎮	集集鎮	ㄐㄧˊ ㄐㄧˊ ㄓㄣˋ	existing				集集鎮				
+phrase.taiwan.tsv	363	頭城鎮	頭城鎮	ㄊㄡˊ ㄔㄥˊ ㄓㄣˋ	existing				頭城鎮				
+phrase.taiwan.tsv	364	頭屋鄉	頭屋鄉	ㄊㄡˊ ㄨ ㄒㄧㄤ	existing				頭屋鄉				
+phrase.taiwan.tsv	366	馬公市	馬公市	ㄇㄚˇ ㄍㄨㄥ ㄕˋ	existing				馬公市				
+phrase.taiwan.tsv	367	高樹鄉	高樹鄉	ㄍㄠ ㄕㄨˋ ㄒㄧㄤ	existing				高樹鄉				
+phrase.taiwan.tsv	368	魚池鄉	魚池鄉	ㄩˊ ㄔˊ ㄒㄧㄤ	existing				魚池鄉				
+phrase.taiwan.tsv	370	鳳山區	鳳山區	ㄈㄥˋ ㄕㄢ ㄑㄩ	existing				鳳山區				
+phrase.taiwan.tsv	374	鹽埕區	鹽埕區	ㄧㄢˊ ㄔㄥˊ ㄑㄩ	existing				鹽埕區				
+phrase.taiwan.tsv	376	鹿港鎮	鹿港鎮	ㄌㄨˋ ㄍㄤˇ ㄓㄣˋ	existing				鹿港鎮				
+phrase.taiwan.tsv	377	鹿草鄉	鹿草鄉	ㄌㄨˋ ㄘㄠˇ ㄒㄧㄤ	existing				鹿草鄉				
+phrase.taiwan.tsv	378	鹿谷鄉	鹿谷鄉	ㄌㄨˋ ㄍㄨˇ ㄒㄧㄤ	existing				鹿谷鄉				
+phrase.taiwan.tsv	379	鹿野鄉	鹿野鄉	ㄌㄨˋ ㄧㄝˇ ㄒㄧㄤ	existing				鹿野鄉				
+phrase.taiwan.tsv	381	麥寮鄉	麥寮鄉	ㄇㄞˋ ㄌㄧㄠˊ ㄒㄧㄤ	existing				麥寮鄉				
+phrase.taiwan.tsv	383	鼓山區	鼓山區	ㄍㄨˇ ㄕㄢ ㄑㄩ	existing				鼓山區				
+phrase.taiwan.tsv	390	三民路	三民路	ㄙㄢ ㄇㄧㄣˊ ㄌㄨˋ	existing				三民路				
+phrase.taiwan.tsv	394	中坡南路	中坡南路	ㄓㄨㄥ ㄆㄛ ㄋㄢˊ ㄌㄨˋ	existing				中坡南路				
+phrase.taiwan.tsv	399	中山二路	中山二路	ㄓㄨㄥ ㄕㄢ ㄦˋ ㄌㄨˋ	existing				中山二路				
+phrase.taiwan.tsv	400	中山北路	中山北路	ㄓㄨㄥ ㄕㄢ ㄅㄟˇ ㄌㄨˋ	existing				中山北路				
+phrase.taiwan.tsv	401	中山南路	中山南路	ㄓㄨㄥ ㄕㄢ ㄋㄢˊ ㄌㄨˋ	existing				中山南路				
+phrase.taiwan.tsv	404	中山路	中山路	ㄓㄨㄥ ㄕㄢ ㄌㄨˋ	existing				中山路				
+phrase.taiwan.tsv	412	中正路	中正路	ㄓㄨㄥ ㄓㄥˋ ㄌㄨˋ	existing				中正路				
+phrase.taiwan.tsv	414	中港路	中港路	ㄓㄨㄥ ㄍㄤˇ ㄌㄨˋ	existing				中港路				
+phrase.taiwan.tsv	417	中華三路	中華三路	ㄓㄨㄥ ㄏㄨㄚˊ ㄙㄢ ㄌㄨˋ	existing				中華三路				
+phrase.taiwan.tsv	424	中華路	中華路	ㄓㄨㄥ ㄏㄨㄚˊ ㄌㄨˋ	existing				中華路				
+phrase.taiwan.tsv	438	仁愛路	仁愛路	ㄖㄣˊ ㄞˋ ㄌㄨˋ	existing				仁愛路				
+phrase.taiwan.tsv	443	信義路	信義路	ㄒㄧㄣˋ ㄧˋ ㄌㄨˋ	existing				信義路				
+phrase.taiwan.tsv	446	光復南路	光復南路	ㄍㄨㄤ ㄈㄨˋ ㄋㄢˊ ㄌㄨˋ	existing				光復南路				
+phrase.taiwan.tsv	448	光復路	光復路	ㄍㄨㄤ ㄈㄨˋ ㄌㄨˋ	existing				光復路				
+phrase.taiwan.tsv	453	八德路	八德路	ㄅㄚ ㄉㄜˊ ㄌㄨˋ	existing				八德路				
+phrase.taiwan.tsv	454	公園路	公園路	ㄍㄨㄥ ㄩㄢˊ ㄌㄨˋ	existing				公園路				
+phrase.taiwan.tsv	469	北安路	北安路	ㄅㄟˇ ㄢ ㄌㄨˋ	existing				北安路				
+phrase.taiwan.tsv	478	南京東路	南京東路	ㄋㄢˊ ㄐㄧㄥ ㄉㄨㄥ ㄌㄨˋ	existing				南京東路				
+phrase.taiwan.tsv	479	南京西路	南京西路	ㄋㄢˊ ㄐㄧㄥ ㄒㄧ ㄌㄨˋ	existing				南京西路				
+phrase.taiwan.tsv	490	博愛街	博愛街	ㄅㄛˊ ㄞˋ ㄐㄧㄝ	existing				博愛街				
+phrase.taiwan.tsv	491	博愛路	博愛路	ㄅㄛˊ ㄞˋ ㄌㄨˋ	existing				博愛路				
+phrase.taiwan.tsv	497	和平東路	和平東路	ㄏㄜˊ ㄆㄧㄥˊ ㄉㄨㄥ ㄌㄨˋ	existing				和平東路				
+phrase.taiwan.tsv	498	和平西路	和平西路	ㄏㄜˊ ㄆㄧㄥˊ ㄒㄧ ㄌㄨˋ	existing				和平西路				
+phrase.taiwan.tsv	499	和平路	和平路	ㄏㄜˊ ㄆㄧㄥˊ ㄌㄨˋ	existing				和平路				
+phrase.taiwan.tsv	521	基隆路	基隆路	ㄐㄧ ㄌㄨㄥˊ ㄌㄨˋ	existing				基隆路				
+phrase.taiwan.tsv	532	大順二路	大順二路	ㄉㄚˋ ㄕㄨㄣˋ ㄦˋ ㄌㄨˋ	existing				大順二路				
+phrase.taiwan.tsv	541	安和路	安和路	ㄢ ㄏㄜˊ ㄌㄨˋ	existing				安和路				
+phrase.taiwan.tsv	556	延平北路	延平北路	ㄧㄢˊ ㄆㄧㄥˊ ㄅㄟˇ ㄌㄨˋ	existing				延平北路				
+phrase.taiwan.tsv	561	建工路	建工路	ㄐㄧㄢˋ ㄍㄨㄥ ㄌㄨˋ	existing				建工路				
+phrase.taiwan.tsv	565	復興北路	復興北路	ㄈㄨˋ ㄒㄧㄥ ㄅㄟˇ ㄌㄨˋ	existing				復興北路				
+phrase.taiwan.tsv	566	復興南路	復興南路	ㄈㄨˋ ㄒㄧㄥ ㄋㄢˊ ㄌㄨˋ	existing				復興南路				
+phrase.taiwan.tsv	571	忠孝東路	忠孝東路	ㄓㄨㄥ ㄒㄧㄠˋ ㄉㄨㄥ ㄌㄨˋ	existing				忠孝東路				
+phrase.taiwan.tsv	572	忠孝西路	忠孝西路	ㄓㄨㄥ ㄒㄧㄠˋ ㄒㄧ ㄌㄨˋ	existing				忠孝西路				
+phrase.taiwan.tsv	580	成功路	成功路	ㄔㄥˊ ㄍㄨㄥ ㄌㄨˋ	existing				成功路				
+phrase.taiwan.tsv	581	承德路	承德路	ㄔㄥˊ ㄉㄜˊ ㄌㄨˋ	existing				承德路				
+phrase.taiwan.tsv	582	敦化北路	敦化北路	ㄉㄨㄣ ㄏㄨㄚˋ ㄅㄟˇ ㄌㄨˋ	existing				敦化北路				
+phrase.taiwan.tsv	583	敦化南路	敦化南路	ㄉㄨㄣ ㄏㄨㄚˋ ㄋㄢˊ ㄌㄨˋ	existing				敦化南路				
+phrase.taiwan.tsv	592	新生北路	新生北路	ㄒㄧㄣ ㄕㄥ ㄅㄟˇ ㄌㄨˋ	existing				新生北路				
+phrase.taiwan.tsv	593	新生南路	新生南路	ㄒㄧㄣ ㄕㄥ ㄋㄢˊ ㄌㄨˋ	existing				新生南路				
+phrase.taiwan.tsv	594	新生路	新生路	ㄒㄧㄣ ㄕㄥ ㄌㄨˋ	existing				新生路				
+phrase.taiwan.tsv	597	昆明街	昆明街	ㄎㄨㄣ ㄇㄧㄥˊ ㄐㄧㄝ	existing				昆明街				
+phrase.taiwan.tsv	608	杭州南路	杭州南路	ㄏㄤˊ ㄓㄡ ㄋㄢˊ ㄌㄨˋ	existing				杭州南路				
+phrase.taiwan.tsv	618	林森路	林森路	ㄌㄧㄣˊ ㄙㄣ ㄌㄨˋ	existing				林森路				
+phrase.taiwan.tsv	621	正義北路	正義北路	ㄓㄥˋ ㄧˋ ㄅㄟˇ ㄌㄨˋ	existing				正義北路				
+phrase.taiwan.tsv	625	民族路	民族路	ㄇㄧㄣˊ ㄗㄨˊ ㄌㄨˋ	existing				民族路				
+phrase.taiwan.tsv	626	民權東路	民權東路	ㄇㄧㄣˊ ㄑㄩㄢˊ ㄉㄨㄥ ㄌㄨˋ	existing				民權東路				
+phrase.taiwan.tsv	628	民權西路	民權西路	ㄇㄧㄣˊ ㄑㄩㄢˊ ㄒㄧ ㄌㄨˋ	existing				民權西路				
+phrase.taiwan.tsv	629	民權路	民權路	ㄇㄧㄣˊ ㄑㄩㄢˊ ㄌㄨˋ	existing				民權路				
+phrase.taiwan.tsv	631	民生東路	民生東路	ㄇㄧㄣˊ ㄕㄥ ㄉㄨㄥ ㄌㄨˋ	existing				民生東路				
+phrase.taiwan.tsv	632	民生西路	民生西路	ㄇㄧㄣˊ ㄕㄥ ㄒㄧ ㄌㄨˋ	existing				民生西路				
+phrase.taiwan.tsv	633	民生路	民生路	ㄇㄧㄣˊ ㄕㄥ ㄌㄨˋ	existing				民生路				
+phrase.taiwan.tsv	671	環河北路	環河北路	ㄏㄨㄢˊ ㄏㄜˊ ㄅㄟˇ ㄌㄨˋ	existing				環河北路				
+phrase.taiwan.tsv	690	羅斯福路	羅斯福路	ㄌㄨㄛˊ ㄙ ㄈㄨˊ ㄌㄨˋ	existing				羅斯福路				
+phrase.taiwan.tsv	708	莊敬路	莊敬路	ㄓㄨㄤ ㄐㄧㄥˋ ㄌㄨˋ	existing				莊敬路				
+phrase.taiwan.tsv	711	衡陽路	衡陽路	ㄏㄥˊ ㄧㄤˊ ㄌㄨˋ	existing				衡陽路				
+phrase.taiwan.tsv	713	西寧南路	西寧南路	ㄒㄧ ㄋㄧㄥˊ ㄋㄢˊ ㄌㄨˋ	existing				西寧南路				
+phrase.taiwan.tsv	719	迪化街	迪化街	ㄉㄧˊ ㄏㄨㄚˋ ㄐㄧㄝ	existing				迪化街				
+phrase.taiwan.tsv	722	重慶北路	重慶北路	ㄔㄨㄥˊ ㄑㄧㄥˋ ㄅㄟˇ ㄌㄨˋ	existing				重慶北路				
+phrase.taiwan.tsv	723	重慶南路	重慶南路	ㄔㄨㄥˊ ㄑㄧㄥˋ ㄋㄢˊ ㄌㄨˋ	existing				重慶南路				
+phrase.taiwan.tsv	731	開封街	開封街	ㄎㄞ ㄈㄥ ㄐㄧㄝ	existing				開封街				
+phrase.taiwan.tsv	750	三仙台	三仙台	ㄙㄢ ㄒㄧㄢ ㄊㄞˊ	existing				三仙台				
+phrase.taiwan.tsv	753	九份	九份	ㄐㄧㄡˇ ㄈㄣˋ	existing				九份				
+phrase.taiwan.tsv	755	九族文化村	九族文化村	ㄐㄧㄡˇ ㄗㄨˊ ㄨㄣˊ ㄏㄨㄚˋ ㄘㄨㄣ	existing				九族文化村				
+phrase.taiwan.tsv	761	佛光山	佛光山	ㄈㄛˊ ㄍㄨㄤ ㄕㄢ	existing				佛光山				
+phrase.taiwan.tsv	762	內灣老街	內灣老街	ㄋㄟˋ ㄨㄢ ㄌㄠˇ ㄐㄧㄝ	existing				內灣老街				
+phrase.taiwan.tsv	766	六福村	六福村	ㄌㄧㄡˋ ㄈㄨˊ ㄘㄨㄣ	existing				六福村				
+phrase.taiwan.tsv	767	冬山河	冬山河	ㄉㄨㄥ ㄕㄢ ㄏㄜˊ	existing				冬山河				
+phrase.taiwan.tsv	768	出磺坑	出磺坑	ㄔㄨ ㄏㄨㄤˊ ㄎㄥ	existing				出磺坑				
+phrase.taiwan.tsv	769	劍湖山	劍湖山	ㄐㄧㄢˋ ㄏㄨˊ ㄕㄢ	existing				劍湖山				
+phrase.taiwan.tsv	777	十八尖山	十八尖山	ㄕˊ ㄅㄚ ㄐㄧㄢ ㄕㄢ	existing				十八尖山				
+phrase.taiwan.tsv	778	十分瀑布	十分瀑布	ㄕˊ ㄈㄣ ㄆㄨˋ ㄅㄨˋ	existing				十分瀑布				
+phrase.taiwan.tsv	782	古寧頭	古寧頭	ㄍㄨˇ ㄋㄧㄥˊ ㄊㄡˊ	existing				古寧頭				
+phrase.taiwan.tsv	783	司馬庫斯	司馬庫斯	ㄙ ㄇㄚˇ ㄎㄨˋ ㄙ	existing				司馬庫斯				
+phrase.taiwan.tsv	784	合歡山	合歡山	ㄏㄜˊ ㄏㄨㄢ ㄕㄢ	existing				合歡山				
+phrase.taiwan.tsv	785	和平島	和平島	ㄏㄜˊ ㄆㄧㄥˊ ㄉㄠˇ	existing				和平島				
+phrase.taiwan.tsv	791	墾丁	墾丁	ㄎㄣˇ ㄉㄧㄥ	existing				墾丁				
+phrase.taiwan.tsv	793	壽山動物園	壽山動物園	ㄕㄡˋ ㄕㄢ ㄉㄨㄥˋ ㄨˋ ㄩㄢˊ	existing				壽山動物園				
+phrase.taiwan.tsv	801	大鵬灣	大鵬灣	ㄉㄚˋ ㄆㄥˊ ㄨㄢ	existing				大鵬灣				
+phrase.taiwan.tsv	802	太平山	太平山	ㄊㄞˋ ㄆㄧㄥˊ ㄕㄢ	existing				太平山				
+phrase.taiwan.tsv	803	太魯閣	太魯閣	ㄊㄞˋ ㄌㄨˇ ㄍㄜˊ	existing				太魯閣				
+phrase.taiwan.tsv	806	奮起湖	奮起湖	ㄈㄣˋ ㄑㄧˇ ㄏㄨˊ	existing				奮起湖				
+phrase.taiwan.tsv	807	安平古堡	安平古堡	ㄢ ㄆㄧㄥˊ ㄍㄨˇ ㄅㄠˇ	existing				安平古堡				
+phrase.taiwan.tsv	811	宮原眼科	宮原眼科	ㄍㄨㄥ ㄩㄢˊ ㄧㄢˇ ㄎㄜ	existing				宮原眼科				
+phrase.taiwan.tsv	813	小人國	小人國	ㄒㄧㄠˇ ㄖㄣˊ ㄍㄨㄛˊ	existing				小人國				
+phrase.taiwan.tsv	814	小琉球	小琉球	ㄒㄧㄠˇ ㄌㄧㄡˊ ㄑㄧㄡˊ	existing				小琉球				
+phrase.taiwan.tsv	824	拉拉山	拉拉山	ㄌㄚ ㄌㄚ ㄕㄢ	existing				拉拉山				
+phrase.taiwan.tsv	826	故宮博物院	故宮博物院	ㄍㄨˋ ㄍㄨㄥ ㄅㄛˊ ㄨˋ ㄩㄢˋ	existing				故宮博物院				
+phrase.taiwan.tsv	828	新港奉天宮	新港奉天宮	ㄒㄧㄣ ㄍㄤˇ ㄈㄥˋ ㄊㄧㄢ ㄍㄨㄥ	existing				新港奉天宮				
+phrase.taiwan.tsv	830	日月潭	日月潭	ㄖˋ ㄩㄝˋ ㄊㄢˊ	existing				日月潭				
+phrase.taiwan.tsv	833	杉林溪	杉林溪	ㄕㄢ ㄌㄧㄣˊ ㄒㄧ	existing				杉林溪				
+phrase.taiwan.tsv	843	正濱漁港	正濱漁港	ㄓㄥˋ ㄅㄧㄣ ㄩˊ ㄍㄤˇ	existing				正濱漁港				
+phrase.taiwan.tsv	844	武陵農場	武陵農場	ㄨˇ ㄌㄧㄥˊ ㄋㄨㄥˊ ㄔㄤˇ	existing				武陵農場				
+phrase.taiwan.tsv	852	溪頭	溪頭	ㄒㄧ ㄊㄡˊ	existing				溪頭				
+phrase.taiwan.tsv	853	漁人碼頭	漁人碼頭	ㄩˊ ㄖㄣˊ ㄇㄚˇ ㄊㄡˊ	existing				漁人碼頭				
+phrase.taiwan.tsv	855	澎湖天后宮	澎湖天后宮	ㄆㄥˊ ㄏㄨˊ ㄊㄧㄢ ㄏㄡˋ ㄍㄨㄥ	existing				澎湖天后宮				
+phrase.taiwan.tsv	861	知本溫泉	知本溫泉	ㄓ ㄅㄣˇ ㄨㄣ ㄑㄩㄢˊ	existing				知本溫泉				
+phrase.taiwan.tsv	863	石門水庫	石門水庫	ㄕˊ ㄇㄣˊ ㄕㄨㄟˇ ㄎㄨˋ	existing				石門水庫				
+phrase.taiwan.tsv	866	礁溪溫泉	礁溪溫泉	ㄐㄧㄠ ㄒㄧ ㄨㄣ ㄑㄩㄢˊ	existing				礁溪溫泉				
+phrase.taiwan.tsv	870	紅毛城	紅毛城	ㄏㄨㄥˊ ㄇㄠˊ ㄔㄥˊ	existing				紅毛城				
+phrase.taiwan.tsv	871	綠島	綠島	ㄌㄩˋ ㄉㄠˇ	existing				綠島				
+phrase.taiwan.tsv	874	翟山坑道	翟山坑道	ㄓㄞˊ ㄕㄢ ㄎㄥ ㄉㄠˋ	existing				翟山坑道				
+phrase.taiwan.tsv	875	翠峰湖	翠峰湖	ㄘㄨㄟˋ ㄈㄥ ㄏㄨˊ	existing				翠峰湖				
+phrase.taiwan.tsv	888	蓮池潭	蓮池潭	ㄌㄧㄢˊ ㄔˊ ㄊㄢˊ	existing				蓮池潭				
+phrase.taiwan.tsv	890	蘭嶼	蘭嶼	ㄌㄢˊ ㄩˇ	existing				蘭嶼				
+phrase.taiwan.tsv	894	衛武營	衛武營	ㄨㄟˋ ㄨˇ ㄧㄥˊ	existing				衛武營				
+phrase.taiwan.tsv	895	西子灣	西子灣	ㄒㄧ ㄗˇ ㄨㄢ	existing				西子灣				
+phrase.taiwan.tsv	897	西螺大橋	西螺大橋	ㄒㄧ ㄌㄨㄛˊ ㄉㄚˋ ㄑㄧㄠˊ	existing				西螺大橋				
+phrase.taiwan.tsv	898	西門町	西門町	ㄒㄧ ㄇㄣˊ ㄉㄧㄥ	existing				西門町				
+phrase.taiwan.tsv	902	貓空	貓空	ㄇㄠ ㄎㄨㄥ	existing				貓空				
+phrase.taiwan.tsv	903	赤崁樓	赤崁樓	ㄔˋ ㄎㄢˇ ㄌㄡˊ	existing				赤崁樓				
+phrase.taiwan.tsv	906	都城隍廟	都城隍廟	ㄉㄨ ㄔㄥˊ ㄏㄨㄤˊ ㄇㄧㄠˋ	existing				都城隍廟				
+phrase.taiwan.tsv	908	野柳	野柳	ㄧㄝˇ ㄌㄧㄡˇ	existing				野柳				
+phrase.taiwan.tsv	910	金瓜石	金瓜石	ㄐㄧㄣ ㄍㄨㄚ ㄕˊ	existing				金瓜石				
+phrase.taiwan.tsv	911	金門大橋	金門大橋	ㄐㄧㄣ ㄇㄣˊ ㄉㄚˋ ㄑㄧㄠˊ	existing				金門大橋				
+phrase.taiwan.tsv	913	關子嶺	關子嶺	ㄍㄨㄢ ㄗˇ ㄌㄧㄥˇ	existing				關子嶺				
+phrase.taiwan.tsv	914	阿里山	阿里山	ㄚ ㄌㄧˇ ㄕㄢ	existing				阿里山				
+phrase.taiwan.tsv	917	陽明山	陽明山	ㄧㄤˊ ㄇㄧㄥˊ ㄕㄢ	existing				陽明山				
+phrase.taiwan.tsv	922	青草湖	青草湖	ㄑㄧㄥ ㄘㄠˇ ㄏㄨˊ	existing				青草湖				
+phrase.taiwan.tsv	929	鵝鑾鼻	鵝鑾鼻	ㄜˊ ㄌㄨㄢˊ ㄅㄧˊ	existing				鵝鑾鼻				
+phrase.taiwan.tsv	939	龜山島	龜山島	ㄍㄨㄟ ㄕㄢ ㄉㄠˇ	existing				龜山島				
+phrase.taiwan.tsv	944	傻眼	傻眼	ㄕㄚˇ ㄧㄢˇ	existing				傻眼				
+phrase.taiwan.tsv	947	哎呀	哎呀	ㄞ ㄧㄚ	existing				哎呀				
+phrase.taiwan.tsv	948	哎唷	哎唷	ㄞ ㄧㄛ	existing				哎唷				
+phrase.taiwan.tsv	954	啥咪	啥咪	ㄕㄚˊ ㄇㄧ	existing				啥咪				
+phrase.taiwan.tsv	958	太扯了	太扯了	ㄊㄞˋ ㄔㄜˇ ㄌㄜ˙	existing				太扯了				
+phrase.taiwan.tsv	974	有夠	有夠	ㄧㄡˇ ㄍㄡˋ	existing				有夠				
+phrase.taiwan.tsv	976	歹勢	歹勢	ㄉㄞˇ ㄕˋ	existing				歹勢				
+phrase.taiwan.tsv	995	中華	中華	ㄓㄨㄥ ㄏㄨㄚˊ	existing				中華				
+phrase.taiwan.tsv	997	中鋼	中鋼	ㄓㄨㄥ ㄍㄤ	existing				中鋼				
+phrase.taiwan.tsv	1010	兆豐金	兆豐金	ㄓㄠˋ ㄈㄥ ㄐㄧㄣ	existing				兆豐金				
+phrase.taiwan.tsv	1013	創意	創意	ㄔㄨㄤˋ ㄧˋ	existing				創意				
+phrase.taiwan.tsv	1017	南亞	南亞	ㄋㄢˊ ㄧㄚˋ	existing				南亞				
+phrase.taiwan.tsv	1027	台塑	台塑	ㄊㄞˊ ㄙㄨˋ	existing				台塑				
+phrase.taiwan.tsv	1032	台灣高鐵	台灣高鐵	ㄊㄞˊ ㄨㄢ ㄍㄠ ㄊㄧㄝˇ	duplicate				台灣高鐵				
+phrase.taiwan.tsv	1033	台玻	台玻	ㄊㄞˊ ㄅㄛ	existing				台玻				
+phrase.taiwan.tsv	1034	台積電	台積電	ㄊㄞˊ ㄐㄧ ㄉㄧㄢˋ	existing				台積電				
+phrase.taiwan.tsv	1035	台肥	台肥	ㄊㄞˊ ㄈㄟˊ	existing				台肥				
+phrase.taiwan.tsv	1038	味全	味全	ㄨㄟˋ ㄑㄩㄢˊ	existing				味全				
+phrase.taiwan.tsv	1045	大成	大成	ㄉㄚˋ ㄔㄥˊ	existing				大成				
+phrase.taiwan.tsv	1050	宏碁	宏碁	ㄏㄨㄥˊ ㄐㄧ	existing				宏碁				
+phrase.taiwan.tsv	1054	巨大	巨大	ㄐㄩˋ ㄉㄚˋ	existing				巨大				
+phrase.taiwan.tsv	1056	彰銀	彰銀	ㄓㄤ ㄧㄣˊ	existing				彰銀				
+phrase.taiwan.tsv	1065	東元	東元	ㄉㄨㄥ ㄩㄢˊ	existing				東元				
+phrase.taiwan.tsv	1068	櫻花	櫻花	ㄧㄥ ㄏㄨㄚ	existing				櫻花				
+phrase.taiwan.tsv	1071	正隆	正隆	ㄓㄥˋ ㄌㄨㄥˊ	existing				正隆				
+phrase.taiwan.tsv	1077	燦坤	燦坤	ㄘㄢˋ ㄎㄨㄣ	existing				燦坤				
+phrase.taiwan.tsv	1087	統一	統一	ㄊㄨㄥˇ ㄧ	existing				統一				
+phrase.taiwan.tsv	1091	美利達	美利達	ㄇㄟˇ ㄌㄧˋ ㄉㄚˊ	existing				美利達				
+phrase.taiwan.tsv	1094	聯發科	聯發科	ㄌㄧㄢˊ ㄈㄚ ㄎㄜ	existing				聯發科				
+phrase.taiwan.tsv	1101	英業達	英業達	ㄧㄥ ㄧㄝˋ ㄉㄚˊ	existing				英業達				
+phrase.taiwan.tsv	1104	華新	華新	ㄏㄨㄚˊ ㄒㄧㄣ	existing				華新				
+phrase.taiwan.tsv	1106	華碩	華碩	ㄏㄨㄚˊ ㄕㄨㄛˋ	existing				華碩				
+phrase.taiwan.tsv	1107	華航	華航	ㄏㄨㄚˊ ㄏㄤˊ	existing				華航				
+phrase.taiwan.tsv	1113	裕隆	裕隆	ㄩˋ ㄌㄨㄥˊ	existing				裕隆				
+phrase.taiwan.tsv	1115	遠傳	遠傳	ㄩㄢˇ ㄔㄨㄢˊ	existing				遠傳				
+phrase.taiwan.tsv	1119	長榮	長榮	ㄔㄤˊ ㄖㄨㄥˊ	existing				長榮				
+phrase.taiwan.tsv	1121	長興	長興	ㄔㄤˊ ㄒㄧㄥ	existing				長興				
+phrase.taiwan.tsv	1122	陽明	陽明	ㄧㄤˊ ㄇㄧㄥˊ	existing				陽明				
+phrase.taiwan.tsv	1123	雄獅	雄獅	ㄒㄩㄥˊ ㄕ	existing				雄獅				
+phrase.taiwan.tsv	1124	鴻海	鴻海	ㄏㄨㄥˊ ㄏㄞˇ	existing				鴻海				
+phrase.taiwan.tsv	1125	黑松	黑松	ㄏㄟ ㄙㄨㄥ	existing				黑松				
+phrase.taiwan.tsv	1126	世界	世界	ㄕˋ ㄐㄧㄝˋ	existing				世界				
+phrase.taiwan.tsv	1133	全家	全家	ㄑㄩㄢˊ ㄐㄧㄚ	existing				全家				
+phrase.taiwan.tsv	1134	六角	六角	ㄌㄧㄡˋ ㄐㄧㄠˇ	existing				六角				
+phrase.taiwan.tsv	1144	大江	大江	ㄉㄚˋ ㄐㄧㄤ	existing				大江				
+phrase.taiwan.tsv	1159	橘子	橘子	ㄐㄩˊ ㄗ˙	existing				橘子				
+phrase.taiwan.tsv	1185	三陽	三陽	ㄙㄢ ㄧㄤˊ	existing				三陽				
+phrase.taiwan.tsv	1187	中油	中油	ㄓㄨㄥ ㄧㄡˊ	existing				中油				
+phrase.taiwan.tsv	1190	中華電信	中華電信	ㄓㄨㄥ ㄏㄨㄚˊ ㄉㄧㄢˋ ㄒㄧㄣˋ	existing				中華電信				
+phrase.taiwan.tsv	1200	博客來	博客來	ㄅㄛˊ ㄎㄜˋ ㄌㄞˊ	existing				博客來				
+phrase.taiwan.tsv	1204	台灣大哥大	台灣大哥大	ㄊㄞˊ ㄨㄢ ㄉㄚˋ ㄍㄜ ㄉㄚˋ	existing				台灣大哥大				
+phrase.taiwan.tsv	1206	台灣銀行	台灣銀行	ㄊㄞˊ ㄨㄢ ㄧㄣˊ ㄏㄤˊ	existing				台灣銀行				
+phrase.taiwan.tsv	1207	台糖	台糖	ㄊㄞˊ ㄊㄤˊ	existing				台糖				
+phrase.taiwan.tsv	1209	台鐵	台鐵	ㄊㄞˊ ㄊㄧㄝˇ	existing				台鐵				
+phrase.taiwan.tsv	1210	台電	台電	ㄊㄞˊ ㄉㄧㄢˋ	existing				台電				
+phrase.taiwan.tsv	1212	國泰人壽	國泰人壽	ㄍㄨㄛˊ ㄊㄞˋ ㄖㄣˊ ㄕㄡˋ	existing				國泰人壽				
+phrase.taiwan.tsv	1213	土銀	土銀	ㄊㄨˇ ㄧㄣˊ	existing				土銀				
+phrase.taiwan.tsv	1217	家樂福	家樂福	ㄐㄧㄚ ㄌㄜˋ ㄈㄨˊ	existing				家樂福				
+phrase.taiwan.tsv	1221	捷安特	捷安特	ㄐㄧㄝˊ ㄢ ㄊㄜˋ	existing				捷安特				
+phrase.taiwan.tsv	1222	新光三越	新光三越	ㄒㄧㄣ ㄍㄨㄤ ㄙㄢ ㄩㄝˋ	existing				新光三越				
+phrase.taiwan.tsv	1223	新東陽	新東陽	ㄒㄧㄣ ㄉㄨㄥ ㄧㄤˊ	existing				新東陽				
+phrase.taiwan.tsv	1224	日月光	日月光	ㄖˋ ㄩㄝˋ ㄍㄨㄤ	existing				日月光				
+phrase.taiwan.tsv	1228	漢神百貨	漢神百貨	ㄏㄢˋ ㄕㄣˊ ㄅㄞˇ ㄏㄨㄛˋ	existing				漢神百貨				
+phrase.taiwan.tsv	1236	義美	義美	ㄧˋ ㄇㄟˇ	existing				義美				
+phrase.taiwan.tsv	1242	萊爾富	萊爾富	ㄌㄞˊ ㄦˇ ㄈㄨˋ	existing				萊爾富				
+phrase.taiwan.tsv	1244	誠品	誠品	ㄔㄥˊ ㄆㄧㄣˇ	existing				誠品				
+phrase.taiwan.tsv	1253	鼎泰豐	鼎泰豐	ㄉㄧㄥˇ ㄊㄞˋ ㄈㄥ	existing				鼎泰豐				
+phrase.taiwan.tsv	1258	世新	世新	ㄕˋ ㄒㄧㄣ	existing				世新				
+phrase.taiwan.tsv	1259	中原	中原	ㄓㄨㄥ ㄩㄢˊ	existing				中原				
+phrase.taiwan.tsv	1261	中大	中大	ㄓㄨㄥ ㄉㄚˋ	existing				中大				
+phrase.taiwan.tsv	1270	元智	元智	ㄩㄢˊ ㄓˋ	existing				元智				
+phrase.taiwan.tsv	1273	北大	北大	ㄅㄟˇ ㄉㄚˋ	existing				北大				
+phrase.taiwan.tsv	1277	北藝大	北藝大	ㄅㄟˇ ㄧˋ ㄉㄚˋ	existing				北藝大				
+phrase.taiwan.tsv	1279	北醫	北醫	ㄅㄟˇ ㄧ	existing				北醫				
+phrase.taiwan.tsv	1289	台大	台大	ㄊㄞˊ ㄉㄚˋ	existing				台大				
+phrase.taiwan.tsv	1292	台科大	台科大	ㄊㄞˊ ㄎㄜ ㄉㄚˋ	existing				台科大				
+phrase.taiwan.tsv	1305	實踐	實踐	ㄕˊ ㄐㄧㄢˋ	existing				實踐				
+phrase.taiwan.tsv	1307	屏科大	屏科大	ㄆㄧㄥˊ ㄎㄜ ㄉㄚˋ	existing				屏科大				
+phrase.taiwan.tsv	1314	成大	成大	ㄔㄥˊ ㄉㄚˋ	existing				成大				
+phrase.taiwan.tsv	1315	政大	政大	ㄓㄥˋ ㄉㄚˋ	existing				政大				
+phrase.taiwan.tsv	1316	文大	文大	ㄨㄣˊ ㄉㄚˋ	existing				文大				
+phrase.taiwan.tsv	1317	文藻	文藻	ㄨㄣˊ ㄗㄠˇ	existing				文藻				
+phrase.taiwan.tsv	1322	東吳	東吳	ㄉㄨㄥ ㄨˊ	existing				東吳				
+phrase.taiwan.tsv	1323	東海	東海	ㄉㄨㄥ ㄏㄞˇ	existing				東海				
+phrase.taiwan.tsv	1328	淡江	淡江	ㄉㄢˋ ㄐㄧㄤ	existing				淡江				
+phrase.taiwan.tsv	1329	清大	清大	ㄑㄧㄥ ㄉㄚˋ	existing				清大				
+phrase.taiwan.tsv	1333	空大	空大	ㄎㄨㄥ ㄉㄚˋ	existing				空大				
+phrase.taiwan.tsv	1335	聯大	聯大	ㄌㄧㄢˊ ㄉㄚˋ	existing				聯大				
+phrase.taiwan.tsv	1349	輔大	輔大	ㄈㄨˇ ㄉㄚˋ	existing				輔大				
+phrase.taiwan.tsv	1351	逢甲	逢甲	ㄈㄥˊ ㄐㄧㄚˇ	existing				逢甲				
+phrase.taiwan.tsv	1354	銘傳	銘傳	ㄇㄧㄥˊ ㄔㄨㄢˊ	existing				銘傳				
+phrase.taiwan.tsv	1361	靜宜	靜宜	ㄐㄧㄥˋ ㄧˊ	existing				靜宜				
+phrase.taiwan.tsv	1363	高大	高大	ㄍㄠ ㄉㄚˋ	existing				高大				
+phrase.taiwan.tsv	1364	高師大	高師大	ㄍㄠ ㄕ ㄉㄚˋ	existing				高師大				
+phrase.taiwan.tsv	1366	高醫	高醫	ㄍㄠ ㄧ	existing				高醫				
+phrase.taiwan.tsv	1369	龍華科大	龍華科大	ㄌㄨㄥˊ ㄏㄨㄚˊ ㄎㄜ ㄉㄚˋ	existing				龍華科大				
 phrase.transport-logistics.tsv	2	中心	中心	ㄓㄨㄥ ㄒㄧㄣ	existing				中心				
 phrase.transport-logistics.tsv	3	交通	交通	ㄐㄧㄠ ㄊㄨㄥ	existing				交通				
 phrase.transport-logistics.tsv	14	倉庫	倉庫	ㄘㄤ ㄎㄨˋ	existing				倉庫				

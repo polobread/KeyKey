@@ -1,6 +1,6 @@
 {
   "base_commit": "63a5a33beb5a24a23c91cd74d5ff021c65affde2",
-  "database_sha256": "69975755bc8c9ce2d7bb27f6daa478b22c836f7b3bacf910515724b7d85e51b0",
+  "database_sha256": "16af45d4da0043d3e074523f130a0322aa1c9e7eb043b65bcaf7d819ac7841dd",
   "files": [
     {
       "collision": 2,
@@ -46,6 +46,15 @@
       "inserted": 136,
       "rejected": 0,
       "rows": 184
+    },
+    {
+      "collision": 13,
+      "duplicate": 0,
+      "existing": 140,
+      "file": "phrase.china.tsv",
+      "inserted": 287,
+      "rejected": 0,
+      "rows": 427
     },
     {
       "collision": 19,
@@ -103,12 +112,21 @@
     },
     {
       "collision": 2,
-      "duplicate": 7,
+      "duplicate": 9,
       "existing": 60,
       "file": "phrase.general.tsv",
-      "inserted": 109,
+      "inserted": 107,
       "rejected": 0,
       "rows": 176
+    },
+    {
+      "collision": 15,
+      "duplicate": 0,
+      "existing": 22,
+      "file": "phrase.given-names.tsv",
+      "inserted": 52,
+      "rejected": 0,
+      "rows": 74
     },
     {
       "collision": 4,
@@ -127,6 +145,15 @@
       "inserted": 151,
       "rejected": 0,
       "rows": 182
+    },
+    {
+      "collision": 21,
+      "duplicate": 0,
+      "existing": 35,
+      "file": "phrase.hongkong-macao.tsv",
+      "inserted": 299,
+      "rejected": 0,
+      "rows": 334
     },
     {
       "collision": 3,
@@ -255,6 +282,15 @@
       "rows": 98
     },
     {
+      "collision": 53,
+      "duplicate": 2,
+      "existing": 414,
+      "file": "phrase.taiwan.tsv",
+      "inserted": 952,
+      "rejected": 0,
+      "rows": 1368
+    },
+    {
       "collision": 0,
       "duplicate": 2,
       "existing": 35,
@@ -267,7 +303,7 @@
   "frequency_policy": "minimum",
   "policy": "Chinese aliases; text deduplication; homophones retained below existing candidates; long partial overlaps diagnostic only; anime and colliding words added after training at count <=0.01; other personal names added after training at count <=1",
   "rejected": [],
-  "semantic_sha256": "dab0db5035a5772ad49c2b8d1fa8b3c252f4b2e5cbbcb07f65e25f0153a9c5ee",
+  "semantic_sha256": "b7be907eb2b98baf7d9258d5ae89e96ae5738100e8ef62864df5e2db9a5ecc1a",
   "skipped": [
     {
       "file": "phrase.agriculture-food.tsv",
@@ -3306,6 +3342,846 @@
       "word": "風險"
     },
     {
+      "file": "phrase.china.tsv",
+      "line": 2,
+      "reason": "existing",
+      "word": "上海市"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 3,
+      "reason": "existing",
+      "word": "內蒙古"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 4,
+      "reason": "existing",
+      "word": "北京市"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 5,
+      "reason": "existing",
+      "word": "吉林省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 6,
+      "reason": "existing",
+      "word": "四川省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 7,
+      "reason": "existing",
+      "word": "天津市"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 8,
+      "reason": "existing",
+      "word": "安徽省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 9,
+      "reason": "existing",
+      "word": "寧夏"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 10,
+      "reason": "existing",
+      "word": "山東省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 11,
+      "reason": "existing",
+      "word": "山西省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 12,
+      "reason": "existing",
+      "word": "廣東省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 13,
+      "reason": "existing",
+      "word": "廣西"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 14,
+      "reason": "existing",
+      "word": "新疆"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 15,
+      "reason": "existing",
+      "word": "江蘇省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 16,
+      "reason": "existing",
+      "word": "江西省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 17,
+      "reason": "existing",
+      "word": "河北省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 18,
+      "reason": "existing",
+      "word": "河南省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 19,
+      "reason": "existing",
+      "word": "浙江省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 21,
+      "reason": "existing",
+      "word": "湖北省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 22,
+      "reason": "existing",
+      "word": "湖南省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 23,
+      "reason": "existing",
+      "word": "甘肅省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 24,
+      "reason": "existing",
+      "word": "福建省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 25,
+      "reason": "existing",
+      "word": "西藏"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 26,
+      "reason": "existing",
+      "word": "貴州省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 27,
+      "reason": "existing",
+      "word": "遼寧省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 28,
+      "reason": "existing",
+      "word": "重慶市"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 29,
+      "reason": "existing",
+      "word": "陝西省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 30,
+      "reason": "existing",
+      "word": "雲南省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 31,
+      "reason": "existing",
+      "word": "青海省"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 34,
+      "reason": "existing",
+      "word": "佛山"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 35,
+      "reason": "existing",
+      "word": "南京"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 36,
+      "reason": "existing",
+      "word": "南寧"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 37,
+      "reason": "existing",
+      "word": "南昌"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 38,
+      "reason": "existing",
+      "word": "合肥"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 39,
+      "reason": "existing",
+      "word": "吐魯番"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 40,
+      "reason": "existing",
+      "word": "呼和浩特"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 41,
+      "reason": "existing",
+      "word": "哈爾濱"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 43,
+      "reason": "existing",
+      "word": "大同"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 44,
+      "reason": "existing",
+      "word": "大理"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 45,
+      "reason": "existing",
+      "word": "大連"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 46,
+      "reason": "existing",
+      "word": "太原"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 47,
+      "reason": "existing",
+      "word": "寧波"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 48,
+      "reason": "existing",
+      "word": "廈門"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 49,
+      "reason": "existing",
+      "word": "廣州"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 50,
+      "reason": "existing",
+      "word": "成都"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 51,
+      "reason": "existing",
+      "word": "拉薩"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 52,
+      "reason": "existing",
+      "word": "揚州"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 53,
+      "reason": "existing",
+      "word": "昆明"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 54,
+      "reason": "existing",
+      "word": "杭州"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 55,
+      "reason": "existing",
+      "word": "東莞"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 56,
+      "reason": "existing",
+      "word": "桂林"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 57,
+      "reason": "existing",
+      "word": "武漢"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 58,
+      "reason": "existing",
+      "word": "汕頭"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 59,
+      "reason": "existing",
+      "word": "泉州"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 60,
+      "reason": "existing",
+      "word": "洛陽"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 61,
+      "reason": "existing",
+      "word": "海口"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 62,
+      "reason": "existing",
+      "word": "深圳"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 63,
+      "reason": "existing",
+      "word": "濟南"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 64,
+      "reason": "existing",
+      "word": "瀋陽"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 65,
+      "reason": "existing",
+      "word": "烏魯木齊"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 66,
+      "reason": "existing",
+      "word": "無錫"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 67,
+      "reason": "existing",
+      "word": "珠海"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 68,
+      "reason": "existing",
+      "word": "石家莊"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 69,
+      "reason": "existing",
+      "word": "福州"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 70,
+      "reason": "existing",
+      "word": "蘇州"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 71,
+      "reason": "existing",
+      "word": "蘭州"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 72,
+      "reason": "existing",
+      "word": "西安"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 73,
+      "reason": "existing",
+      "word": "西寧"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 74,
+      "reason": "existing",
+      "word": "貴陽"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 75,
+      "reason": "existing",
+      "word": "鄭州"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 76,
+      "reason": "existing",
+      "word": "銀川"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 77,
+      "reason": "existing",
+      "word": "長春"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 78,
+      "reason": "existing",
+      "word": "長沙"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 79,
+      "reason": "existing",
+      "word": "青島"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 109,
+      "reason": "existing",
+      "word": "南京東路"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 110,
+      "reason": "existing",
+      "word": "南京西路"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 135,
+      "reason": "existing",
+      "word": "長安街"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 141,
+      "reason": "existing",
+      "word": "九寨溝"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 147,
+      "reason": "existing",
+      "word": "兵馬俑"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 150,
+      "reason": "existing",
+      "word": "千島湖"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 152,
+      "reason": "existing",
+      "word": "嘉峪關"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 153,
+      "reason": "existing",
+      "word": "圓明園"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 158,
+      "reason": "existing",
+      "word": "天壇"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 159,
+      "reason": "existing",
+      "word": "天安門"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 160,
+      "reason": "existing",
+      "word": "天安門廣場"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 161,
+      "reason": "existing",
+      "word": "天涯海角"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 164,
+      "reason": "existing",
+      "word": "寒山寺"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 165,
+      "reason": "existing",
+      "word": "少林寺"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 166,
+      "reason": "existing",
+      "word": "山海關"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 167,
+      "reason": "existing",
+      "word": "岳陽樓"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 170,
+      "reason": "existing",
+      "word": "布達拉宮"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 173,
+      "reason": "existing",
+      "word": "廬山"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 177,
+      "reason": "existing",
+      "word": "故宮博物院"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 187,
+      "reason": "existing",
+      "word": "泰山"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 193,
+      "reason": "existing",
+      "word": "火焰山"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 195,
+      "reason": "existing",
+      "word": "獅子林"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 201,
+      "reason": "existing",
+      "word": "紫禁城"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 203,
+      "reason": "existing",
+      "word": "莫高窟"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 204,
+      "reason": "existing",
+      "word": "華山"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 205,
+      "reason": "existing",
+      "word": "華清池"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 209,
+      "reason": "existing",
+      "word": "西雙版納"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 214,
+      "reason": "existing",
+      "word": "都江堰"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 215,
+      "reason": "existing",
+      "word": "長白山"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 217,
+      "reason": "existing",
+      "word": "陸家嘴"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 219,
+      "reason": "existing",
+      "word": "雷峰塔"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 220,
+      "reason": "existing",
+      "word": "靈隱寺"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 222,
+      "reason": "existing",
+      "word": "頤和園"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 225,
+      "reason": "existing",
+      "word": "黃山"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 227,
+      "reason": "existing",
+      "word": "黃鶴樓"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 231,
+      "reason": "existing",
+      "word": "一會兒"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 235,
+      "reason": "existing",
+      "word": "咱們"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 236,
+      "reason": "existing",
+      "word": "安逸"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 238,
+      "reason": "existing",
+      "word": "抬槓"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 244,
+      "reason": "existing",
+      "word": "曉得"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 247,
+      "reason": "existing",
+      "word": "歇會兒"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 253,
+      "reason": "existing",
+      "word": "要得"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 255,
+      "reason": "existing",
+      "word": "逗樂"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 259,
+      "reason": "existing",
+      "word": "信息"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 263,
+      "reason": "existing",
+      "word": "公積金"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 264,
+      "reason": "existing",
+      "word": "共享單車"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 268,
+      "reason": "existing",
+      "word": "團購"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 269,
+      "reason": "existing",
+      "word": "地鐵"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 271,
+      "reason": "existing",
+      "word": "堵車"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 274,
+      "reason": "existing",
+      "word": "家政"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 277,
+      "reason": "existing",
+      "word": "小區"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 280,
+      "reason": "existing",
+      "word": "快遞"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 290,
+      "reason": "existing",
+      "word": "激光"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 292,
+      "reason": "existing",
+      "word": "班主任"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 306,
+      "reason": "existing",
+      "word": "刀削麵"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 313,
+      "reason": "existing",
+      "word": "水煎包"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 315,
+      "reason": "existing",
+      "word": "炸醬麵"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 319,
+      "reason": "existing",
+      "word": "糖葫蘆"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 353,
+      "reason": "existing",
+      "word": "快手"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 372,
+      "reason": "existing",
+      "word": "騰訊"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 384,
+      "reason": "existing",
+      "word": "北大"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 393,
+      "reason": "existing",
+      "word": "南開"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 401,
+      "reason": "existing",
+      "word": "天大"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 405,
+      "reason": "existing",
+      "word": "復旦"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 410,
+      "reason": "existing",
+      "word": "清華"
+    },
+    {
+      "file": "phrase.china.tsv",
+      "line": 421,
+      "reason": "existing",
+      "word": "重大"
+    },
+    {
       "file": "phrase.chinese.tsv",
       "line": 15,
       "reason": "existing",
@@ -5019,6 +5895,12 @@
     },
     {
       "file": "phrase.general.tsv",
+      "line": 47,
+      "reason": "duplicate",
+      "word": "小紅書"
+    },
+    {
+      "file": "phrase.general.tsv",
       "line": 49,
       "reason": "existing",
       "word": "居家辦公"
@@ -5046,6 +5928,12 @@
       "line": 60,
       "reason": "existing",
       "word": "手遊"
+    },
+    {
+      "file": "phrase.general.tsv",
+      "line": 61,
+      "reason": "duplicate",
+      "word": "抖音"
     },
     {
       "file": "phrase.general.tsv",
@@ -5306,6 +6194,138 @@
       "line": 177,
       "reason": "existing",
       "word": "鬼滅之刃"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 2,
+      "reason": "existing",
+      "word": "家豪"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 5,
+      "reason": "existing",
+      "word": "俊傑"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 10,
+      "reason": "existing",
+      "word": "冠宇"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 12,
+      "reason": "existing",
+      "word": "宗翰"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 14,
+      "reason": "existing",
+      "word": "冠廷"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 15,
+      "reason": "existing",
+      "word": "志成"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 18,
+      "reason": "existing",
+      "word": "金龍"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 22,
+      "reason": "existing",
+      "word": "德威"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 23,
+      "reason": "existing",
+      "word": "文山"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 24,
+      "reason": "existing",
+      "word": "丙丁"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 25,
+      "reason": "existing",
+      "word": "金水"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 29,
+      "reason": "existing",
+      "word": "榮華"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 34,
+      "reason": "existing",
+      "word": "明德"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 36,
+      "reason": "existing",
+      "word": "彬彬"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 46,
+      "reason": "existing",
+      "word": "雅婷"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 50,
+      "reason": "existing",
+      "word": "秀美"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 52,
+      "reason": "existing",
+      "word": "怡君"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 54,
+      "reason": "existing",
+      "word": "美玉"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 55,
+      "reason": "existing",
+      "word": "雅惠"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 61,
+      "reason": "existing",
+      "word": "玉蘭"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 63,
+      "reason": "existing",
+      "word": "怡婷"
+    },
+    {
+      "file": "phrase.given-names.tsv",
+      "line": 72,
+      "reason": "existing",
+      "word": "婷婷"
     },
     {
       "file": "phrase.government.tsv",
@@ -5750,6 +6770,216 @@
       "line": 179,
       "reason": "existing",
       "word": "飛彈"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 5,
+      "reason": "existing",
+      "word": "北區"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 6,
+      "reason": "existing",
+      "word": "南區"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 9,
+      "reason": "existing",
+      "word": "東區"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 20,
+      "reason": "existing",
+      "word": "上水"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 22,
+      "reason": "existing",
+      "word": "中環"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 23,
+      "reason": "existing",
+      "word": "九龍"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 24,
+      "reason": "existing",
+      "word": "九龍塘"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 31,
+      "reason": "existing",
+      "word": "大埔"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 36,
+      "reason": "existing",
+      "word": "尖沙咀"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 38,
+      "reason": "existing",
+      "word": "新界"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 42,
+      "reason": "existing",
+      "word": "沙田"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 45,
+      "reason": "existing",
+      "word": "淺水灣"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 47,
+      "reason": "existing",
+      "word": "灣仔"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 48,
+      "reason": "existing",
+      "word": "獅子山"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 57,
+      "reason": "existing",
+      "word": "西貢"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 59,
+      "reason": "existing",
+      "word": "金鐘"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 60,
+      "reason": "existing",
+      "word": "銅鑼灣"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 102,
+      "reason": "existing",
+      "word": "太平山頂"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 110,
+      "reason": "existing",
+      "word": "星光大道"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 138,
+      "reason": "existing",
+      "word": "多謝"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 145,
+      "reason": "existing",
+      "word": "收工"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 150,
+      "reason": "existing",
+      "word": "街坊"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 155,
+      "reason": "existing",
+      "word": "點算"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 160,
+      "reason": "existing",
+      "word": "叉燒飯"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 165,
+      "reason": "existing",
+      "word": "煲仔飯"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 168,
+      "reason": "existing",
+      "word": "絲襪奶茶"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 169,
+      "reason": "existing",
+      "word": "茶餐廳"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 171,
+      "reason": "existing",
+      "word": "菠蘿油"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 183,
+      "reason": "existing",
+      "word": "大家樂"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 186,
+      "reason": "existing",
+      "word": "屈臣氏"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 224,
+      "reason": "existing",
+      "word": "澳門"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 267,
+      "reason": "existing",
+      "word": "威尼斯人"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 311,
+      "reason": "existing",
+      "word": "巴士"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 312,
+      "reason": "existing",
+      "word": "泊車"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "line": 314,
+      "reason": "existing",
+      "word": "街市"
     },
     {
       "file": "phrase.industrial-engineering.tsv",
@@ -10822,6 +12052,2502 @@
       "word": "驗證"
     },
     {
+      "file": "phrase.taiwan.tsv",
+      "line": 2,
+      "reason": "existing",
+      "word": "南投縣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 3,
+      "reason": "existing",
+      "word": "台中市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 4,
+      "reason": "existing",
+      "word": "台北市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 5,
+      "reason": "existing",
+      "word": "台南市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 6,
+      "reason": "existing",
+      "word": "台東縣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 7,
+      "reason": "existing",
+      "word": "嘉義市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 8,
+      "reason": "existing",
+      "word": "嘉義縣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 9,
+      "reason": "existing",
+      "word": "基隆市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 10,
+      "reason": "existing",
+      "word": "宜蘭縣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 11,
+      "reason": "existing",
+      "word": "屏東縣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 12,
+      "reason": "existing",
+      "word": "彰化縣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 13,
+      "reason": "existing",
+      "word": "新北市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 14,
+      "reason": "existing",
+      "word": "新竹市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 15,
+      "reason": "existing",
+      "word": "新竹縣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 16,
+      "reason": "existing",
+      "word": "桃園市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 17,
+      "reason": "existing",
+      "word": "澎湖縣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 22,
+      "reason": "existing",
+      "word": "花蓮縣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 23,
+      "reason": "existing",
+      "word": "苗栗縣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 24,
+      "reason": "existing",
+      "word": "連江縣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 25,
+      "reason": "existing",
+      "word": "金門縣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 26,
+      "reason": "existing",
+      "word": "雲林縣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 27,
+      "reason": "existing",
+      "word": "高雄市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 32,
+      "reason": "existing",
+      "word": "三峽區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 33,
+      "reason": "existing",
+      "word": "三星鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 34,
+      "reason": "existing",
+      "word": "三民區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 35,
+      "reason": "existing",
+      "word": "三灣鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 36,
+      "reason": "existing",
+      "word": "三義鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 38,
+      "reason": "existing",
+      "word": "三重區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 40,
+      "reason": "existing",
+      "word": "中區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 41,
+      "reason": "existing",
+      "word": "中和區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 42,
+      "reason": "existing",
+      "word": "中埔鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 44,
+      "reason": "existing",
+      "word": "中寮鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 45,
+      "reason": "existing",
+      "word": "中山區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 46,
+      "reason": "existing",
+      "word": "中正區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 47,
+      "reason": "duplicate",
+      "word": "中西區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 48,
+      "reason": "existing",
+      "word": "九如鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 50,
+      "reason": "existing",
+      "word": "二林鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 51,
+      "reason": "existing",
+      "word": "二水鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 52,
+      "reason": "existing",
+      "word": "五峰鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 53,
+      "reason": "existing",
+      "word": "五結鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 57,
+      "reason": "existing",
+      "word": "仁愛鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 59,
+      "reason": "existing",
+      "word": "伸港鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 60,
+      "reason": "existing",
+      "word": "佳冬鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 61,
+      "reason": "existing",
+      "word": "佳里區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 62,
+      "reason": "existing",
+      "word": "來義鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 63,
+      "reason": "existing",
+      "word": "信義區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 66,
+      "reason": "existing",
+      "word": "光復鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 67,
+      "reason": "existing",
+      "word": "內埔鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 68,
+      "reason": "existing",
+      "word": "內湖區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 72,
+      "reason": "existing",
+      "word": "公館鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 76,
+      "reason": "existing",
+      "word": "冬山鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 77,
+      "reason": "existing",
+      "word": "前金區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 78,
+      "reason": "existing",
+      "word": "前鎮區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 79,
+      "reason": "existing",
+      "word": "北區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 80,
+      "reason": "existing",
+      "word": "北埔鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 82,
+      "reason": "existing",
+      "word": "北投區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 83,
+      "reason": "existing",
+      "word": "北斗鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 84,
+      "reason": "existing",
+      "word": "北港鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 87,
+      "reason": "existing",
+      "word": "卑南鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 88,
+      "reason": "existing",
+      "word": "卓溪鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 91,
+      "reason": "existing",
+      "word": "南區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 94,
+      "reason": "existing",
+      "word": "南庄鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 95,
+      "reason": "existing",
+      "word": "南投市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 96,
+      "reason": "existing",
+      "word": "南港區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 97,
+      "reason": "existing",
+      "word": "南澳鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 100,
+      "reason": "existing",
+      "word": "古坑鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 101,
+      "reason": "existing",
+      "word": "台東市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 103,
+      "reason": "existing",
+      "word": "吉安鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 104,
+      "reason": "existing",
+      "word": "名間鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 110,
+      "reason": "existing",
+      "word": "善化區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 111,
+      "reason": "existing",
+      "word": "四湖鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 112,
+      "reason": "existing",
+      "word": "國姓鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 113,
+      "reason": "existing",
+      "word": "土城區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 114,
+      "reason": "existing",
+      "word": "土庫鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 116,
+      "reason": "existing",
+      "word": "埔心鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 117,
+      "reason": "existing",
+      "word": "埔里鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 118,
+      "reason": "existing",
+      "word": "埔鹽鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 119,
+      "reason": "existing",
+      "word": "埤頭鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 120,
+      "reason": "existing",
+      "word": "士林區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 121,
+      "reason": "existing",
+      "word": "壯圍鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 122,
+      "reason": "existing",
+      "word": "壽豐鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 125,
+      "reason": "existing",
+      "word": "大同區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 130,
+      "reason": "existing",
+      "word": "大埤鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 131,
+      "reason": "existing",
+      "word": "大安區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 133,
+      "reason": "existing",
+      "word": "大村鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 134,
+      "reason": "existing",
+      "word": "大林鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 144,
+      "reason": "existing",
+      "word": "太保市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 153,
+      "reason": "existing",
+      "word": "宜蘭市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 155,
+      "reason": "existing",
+      "word": "寶山鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 157,
+      "reason": "existing",
+      "word": "小港區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 158,
+      "reason": "existing",
+      "word": "尖石鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 159,
+      "reason": "existing",
+      "word": "屏東市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 162,
+      "reason": "existing",
+      "word": "峨眉鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 163,
+      "reason": "existing",
+      "word": "崁頂鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 164,
+      "reason": "existing",
+      "word": "崙背鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 165,
+      "reason": "existing",
+      "word": "左營區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 167,
+      "reason": "existing",
+      "word": "布袋鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 170,
+      "reason": "existing",
+      "word": "延平鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 172,
+      "reason": "existing",
+      "word": "彰化市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 174,
+      "reason": "existing",
+      "word": "後龍鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 176,
+      "reason": "existing",
+      "word": "恆春鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 177,
+      "reason": "existing",
+      "word": "成功鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 178,
+      "reason": "existing",
+      "word": "文山區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 179,
+      "reason": "existing",
+      "word": "斗六市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 180,
+      "reason": "existing",
+      "word": "斗南鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 182,
+      "reason": "existing",
+      "word": "新園鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 183,
+      "reason": "existing",
+      "word": "新城鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 184,
+      "reason": "existing",
+      "word": "新埔鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 185,
+      "reason": "existing",
+      "word": "新埤鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 187,
+      "reason": "existing",
+      "word": "新市區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 188,
+      "reason": "existing",
+      "word": "新店區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 189,
+      "reason": "existing",
+      "word": "新港鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 191,
+      "reason": "existing",
+      "word": "新社區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 192,
+      "reason": "existing",
+      "word": "新興區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 193,
+      "reason": "existing",
+      "word": "新莊區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 194,
+      "reason": "existing",
+      "word": "新豐鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 196,
+      "reason": "existing",
+      "word": "旗津區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 199,
+      "reason": "existing",
+      "word": "望安鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 200,
+      "reason": "existing",
+      "word": "朴子市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 202,
+      "reason": "existing",
+      "word": "東勢區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 204,
+      "reason": "existing",
+      "word": "東區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 210,
+      "reason": "existing",
+      "word": "松山區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 211,
+      "reason": "existing",
+      "word": "板橋區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 212,
+      "reason": "existing",
+      "word": "枋寮鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 213,
+      "reason": "existing",
+      "word": "枋山鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 214,
+      "reason": "existing",
+      "word": "林內鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 215,
+      "reason": "existing",
+      "word": "林口區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 216,
+      "reason": "existing",
+      "word": "林園區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 217,
+      "reason": "existing",
+      "word": "林邊鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 221,
+      "reason": "existing",
+      "word": "梅山鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 225,
+      "reason": "existing",
+      "word": "楠梓區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 229,
+      "reason": "existing",
+      "word": "橫山鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 232,
+      "reason": "existing",
+      "word": "水上鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 235,
+      "reason": "existing",
+      "word": "永和區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 238,
+      "reason": "existing",
+      "word": "永靖鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 250,
+      "reason": "existing",
+      "word": "湖口鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 253,
+      "reason": "existing",
+      "word": "溪州鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 254,
+      "reason": "existing",
+      "word": "溪湖鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 255,
+      "reason": "existing",
+      "word": "滿州鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 267,
+      "reason": "existing",
+      "word": "玉里鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 269,
+      "reason": "existing",
+      "word": "瑞穗鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 271,
+      "reason": "existing",
+      "word": "瑪家鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 272,
+      "reason": "existing",
+      "word": "田中鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 274,
+      "reason": "existing",
+      "word": "田尾鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 277,
+      "reason": "existing",
+      "word": "白沙鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 282,
+      "reason": "existing",
+      "word": "礁溪鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 283,
+      "reason": "existing",
+      "word": "社頭鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 285,
+      "reason": "existing",
+      "word": "福興鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 288,
+      "reason": "existing",
+      "word": "竹北市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 289,
+      "reason": "existing",
+      "word": "竹南鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 291,
+      "reason": "existing",
+      "word": "竹山鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 292,
+      "reason": "existing",
+      "word": "竹崎鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 293,
+      "reason": "existing",
+      "word": "竹東鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 294,
+      "reason": "existing",
+      "word": "竹田鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 297,
+      "reason": "existing",
+      "word": "羅東鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 298,
+      "reason": "existing",
+      "word": "美濃區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 302,
+      "reason": "existing",
+      "word": "芎林鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 303,
+      "reason": "existing",
+      "word": "芬園鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 304,
+      "reason": "existing",
+      "word": "花壇鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 305,
+      "reason": "existing",
+      "word": "花蓮市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 306,
+      "reason": "existing",
+      "word": "芳苑鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 307,
+      "reason": "existing",
+      "word": "苑裡鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 308,
+      "reason": "existing",
+      "word": "苓雅區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 309,
+      "reason": "existing",
+      "word": "苗栗市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 312,
+      "reason": "existing",
+      "word": "草屯鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 314,
+      "reason": "existing",
+      "word": "莿桐鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 316,
+      "reason": "existing",
+      "word": "萬巒鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 318,
+      "reason": "existing",
+      "word": "萬華區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 320,
+      "reason": "existing",
+      "word": "蘆洲區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 322,
+      "reason": "existing",
+      "word": "蘇澳鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 324,
+      "reason": "existing",
+      "word": "虎尾鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 325,
+      "reason": "existing",
+      "word": "褒忠鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 326,
+      "reason": "existing",
+      "word": "西區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 328,
+      "reason": "existing",
+      "word": "西嶼鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 330,
+      "reason": "existing",
+      "word": "西湖鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 331,
+      "reason": "existing",
+      "word": "西螺鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 334,
+      "reason": "existing",
+      "word": "豐濱鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 338,
+      "reason": "existing",
+      "word": "通霄鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 339,
+      "reason": "existing",
+      "word": "造橋鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 340,
+      "reason": "existing",
+      "word": "達仁鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 343,
+      "reason": "existing",
+      "word": "金城鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 349,
+      "reason": "existing",
+      "word": "銅鑼鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 350,
+      "reason": "existing",
+      "word": "長治鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 351,
+      "reason": "existing",
+      "word": "長濱鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 354,
+      "reason": "existing",
+      "word": "關西鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 356,
+      "reason": "existing",
+      "word": "阿里山鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 357,
+      "reason": "existing",
+      "word": "集集鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 363,
+      "reason": "existing",
+      "word": "頭城鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 364,
+      "reason": "existing",
+      "word": "頭屋鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 366,
+      "reason": "existing",
+      "word": "馬公市"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 367,
+      "reason": "existing",
+      "word": "高樹鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 368,
+      "reason": "existing",
+      "word": "魚池鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 370,
+      "reason": "existing",
+      "word": "鳳山區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 374,
+      "reason": "existing",
+      "word": "鹽埕區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 376,
+      "reason": "existing",
+      "word": "鹿港鎮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 377,
+      "reason": "existing",
+      "word": "鹿草鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 378,
+      "reason": "existing",
+      "word": "鹿谷鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 379,
+      "reason": "existing",
+      "word": "鹿野鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 381,
+      "reason": "existing",
+      "word": "麥寮鄉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 383,
+      "reason": "existing",
+      "word": "鼓山區"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 390,
+      "reason": "existing",
+      "word": "三民路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 394,
+      "reason": "existing",
+      "word": "中坡南路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 399,
+      "reason": "existing",
+      "word": "中山二路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 400,
+      "reason": "existing",
+      "word": "中山北路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 401,
+      "reason": "existing",
+      "word": "中山南路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 404,
+      "reason": "existing",
+      "word": "中山路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 412,
+      "reason": "existing",
+      "word": "中正路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 414,
+      "reason": "existing",
+      "word": "中港路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 417,
+      "reason": "existing",
+      "word": "中華三路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 424,
+      "reason": "existing",
+      "word": "中華路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 438,
+      "reason": "existing",
+      "word": "仁愛路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 443,
+      "reason": "existing",
+      "word": "信義路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 446,
+      "reason": "existing",
+      "word": "光復南路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 448,
+      "reason": "existing",
+      "word": "光復路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 453,
+      "reason": "existing",
+      "word": "八德路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 454,
+      "reason": "existing",
+      "word": "公園路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 469,
+      "reason": "existing",
+      "word": "北安路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 478,
+      "reason": "existing",
+      "word": "南京東路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 479,
+      "reason": "existing",
+      "word": "南京西路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 490,
+      "reason": "existing",
+      "word": "博愛街"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 491,
+      "reason": "existing",
+      "word": "博愛路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 497,
+      "reason": "existing",
+      "word": "和平東路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 498,
+      "reason": "existing",
+      "word": "和平西路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 499,
+      "reason": "existing",
+      "word": "和平路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 521,
+      "reason": "existing",
+      "word": "基隆路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 532,
+      "reason": "existing",
+      "word": "大順二路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 541,
+      "reason": "existing",
+      "word": "安和路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 556,
+      "reason": "existing",
+      "word": "延平北路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 561,
+      "reason": "existing",
+      "word": "建工路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 565,
+      "reason": "existing",
+      "word": "復興北路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 566,
+      "reason": "existing",
+      "word": "復興南路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 571,
+      "reason": "existing",
+      "word": "忠孝東路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 572,
+      "reason": "existing",
+      "word": "忠孝西路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 580,
+      "reason": "existing",
+      "word": "成功路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 581,
+      "reason": "existing",
+      "word": "承德路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 582,
+      "reason": "existing",
+      "word": "敦化北路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 583,
+      "reason": "existing",
+      "word": "敦化南路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 592,
+      "reason": "existing",
+      "word": "新生北路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 593,
+      "reason": "existing",
+      "word": "新生南路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 594,
+      "reason": "existing",
+      "word": "新生路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 597,
+      "reason": "existing",
+      "word": "昆明街"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 608,
+      "reason": "existing",
+      "word": "杭州南路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 618,
+      "reason": "existing",
+      "word": "林森路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 621,
+      "reason": "existing",
+      "word": "正義北路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 625,
+      "reason": "existing",
+      "word": "民族路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 626,
+      "reason": "existing",
+      "word": "民權東路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 628,
+      "reason": "existing",
+      "word": "民權西路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 629,
+      "reason": "existing",
+      "word": "民權路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 631,
+      "reason": "existing",
+      "word": "民生東路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 632,
+      "reason": "existing",
+      "word": "民生西路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 633,
+      "reason": "existing",
+      "word": "民生路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 671,
+      "reason": "existing",
+      "word": "環河北路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 690,
+      "reason": "existing",
+      "word": "羅斯福路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 708,
+      "reason": "existing",
+      "word": "莊敬路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 711,
+      "reason": "existing",
+      "word": "衡陽路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 713,
+      "reason": "existing",
+      "word": "西寧南路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 719,
+      "reason": "existing",
+      "word": "迪化街"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 722,
+      "reason": "existing",
+      "word": "重慶北路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 723,
+      "reason": "existing",
+      "word": "重慶南路"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 731,
+      "reason": "existing",
+      "word": "開封街"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 750,
+      "reason": "existing",
+      "word": "三仙台"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 753,
+      "reason": "existing",
+      "word": "九份"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 755,
+      "reason": "existing",
+      "word": "九族文化村"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 761,
+      "reason": "existing",
+      "word": "佛光山"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 762,
+      "reason": "existing",
+      "word": "內灣老街"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 766,
+      "reason": "existing",
+      "word": "六福村"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 767,
+      "reason": "existing",
+      "word": "冬山河"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 768,
+      "reason": "existing",
+      "word": "出磺坑"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 769,
+      "reason": "existing",
+      "word": "劍湖山"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 777,
+      "reason": "existing",
+      "word": "十八尖山"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 778,
+      "reason": "existing",
+      "word": "十分瀑布"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 782,
+      "reason": "existing",
+      "word": "古寧頭"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 783,
+      "reason": "existing",
+      "word": "司馬庫斯"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 784,
+      "reason": "existing",
+      "word": "合歡山"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 785,
+      "reason": "existing",
+      "word": "和平島"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 791,
+      "reason": "existing",
+      "word": "墾丁"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 793,
+      "reason": "existing",
+      "word": "壽山動物園"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 801,
+      "reason": "existing",
+      "word": "大鵬灣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 802,
+      "reason": "existing",
+      "word": "太平山"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 803,
+      "reason": "existing",
+      "word": "太魯閣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 806,
+      "reason": "existing",
+      "word": "奮起湖"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 807,
+      "reason": "existing",
+      "word": "安平古堡"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 811,
+      "reason": "existing",
+      "word": "宮原眼科"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 813,
+      "reason": "existing",
+      "word": "小人國"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 814,
+      "reason": "existing",
+      "word": "小琉球"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 824,
+      "reason": "existing",
+      "word": "拉拉山"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 826,
+      "reason": "existing",
+      "word": "故宮博物院"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 828,
+      "reason": "existing",
+      "word": "新港奉天宮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 830,
+      "reason": "existing",
+      "word": "日月潭"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 833,
+      "reason": "existing",
+      "word": "杉林溪"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 843,
+      "reason": "existing",
+      "word": "正濱漁港"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 844,
+      "reason": "existing",
+      "word": "武陵農場"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 852,
+      "reason": "existing",
+      "word": "溪頭"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 853,
+      "reason": "existing",
+      "word": "漁人碼頭"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 855,
+      "reason": "existing",
+      "word": "澎湖天后宮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 861,
+      "reason": "existing",
+      "word": "知本溫泉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 863,
+      "reason": "existing",
+      "word": "石門水庫"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 866,
+      "reason": "existing",
+      "word": "礁溪溫泉"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 870,
+      "reason": "existing",
+      "word": "紅毛城"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 871,
+      "reason": "existing",
+      "word": "綠島"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 874,
+      "reason": "existing",
+      "word": "翟山坑道"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 875,
+      "reason": "existing",
+      "word": "翠峰湖"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 888,
+      "reason": "existing",
+      "word": "蓮池潭"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 890,
+      "reason": "existing",
+      "word": "蘭嶼"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 894,
+      "reason": "existing",
+      "word": "衛武營"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 895,
+      "reason": "existing",
+      "word": "西子灣"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 897,
+      "reason": "existing",
+      "word": "西螺大橋"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 898,
+      "reason": "existing",
+      "word": "西門町"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 902,
+      "reason": "existing",
+      "word": "貓空"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 903,
+      "reason": "existing",
+      "word": "赤崁樓"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 906,
+      "reason": "existing",
+      "word": "都城隍廟"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 908,
+      "reason": "existing",
+      "word": "野柳"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 910,
+      "reason": "existing",
+      "word": "金瓜石"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 911,
+      "reason": "existing",
+      "word": "金門大橋"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 913,
+      "reason": "existing",
+      "word": "關子嶺"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 914,
+      "reason": "existing",
+      "word": "阿里山"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 917,
+      "reason": "existing",
+      "word": "陽明山"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 922,
+      "reason": "existing",
+      "word": "青草湖"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 929,
+      "reason": "existing",
+      "word": "鵝鑾鼻"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 939,
+      "reason": "existing",
+      "word": "龜山島"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 944,
+      "reason": "existing",
+      "word": "傻眼"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 947,
+      "reason": "existing",
+      "word": "哎呀"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 948,
+      "reason": "existing",
+      "word": "哎唷"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 954,
+      "reason": "existing",
+      "word": "啥咪"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 958,
+      "reason": "existing",
+      "word": "太扯了"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 974,
+      "reason": "existing",
+      "word": "有夠"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 976,
+      "reason": "existing",
+      "word": "歹勢"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 995,
+      "reason": "existing",
+      "word": "中華"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 997,
+      "reason": "existing",
+      "word": "中鋼"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1010,
+      "reason": "existing",
+      "word": "兆豐金"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1013,
+      "reason": "existing",
+      "word": "創意"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1017,
+      "reason": "existing",
+      "word": "南亞"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1027,
+      "reason": "existing",
+      "word": "台塑"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1032,
+      "reason": "duplicate",
+      "word": "台灣高鐵"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1033,
+      "reason": "existing",
+      "word": "台玻"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1034,
+      "reason": "existing",
+      "word": "台積電"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1035,
+      "reason": "existing",
+      "word": "台肥"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1038,
+      "reason": "existing",
+      "word": "味全"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1045,
+      "reason": "existing",
+      "word": "大成"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1050,
+      "reason": "existing",
+      "word": "宏碁"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1054,
+      "reason": "existing",
+      "word": "巨大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1056,
+      "reason": "existing",
+      "word": "彰銀"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1065,
+      "reason": "existing",
+      "word": "東元"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1068,
+      "reason": "existing",
+      "word": "櫻花"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1071,
+      "reason": "existing",
+      "word": "正隆"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1077,
+      "reason": "existing",
+      "word": "燦坤"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1087,
+      "reason": "existing",
+      "word": "統一"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1091,
+      "reason": "existing",
+      "word": "美利達"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1094,
+      "reason": "existing",
+      "word": "聯發科"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1101,
+      "reason": "existing",
+      "word": "英業達"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1104,
+      "reason": "existing",
+      "word": "華新"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1106,
+      "reason": "existing",
+      "word": "華碩"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1107,
+      "reason": "existing",
+      "word": "華航"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1113,
+      "reason": "existing",
+      "word": "裕隆"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1115,
+      "reason": "existing",
+      "word": "遠傳"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1119,
+      "reason": "existing",
+      "word": "長榮"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1121,
+      "reason": "existing",
+      "word": "長興"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1122,
+      "reason": "existing",
+      "word": "陽明"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1123,
+      "reason": "existing",
+      "word": "雄獅"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1124,
+      "reason": "existing",
+      "word": "鴻海"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1125,
+      "reason": "existing",
+      "word": "黑松"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1126,
+      "reason": "existing",
+      "word": "世界"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1133,
+      "reason": "existing",
+      "word": "全家"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1134,
+      "reason": "existing",
+      "word": "六角"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1144,
+      "reason": "existing",
+      "word": "大江"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1159,
+      "reason": "existing",
+      "word": "橘子"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1185,
+      "reason": "existing",
+      "word": "三陽"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1187,
+      "reason": "existing",
+      "word": "中油"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1190,
+      "reason": "existing",
+      "word": "中華電信"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1200,
+      "reason": "existing",
+      "word": "博客來"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1204,
+      "reason": "existing",
+      "word": "台灣大哥大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1206,
+      "reason": "existing",
+      "word": "台灣銀行"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1207,
+      "reason": "existing",
+      "word": "台糖"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1209,
+      "reason": "existing",
+      "word": "台鐵"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1210,
+      "reason": "existing",
+      "word": "台電"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1212,
+      "reason": "existing",
+      "word": "國泰人壽"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1213,
+      "reason": "existing",
+      "word": "土銀"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1217,
+      "reason": "existing",
+      "word": "家樂福"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1221,
+      "reason": "existing",
+      "word": "捷安特"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1222,
+      "reason": "existing",
+      "word": "新光三越"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1223,
+      "reason": "existing",
+      "word": "新東陽"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1224,
+      "reason": "existing",
+      "word": "日月光"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1228,
+      "reason": "existing",
+      "word": "漢神百貨"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1236,
+      "reason": "existing",
+      "word": "義美"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1242,
+      "reason": "existing",
+      "word": "萊爾富"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1244,
+      "reason": "existing",
+      "word": "誠品"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1253,
+      "reason": "existing",
+      "word": "鼎泰豐"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1258,
+      "reason": "existing",
+      "word": "世新"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1259,
+      "reason": "existing",
+      "word": "中原"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1261,
+      "reason": "existing",
+      "word": "中大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1270,
+      "reason": "existing",
+      "word": "元智"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1273,
+      "reason": "existing",
+      "word": "北大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1277,
+      "reason": "existing",
+      "word": "北藝大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1279,
+      "reason": "existing",
+      "word": "北醫"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1289,
+      "reason": "existing",
+      "word": "台大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1292,
+      "reason": "existing",
+      "word": "台科大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1305,
+      "reason": "existing",
+      "word": "實踐"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1307,
+      "reason": "existing",
+      "word": "屏科大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1314,
+      "reason": "existing",
+      "word": "成大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1315,
+      "reason": "existing",
+      "word": "政大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1316,
+      "reason": "existing",
+      "word": "文大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1317,
+      "reason": "existing",
+      "word": "文藻"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1322,
+      "reason": "existing",
+      "word": "東吳"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1323,
+      "reason": "existing",
+      "word": "東海"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1328,
+      "reason": "existing",
+      "word": "淡江"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1329,
+      "reason": "existing",
+      "word": "清大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1333,
+      "reason": "existing",
+      "word": "空大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1335,
+      "reason": "existing",
+      "word": "聯大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1349,
+      "reason": "existing",
+      "word": "輔大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1351,
+      "reason": "existing",
+      "word": "逢甲"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1354,
+      "reason": "existing",
+      "word": "銘傳"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1361,
+      "reason": "existing",
+      "word": "靜宜"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1363,
+      "reason": "existing",
+      "word": "高大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1364,
+      "reason": "existing",
+      "word": "高師大"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1366,
+      "reason": "existing",
+      "word": "高醫"
+    },
+    {
+      "file": "phrase.taiwan.tsv",
+      "line": 1369,
+      "reason": "existing",
+      "word": "龍華科大"
+    },
+    {
       "file": "phrase.transport-logistics.tsv",
       "line": 2,
       "reason": "existing",
@@ -11066,6 +14792,10 @@
       "sha256": "15d02771e998f79fbd98cea499ea7fb71a40fc9e49c88bd852e1f2a1fb605852"
     },
     {
+      "file": "phrase.china.tsv",
+      "sha256": "f2ebf252214bfd8e0f6b5cc46b9c91128e2c0de25fb1e91167b5ed5dfdba2980"
+    },
+    {
       "file": "phrase.chinese.tsv",
       "sha256": "8f1e92365022b66d3a2505f76833df829dffc153caf6e49446ec7d274d45f166"
     },
@@ -11094,12 +14824,20 @@
       "sha256": "17fc26bcb91ce51e98752e672c49c76c028a50247857f1d05f516505714967e5"
     },
     {
+      "file": "phrase.given-names.tsv",
+      "sha256": "5e11ce1a3880559639e87049b89fc5c2e163a7febf8dabe994b1b675e462c044"
+    },
+    {
       "file": "phrase.government.tsv",
       "sha256": "c5314c93b1b4146ac10237aee6f61a27f705974cf8d48b2d88677a866f8df55e"
     },
     {
       "file": "phrase.history.tsv",
       "sha256": "89fe6eab08580ceca972deae1c87797d9fe7932b211ca802e4a67ad604126b20"
+    },
+    {
+      "file": "phrase.hongkong-macao.tsv",
+      "sha256": "e2a3b247d747ac024791a239bca79ccd43aab01ec35ae7b305caf145fac40f4b"
     },
     {
       "file": "phrase.industrial-engineering.tsv",
@@ -11158,17 +14896,21 @@
       "sha256": "29d5b5263db056ffb12ecc97f07d5f56f816c13cf4e07620ade59cee23362acf"
     },
     {
+      "file": "phrase.taiwan.tsv",
+      "sha256": "7e6f31c2db0fc9ff252f60cf944dd0f42902a5e807469b7e220468bd89d27b6f"
+    },
+    {
       "file": "phrase.transport-logistics.tsv",
       "sha256": "3b35634cc638940ebef1db5a09b6e5bbc838fd70336a612c59ec3cee2092cae6"
     }
   ],
   "totals": {
-    "collision": 143,
-    "duplicate": 50,
-    "existing": 1745,
-    "inserted": 4765,
+    "collision": 245,
+    "duplicate": 54,
+    "existing": 2356,
+    "inserted": 6353,
     "rejected": 0,
-    "rows": 6560
+    "rows": 8763
   },
-  "unigram_total_count": 22609580.0
+  "unigram_total_count": 22611029.0
 }

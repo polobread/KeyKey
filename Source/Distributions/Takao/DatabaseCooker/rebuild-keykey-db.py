@@ -20,7 +20,7 @@ import subprocess
 import sys
 
 from collection_unigram_supplement import apply as apply_collection, load_overrides, source_records, write_list
-from phrase_unigram_supplement import apply as apply_phrases, query_for_reading
+from phrase_unigram_supplement import POST_TRAINING, apply as apply_phrases, query_for_reading
 from smart_mandarin_model import file_sha256, semantic_sha256, verify_manifest
 from unigram_collisions import CollisionIndex, write_exclusions, POLICY
 from rebuild_model import make_cin, cook, write_lexicon, add_convenience_words
@@ -303,11 +303,12 @@ def main():
     paths = sorted((ROOT / "DataSource/chichi77Collection").glob("phrase.*.tsv"))
     if not paths:
         raise ValueError("no collection files")
+    phrase_path = ROOT / DATA / "common-phrase-unigram.tsv"
     overrides = load_overrides(ROOT / DATA / "collection-unigram-overrides.tsv")
     with sqlite3.connect(database) as db:
         apply_search(db, finalizer.load_search_trend(data / "search-trend-unigram.tsv"), total)
         # Explicitly reviewed common phrases remain separate from scraped words.
-        phrases = apply_phrases(db, ROOT / DATA / "common-phrase-unigram.tsv", total)
+        phrases = apply_phrases(db, phrase_path, total)
         collection = apply_collection(db, paths, total, overrides, collision_index=collision_index)
         if collection["rejected"]:
             raise ValueError(f"unresolved collection readings: {collection['rejected']}")
@@ -354,6 +355,7 @@ def main():
     collection["policy"] = "Chinese aliases; text deduplication; homophones retained below existing candidates; long partial overlaps diagnostic only; anime and colliding words added after training at count <=0.01; other personal names added after training at count <=1"
     write_lexicon(data / "search-trend-unigram.tsv", search_entries)
     weights_metadata = None
+    post_training_phrases = []
     with sqlite3.connect(database) as db:
         if not args.training_articles and args.cin_reading_frequencies == DEFAULT_CIN_FREQUENCIES.resolve():
             weights_path = ROOT / STANDALONE_WEIGHTS
@@ -363,6 +365,7 @@ def main():
             if weights["selection_sha256"] != selection_hash:
                 raise ValueError("reviewed composition selections differ from the weight source")
             standalone_composition_weights.apply(db, weights)
+            post_training_phrases = apply_phrases(db, phrase_path, total, stage=POST_TRAINING)
             cin_keys = {(row["qstring"], row["character"]) for row in cin_entries}
             weights_metadata = {
                 "file": STANDALONE_WEIGHTS.as_posix(), "sha256": weights_hash,
@@ -457,7 +460,14 @@ def main():
     sources["protected_characters"]["sha256"] = file_sha256(finalizer.DEFAULT_PROTECTED)
     for key, filename in (("unigram_supplement", "common-unigram-supplement.tsv"), ("phrase_unigram_supplement", "common-phrase-unigram.tsv")):
         sources[key]["sha256"] = file_sha256(ROOT / DATA / filename)
-    sources["phrase_unigram_supplement"].update(entries=len(phrases), inserted=sum(r["status"] == "inserted" for r in phrases), retained=sum(r["status"] == "retained" for r in phrases))
+    phrase_entries = [*phrases, *post_training_phrases]
+    sources["phrase_unigram_supplement"].update(
+        entries=len(phrase_entries), inserted=sum(r["status"] == "inserted" for r in phrase_entries),
+        retained=sum(r["status"] == "retained" for r in phrase_entries), pre_training_entries=len(phrases),
+        post_training_entries=len(post_training_phrases),
+        policy="Pre-training reviewed phrases use the minimum score above same-reading tokenizations and retain "
+               "existing probabilities. Post-training reviewed phrases use their explicit counts and add no Bigram edges.",
+    )
     trend_report = json.loads((data / "search-trend-unigram-report.json").read_text())
     trend_report["output_sha256"] = file_sha256(data / "search-trend-unigram.tsv")
     write_json(data / "search-trend-unigram-report.json", trend_report)

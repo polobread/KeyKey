@@ -141,7 +141,7 @@ PYTHON
   test -f /usr/share/chichi77-keykey/data/associated-phrases/display-names.tsv
   test -f /usr/share/chichi77-keykey/data/associated-phrases/phrase.general.tsv
   test "$(find /usr/share/chichi77-keykey/data/associated-phrases \
-    -maxdepth 1 -type f -name 'phrase.*.tsv' | wc -l)" -eq 29
+    -maxdepth 1 -type f -name 'phrase.*.tsv' | wc -l)" -eq 33
   test -f /usr/share/doc/chichi77-keykey-data/copyright
   test -f /usr/share/doc/fcitx5-chichi77-keykey/copyright
   cmp "$repository_root/Source/DataTables/bpmf-ext.cin" \
@@ -160,6 +160,14 @@ PYTHON
     /usr/share/chichi77-keykey/data/associated-phrases/display-names.tsv
   cmp "$repository_root/DataSource/chichi77Collection/phrase.general.tsv" \
     /usr/share/chichi77-keykey/data/associated-phrases/phrase.general.tsv
+  cmp "$repository_root/DataSource/chichi77Collection/phrase.china.tsv" \
+    /usr/share/chichi77-keykey/data/associated-phrases/phrase.china.tsv
+  cmp "$repository_root/DataSource/chichi77Collection/phrase.given-names.tsv" \
+    /usr/share/chichi77-keykey/data/associated-phrases/phrase.given-names.tsv
+  cmp "$repository_root/DataSource/chichi77Collection/phrase.hongkong-macao.tsv" \
+    /usr/share/chichi77-keykey/data/associated-phrases/phrase.hongkong-macao.tsv
+  cmp "$repository_root/DataSource/chichi77Collection/phrase.taiwan.tsv" \
+    /usr/share/chichi77-keykey/data/associated-phrases/phrase.taiwan.tsv
   cmp "$repository_root/Source/Distributions/Takao/CookedDatabase/KeyKey.db" \
     /usr/share/chichi77-keykey/data/smart-mandarin.db
   dpkg --verify chichi77-keykey-data fcitx5-chichi77-keykey

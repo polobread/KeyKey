@@ -169,6 +169,13 @@ def verify_manifest(path: Path, manifest_path: Path) -> dict[str, object]:
                         or len(weights["bigrams"]) != weights_source["bigram_upserts"]):
                     raise ValueError("reviewed composition weight metadata differs from its source")
                 verify(database, weights)
+        phrase_source = manifest["sources"].get("phrase_unigram_supplement")
+        if phrase_source and phrase_source.get("post_training_entries"):
+            from phrase_unigram_supplement import verify_post_training
+            phrase_path = manifest_path.parent / phrase_source["file"]
+            if file_sha256(phrase_path) == phrase_source["sha256"]:
+                verify_post_training(database, phrase_path, manifest["unigram_total_count"],
+                                     phrase_source["post_training_entries"])
         frequencies = manifest["sources"].get("cin_reading_frequencies")
         if frequencies:
             from cin_reading_frequencies import load, verify_unigrams

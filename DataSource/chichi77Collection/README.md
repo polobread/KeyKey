@@ -1,6 +1,6 @@
 # 分類關聯詞詞庫
 
-本目錄收錄 KeyKey 內建的 29 份分類關聯詞詞庫。資料以自動化方式生成、推論與整理；
+本目錄收錄 KeyKey 內建的 33 份分類關聯詞詞庫。資料以自動化方式生成、推論與整理；
 長詞拆分曾做專項 review，但整體沒有全面逐筆人工校正，仍可能包含錯詞、錯音、錯誤
 分類、頻率誤差或其他不適當內容。不保證正確性、完整性或適合特定用途，重要用途請
 自行查證。
@@ -11,13 +11,26 @@ review 明確保留的連續片段，未列出的句子殘片或不完整專名�
 四個平台建置時都會納入這些檔案，Android 保留 TSV 作為 generated asset，其他平台
 則在建置時寫入 SQLite 資料庫。
 
+「台灣用語」收錄地名、街路、景點、口語、企業與大專院校簡稱，以及指定詞。校名參照[教育部大專校院一覽表](https://udb.moe.edu.tw/udata/OpenData/QuickSearch)，簡稱採現行常用寫法。「常見名字」依[內政部戶政司《全國姓名統計分析》](https://www.ris.gov.tw/documents/data/5/2/112namestat.pdf)整理雙字名字。這份名單的新增詞在 Bigram 訓練完成後才寫入 Unigram。
+
+「港澳用語」收錄香港、澳門的地名、街道、景點、生活用語、企業與院校簡稱。
+詞條使用現有注音輸入表能對應的讀音，供使用注音的使用者輸入當地用字。
+名稱與寫法參考[香港民政事務總署](https://www.had.gov.hk/tc/18_districts/my_map.htm)、
+[香港旅遊發展局](https://www.discoverhongkong.com/tc/index.html)、[香港教育大學粵語教材](https://www.eduhk.hk/cle/resources/cep/cantonese/unit1.htm)、
+[澳門旅遊局](https://www.macaotourism.gov.mo/zh-hant/sightseeing/macao-world-heritage)與[澳門教育及青年發展局](https://portal.dsedj.gov.mo/webdsejspace/site/studyinmacau/tc/campus-information.html)。
+
+「中國用語」收錄中國大陸的地名、街路、景點、日常用語、企業與院校簡稱。
+以繁體字保存，保留「網約車」「外賣」等當地用詞。
+地名、景點及校名參考[省級行政區劃名稱](https://big5.mot.gov.cn/gate/big5/xxgk.mot.gov.cn/2020/jigou/kjs/202309/P020230928395745163059.pdf)、
+[文化和旅遊部景區資料](https://sjfw.mct.gov.cn/site/dataservice/base)及[教育部高校名單](https://www.moe.gov.cn/jyb_xxgk/s5743/s5744/202606/t20260618_1441074.html)。
+
 本目錄以 [MIT License](LICENSE.txt) 授權，但僅涵蓋著作權人有權授權的部分，包括在
 具著作權保護時的原創選擇、分類與編排。一般用語、事實、公有領域或其他不受著作權
 保護的內容不主張專有權利；本授權也不授予商標權。
 
 ## Categorized associated-phrase data
 
-This directory contains the 29 categorized associated-phrase collections built
+This directory contains the 33 categorized associated-phrase collections built
 into KeyKey. The data was generated, inferred, and normalized automatically.
 Segmentation of long source terms received a targeted review, but the collection
 as a whole has not been comprehensively reviewed or corrected item by item. It may

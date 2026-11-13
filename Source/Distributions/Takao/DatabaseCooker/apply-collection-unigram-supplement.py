@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import all 29 collections into a new DB copy, skipping existing words."""
+"""Import the collections into a new DB copy, skipping existing words."""
 import argparse
 from contextlib import closing
 import json

@@ -15,8 +15,11 @@ final class SharedModelDatabase {
     private static final String ASSET_NAME = "KeyKey.db";
     // The shared-model verifier checks this fingerprint so an app upgrade
     // cannot reuse a different model merely because its row count matches.
-    static final String INSTALLED_NAME = "KeyKey-smart-69975755bc8c9ce2.db";
+    static final String INSTALLED_NAME = "KeyKey-smart-16af45d4da0043d3.db";
     private static final String[] PREVIOUS_INSTALLED_NAMES = {
+            "KeyKey-smart-fdd5908af4de6878.db",
+            "KeyKey-smart-8bd91213f9fee6d0.db",
+            "KeyKey-smart-69975755bc8c9ce2.db",
             "KeyKey-smart-77fb0d9e69871dd6.db",
             "KeyKey-smart-cbe2e10188427976.db",
             "KeyKey-smart-b212cb38bd3281a7.db",
@@ -35,7 +38,7 @@ final class SharedModelDatabase {
     };
 
     private static final String EXPECTED_SHA256 =
-            "69975755bc8c9ce2d7bb27f6daa478b22c836f7b3bacf910515724b7d85e51b0";
+            "16af45d4da0043d3e074523f130a0322aa1c9e7eb043b65bcaf7d819ac7841dd";
     private static File verifiedFile;
     private static long verifiedLength;
     private static long verifiedModified;

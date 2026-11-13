@@ -88,6 +88,10 @@
     "software": "False",
     "agriculture-food": "False",
     "medicine": "False",
-    "electronics": "False"
+    "electronics": "False",
+    "given-names": "False",
+    "hongkong-macao": "False",
+    "taiwan": "False",
+    "china": "False"
   }
 }

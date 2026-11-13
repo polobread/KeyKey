@@ -16,11 +16,11 @@ Workflow：`.github/workflows/rebuild-keykey-db.yml`。
 | --- | --- |
 | `DataSource/chichi77Collection/phrase.*.tsv` | 分類詞庫原詞、讀音、分類與來源詞頻 |
 | `DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv` | 預設啟用的 CIN 逐字讀音替代詞頻，可明確關閉 |
-| `DataSource/CINReadingFrequency/standalone-composition-review.tsv`、`standalone-composition-weights.json` | 299 筆單音節指定字及 11 個完整詞的審閱權重 |
+| `DataSource/CINReadingFrequency/standalone-composition-review.tsv`、`standalone-composition-weights.json` | 299 筆單音節指定字的審閱權重 |
 | `DataSource/AISyntheticArticles/typing-articles-v[234].jsonl` | Bigram 訓練正文，內嵌人名範圍 |
 | `DataSource/AssociatedPhraseCollectionNames.tsv` | 關聯詞分類顯示名稱 |
 | `DataSource/AISyntheticBigram/common-unigram-supplement.tsv` | 經審閱的常用詞補償 |
-| `DataSource/AISyntheticBigram/common-phrase-unigram.tsv` | 完整詞補充，例如舊的 |
+| `DataSource/AISyntheticBigram/common-phrase-unigram.tsv` | 完整詞補充，`stage` 指定訓練前或訓練後寫入 |
 | `DataSource/AISyntheticBigram/search-trend-unigram-source.txt` | 搜尋詞原始清單，目前 550 詞 |
 | `DataSource/AISyntheticBigram/search-trend-reading-overrides.tsv` | 搜尋詞慣用讀音 |
 | `DataSource/AISyntheticBigram/collection-unigram-overrides.tsv` | 分類詞中文化／特殊讀音 |
@@ -66,8 +66,10 @@ Workflow：`.github/workflows/rebuild-keykey-db.yml`。
 既有 `⟦姓名⟧` 也可讀取。巢狀、不成對或內容空白的標記會使建置停止並顯示行號。
 2,300 篇訓練文章共標記 30,081 處，131 篇驗證文章共標記 1,144 處。明德等單獨使用的名字也依上下文標記。搜尋詞的 Unigram 次數照原始正文計算，先移除起訖符號。
 
-正式重建在 Bigram 及低順位詞處理完成後套用審閱權重，保留 299 筆指定組字及
-11 個完整詞。權重來源綁入模型 manifest，每次從固定基底重建時套用一次。
+`common-phrase-unigram.tsv` 中的 `pre-training` 詞條沿用原有審閱規則，
+「舊的」新增至訓練詞表，「新的」保留原詞頻。正式重建在 Bigram 及低順位詞處理完成後，
+先套用 299 筆指定組字的審閱權重，再依 `post-training` 列寫入「另一位」等 11 個完整詞。
+這 11 個詞按各自的 `target_count` 計分，只加入 Unigram。兩份來源皆綁入模型 manifest。
 
 `--training-articles` 可依序指定 v2／v3／v4 替代檔案供獨立重建。
 固定 131 篇的人名計分方式見[動作計分說明](../DataSource/AISyntheticBigram/TYPING_COST.md#排除人名的成本)。
@@ -166,12 +168,18 @@ python3 -B Source/Distributions/Takao/DatabaseCooker/rebuild-keykey-db.py \
 
 ## 正式重建結果
 
-補標正文人名後重訓，保留 299 筆指定組字及 11 個補詞，並依重訓後的分數校準既有句首權重。
-使用新版標記對兩版計分，固定 131 篇相對上一版共用 DB 為 318,429 → 318,423（−6），
-符合 +30 次計分門檻。完整計分為 334,425 → 334,772（+347）。
-共用 DB 有 119,193 筆 Unigram、870,697 筆 Bigram，
-SHA-256 為 `69975755bc8c9ce2d7bb27f6daa478b22c836f7b3bacf910515724b7d85e51b0`。
-[正式回歸明細](../DataSource/AISyntheticBigram/collection-unigram-validation.json)
+「台灣用語」收錄 1,368 筆詞條，包含 112 筆大專院校簡稱。另有 74 筆雙字常見名字，
+其中 22 筆沿用既有詞條，52 筆在 Bigram 訓練完成後加入 Unigram。
+「港澳用語」收錄 334 筆詞條，新增 299 筆 Unigram，35 筆沿用既有詞條。
+「中國用語」以繁體收錄 427 筆，相較前一版 DB 新增 285 筆 Unigram，142 筆已收錄。
+共用 DB 有 120,781 筆 Unigram、870,633 筆 Bigram，
+SHA-256 為 `16af45d4da0043d3e074523f130a0322aa1c9e7eb043b65bcaf7d819ac7841dd`。
+
+四份詞庫與補詞搬移合併後，相較 PR 115 原本的 DB，固定 131 篇正式計分由 318,423 次增為 318,425 次（+2），
+通過最多增加 30 次的採用門檻。正式計分有 2 篇改善、126 篇持平、3 篇退步。第 11、30 篇各少一次「瓶」的修正，
+第 47 篇多一次「記」的修正，第 48、128 篇各多一次「碼」的修正。每次修正各需 2 次操作。
+完整計分由 334,772 次降為 334,560 次（−212），17 篇改善、111 篇持平、3 篇退步。
+[逐篇與逐字回歸明細](../DataSource/AISyntheticBigram/collection-unigram-validation.json)
 
 ## 先前分類詞庫重建
 

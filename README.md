@@ -189,7 +189,7 @@ bigram 資料、計數及權重，包括匯出檔及併入資料庫的相應部�
 須保留適用的 MIT 著作權與授權聲明；第三方資料維持各自授權。範圍詳見
 [AI 資料聲明](LICENSES/AI-DATA-NOTICE.txt)。
 
-公開 repository 內含 McBopomofo 的字音與詞頻資料，以及 29 份以 MIT License
+公開 repository 內含 McBopomofo 的字音與詞頻資料，以及 33 份以 MIT License
 釋出的分類關聯詞詞庫。分類詞庫由自動化方式生成、推論與整理，沒有逐筆人工校正，
 可能含有錯誤；不保證正確性或完整性，詳見
 [`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md)。

@@ -154,7 +154,11 @@ public:
     X(software, "software", "軟體科學", false) \
     X(agricultureFood, "agriculture-food", "農業食品", false) \
     X(medicine, "medicine", "醫學", false) \
-    X(electronics, "electronics", "電子電機", false)
+    X(electronics, "electronics", "電子電機", false) \
+    X(givenNames, "given-names", "常見名字", false) \
+    X(hongKongMacao, "hongkong-macao", "港澳用語", false) \
+    X(taiwan, "taiwan", "台灣用語", false) \
+    X(china, "china", "中國用語", false)
 
 #define KEYKEY_DECLARE_ASSOCIATED_PHRASE_OPTION(member, source, label,        \
                                                  defaultValue)                 \
