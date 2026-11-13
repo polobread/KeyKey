@@ -32,7 +32,7 @@
   "evaluation": {
     "latest_automated_rebuild": {
       "comparison": {
-        "added_actions": 6,
+        "added_actions": 0,
         "after": 318425,
         "articles": [
           {
@@ -76,7 +76,7 @@
             "id": "tw-corpus-0010"
           },
           {
-            "delta": -2,
+            "delta": 0,
             "id": "tw-corpus-0011"
           },
           {
@@ -152,7 +152,7 @@
             "id": "tw-corpus-0029"
           },
           {
-            "delta": -2,
+            "delta": 0,
             "id": "tw-corpus-0030"
           },
           {
@@ -220,11 +220,11 @@
             "id": "tw-corpus-0046"
           },
           {
-            "delta": 2,
+            "delta": 0,
             "id": "tw-corpus-0047"
           },
           {
-            "delta": 2,
+            "delta": 0,
             "id": "tw-corpus-0048"
           },
           {
@@ -544,7 +544,7 @@
             "id": "tw-corpus-0127"
           },
           {
-            "delta": 2,
+            "delta": 0,
             "id": "tw-corpus-0128"
           },
           {
@@ -560,70 +560,43 @@
             "id": "tw-corpus-0131"
           }
         ],
-        "before": 318423,
+        "before": 318425,
         "character_corrections_after": 4047,
         "character_corrections_before": 4047,
         "corrections_after": 3625,
-        "corrections_before": 3624,
-        "delta": 2,
-        "improved_articles": 2,
+        "corrections_before": 3625,
+        "delta": 0,
+        "improved_articles": 0,
         "maximum_regression_actions": 30,
         "passes": true,
         "passes_strict_diagnostic": false,
-        "reduction_percent": -0.0006280953323095379,
-        "regressed_articles": 3,
-        "saved_actions": 4,
+        "reduction_percent": 0.0,
+        "regressed_articles": 0,
+        "saved_actions": 0,
         "syllables": 93630,
         "tiers": {
           "basic100": {
             "after": 655,
-            "before": 656,
-            "character_changes": [
-              {
-                "after": 8,
-                "before": 9,
-                "character": "和",
-                "delta": -1
-              }
-            ],
-            "delta": -1
+            "before": 655,
+            "character_changes": [],
+            "delta": 0
           },
           "core83": {
             "after": 534,
-            "before": 535,
-            "character_changes": [
-              {
-                "after": 8,
-                "before": 9,
-                "character": "和",
-                "delta": -1
-              }
-            ],
-            "delta": -1
+            "before": 534,
+            "character_changes": [],
+            "delta": 0
           },
           "general101_1000": {
             "after": 2284,
-            "before": 2281,
-            "character_changes": [
-              {
-                "after": 26,
-                "before": 25,
-                "character": "記",
-                "delta": 1
-              },
-              {
-                "after": 3,
-                "before": 1,
-                "character": "碼",
-                "delta": 2
-              }
-            ],
-            "delta": 3
+            "before": 2284,
+            "character_changes": [],
+            "delta": 0
           }
         },
-        "unchanged_articles": 126,
+        "unchanged_articles": 131,
         "unfiltered": {
-          "added_actions": 6,
+          "added_actions": 0,
           "after": 334560,
           "articles": [
             {
@@ -631,7 +604,7 @@
               "id": "tw-corpus-0001"
             },
             {
-              "delta": -8,
+              "delta": 0,
               "id": "tw-corpus-0002"
             },
             {
@@ -663,11 +636,11 @@
               "id": "tw-corpus-0009"
             },
             {
-              "delta": -24,
+              "delta": 0,
               "id": "tw-corpus-0010"
             },
             {
-              "delta": -10,
+              "delta": 0,
               "id": "tw-corpus-0011"
             },
             {
@@ -675,7 +648,7 @@
               "id": "tw-corpus-0012"
             },
             {
-              "delta": -6,
+              "delta": 0,
               "id": "tw-corpus-0013"
             },
             {
@@ -707,7 +680,7 @@
               "id": "tw-corpus-0020"
             },
             {
-              "delta": -20,
+              "delta": 0,
               "id": "tw-corpus-0021"
             },
             {
@@ -743,7 +716,7 @@
               "id": "tw-corpus-0029"
             },
             {
-              "delta": -2,
+              "delta": 0,
               "id": "tw-corpus-0030"
             },
             {
@@ -763,7 +736,7 @@
               "id": "tw-corpus-0034"
             },
             {
-              "delta": -10,
+              "delta": 0,
               "id": "tw-corpus-0035"
             },
             {
@@ -795,7 +768,7 @@
               "id": "tw-corpus-0042"
             },
             {
-              "delta": -10,
+              "delta": 0,
               "id": "tw-corpus-0043"
             },
             {
@@ -811,11 +784,11 @@
               "id": "tw-corpus-0046"
             },
             {
-              "delta": 2,
+              "delta": 0,
               "id": "tw-corpus-0047"
             },
             {
-              "delta": 2,
+              "delta": 0,
               "id": "tw-corpus-0048"
             },
             {
@@ -867,7 +840,7 @@
               "id": "tw-corpus-0060"
             },
             {
-              "delta": -22,
+              "delta": 0,
               "id": "tw-corpus-0061"
             },
             {
@@ -895,7 +868,7 @@
               "id": "tw-corpus-0067"
             },
             {
-              "delta": -10,
+              "delta": 0,
               "id": "tw-corpus-0068"
             },
             {
@@ -963,7 +936,7 @@
               "id": "tw-corpus-0084"
             },
             {
-              "delta": -2,
+              "delta": 0,
               "id": "tw-corpus-0085"
             },
             {
@@ -1031,7 +1004,7 @@
               "id": "tw-corpus-0101"
             },
             {
-              "delta": -6,
+              "delta": 0,
               "id": "tw-corpus-0102"
             },
             {
@@ -1071,7 +1044,7 @@
               "id": "tw-corpus-0111"
             },
             {
-              "delta": -20,
+              "delta": 0,
               "id": "tw-corpus-0112"
             },
             {
@@ -1103,7 +1076,7 @@
               "id": "tw-corpus-0119"
             },
             {
-              "delta": -22,
+              "delta": 0,
               "id": "tw-corpus-0120"
             },
             {
@@ -1115,11 +1088,11 @@
               "id": "tw-corpus-0122"
             },
             {
-              "delta": -14,
+              "delta": 0,
               "id": "tw-corpus-0123"
             },
             {
-              "delta": -16,
+              "delta": 0,
               "id": "tw-corpus-0124"
             },
             {
@@ -1135,11 +1108,11 @@
               "id": "tw-corpus-0127"
             },
             {
-              "delta": 2,
+              "delta": 0,
               "id": "tw-corpus-0128"
             },
             {
-              "delta": -16,
+              "delta": 0,
               "id": "tw-corpus-0129"
             },
             {
@@ -1151,25 +1124,25 @@
               "id": "tw-corpus-0131"
             }
           ],
-          "before": 334772,
+          "before": 334560,
           "character_corrections_after": 6044,
-          "character_corrections_before": 6046,
-          "correction_action_delta": -212,
+          "character_corrections_before": 6044,
+          "correction_action_delta": 0,
           "corrections_after": 5485,
-          "corrections_before": 5581,
-          "delta": -212,
-          "improved_articles": 17,
+          "corrections_before": 5485,
+          "delta": 0,
+          "improved_articles": 0,
           "passes": false,
-          "reduction_percent": 0.06332668204031401,
-          "regressed_articles": 3,
-          "saved_actions": 218,
+          "reduction_percent": 0.0,
+          "regressed_articles": 0,
+          "saved_actions": 0,
           "syllables": 93630,
-          "unchanged_articles": 111,
-          "worst_regression": 2
+          "unchanged_articles": 131,
+          "worst_regression": 0
         },
-        "worst_regression": 2
+        "worst_regression": 0
       },
-      "database_sha256": "16af45d4da0043d3e074523f130a0322aa1c9e7eb043b65bcaf7d819ac7841dd",
+      "database_sha256": "5cff8cb09773501783d56c826a48ec4caaf05f1421403483f38b7e379afca35e",
       "report": "../AISyntheticBigram/collection-unigram-validation.json",
       "semantic_sha256": "b7be907eb2b98baf7d9258d5ae89e96ae5738100e8ef62864df5e2db9a5ecc1a",
       "summary": {
@@ -1179,10 +1152,10 @@
       }
     },
     "latest_rebuild_attempt": {
-      "before_sha256": "69975755bc8c9ce2d7bb27f6daa478b22c836f7b3bacf910515724b7d85e51b0",
-      "candidate_sha256": "16af45d4da0043d3e074523f130a0322aa1c9e7eb043b65bcaf7d819ac7841dd",
+      "before_sha256": "16af45d4da0043d3e074523f130a0322aa1c9e7eb043b65bcaf7d819ac7841dd",
+      "candidate_sha256": "5cff8cb09773501783d56c826a48ec4caaf05f1421403483f38b7e379afca35e",
       "comparison": {
-        "added_actions": 6,
+        "added_actions": 0,
         "after": 318425,
         "articles": [
           {
@@ -1226,7 +1199,7 @@
             "id": "tw-corpus-0010"
           },
           {
-            "delta": -2,
+            "delta": 0,
             "id": "tw-corpus-0011"
           },
           {
@@ -1302,7 +1275,7 @@
             "id": "tw-corpus-0029"
           },
           {
-            "delta": -2,
+            "delta": 0,
             "id": "tw-corpus-0030"
           },
           {
@@ -1370,11 +1343,11 @@
             "id": "tw-corpus-0046"
           },
           {
-            "delta": 2,
+            "delta": 0,
             "id": "tw-corpus-0047"
           },
           {
-            "delta": 2,
+            "delta": 0,
             "id": "tw-corpus-0048"
           },
           {
@@ -1694,7 +1667,7 @@
             "id": "tw-corpus-0127"
           },
           {
-            "delta": 2,
+            "delta": 0,
             "id": "tw-corpus-0128"
           },
           {
@@ -1710,70 +1683,43 @@
             "id": "tw-corpus-0131"
           }
         ],
-        "before": 318423,
+        "before": 318425,
         "character_corrections_after": 4047,
         "character_corrections_before": 4047,
         "corrections_after": 3625,
-        "corrections_before": 3624,
-        "delta": 2,
-        "improved_articles": 2,
+        "corrections_before": 3625,
+        "delta": 0,
+        "improved_articles": 0,
         "maximum_regression_actions": 30,
         "passes": true,
         "passes_strict_diagnostic": false,
-        "reduction_percent": -0.0006280953323095379,
-        "regressed_articles": 3,
-        "saved_actions": 4,
+        "reduction_percent": 0.0,
+        "regressed_articles": 0,
+        "saved_actions": 0,
         "syllables": 93630,
         "tiers": {
           "basic100": {
             "after": 655,
-            "before": 656,
-            "character_changes": [
-              {
-                "after": 8,
-                "before": 9,
-                "character": "和",
-                "delta": -1
-              }
-            ],
-            "delta": -1
+            "before": 655,
+            "character_changes": [],
+            "delta": 0
           },
           "core83": {
             "after": 534,
-            "before": 535,
-            "character_changes": [
-              {
-                "after": 8,
-                "before": 9,
-                "character": "和",
-                "delta": -1
-              }
-            ],
-            "delta": -1
+            "before": 534,
+            "character_changes": [],
+            "delta": 0
           },
           "general101_1000": {
             "after": 2284,
-            "before": 2281,
-            "character_changes": [
-              {
-                "after": 26,
-                "before": 25,
-                "character": "記",
-                "delta": 1
-              },
-              {
-                "after": 3,
-                "before": 1,
-                "character": "碼",
-                "delta": 2
-              }
-            ],
-            "delta": 3
+            "before": 2284,
+            "character_changes": [],
+            "delta": 0
           }
         },
-        "unchanged_articles": 126,
+        "unchanged_articles": 131,
         "unfiltered": {
-          "added_actions": 6,
+          "added_actions": 0,
           "after": 334560,
           "articles": [
             {
@@ -1781,7 +1727,7 @@
               "id": "tw-corpus-0001"
             },
             {
-              "delta": -8,
+              "delta": 0,
               "id": "tw-corpus-0002"
             },
             {
@@ -1813,11 +1759,11 @@
               "id": "tw-corpus-0009"
             },
             {
-              "delta": -24,
+              "delta": 0,
               "id": "tw-corpus-0010"
             },
             {
-              "delta": -10,
+              "delta": 0,
               "id": "tw-corpus-0011"
             },
             {
@@ -1825,7 +1771,7 @@
               "id": "tw-corpus-0012"
             },
             {
-              "delta": -6,
+              "delta": 0,
               "id": "tw-corpus-0013"
             },
             {
@@ -1857,7 +1803,7 @@
               "id": "tw-corpus-0020"
             },
             {
-              "delta": -20,
+              "delta": 0,
               "id": "tw-corpus-0021"
             },
             {
@@ -1893,7 +1839,7 @@
               "id": "tw-corpus-0029"
             },
             {
-              "delta": -2,
+              "delta": 0,
               "id": "tw-corpus-0030"
             },
             {
@@ -1913,7 +1859,7 @@
               "id": "tw-corpus-0034"
             },
             {
-              "delta": -10,
+              "delta": 0,
               "id": "tw-corpus-0035"
             },
             {
@@ -1945,7 +1891,7 @@
               "id": "tw-corpus-0042"
             },
             {
-              "delta": -10,
+              "delta": 0,
               "id": "tw-corpus-0043"
             },
             {
@@ -1961,11 +1907,11 @@
               "id": "tw-corpus-0046"
             },
             {
-              "delta": 2,
+              "delta": 0,
               "id": "tw-corpus-0047"
             },
             {
-              "delta": 2,
+              "delta": 0,
               "id": "tw-corpus-0048"
             },
             {
@@ -2017,7 +1963,7 @@
               "id": "tw-corpus-0060"
             },
             {
-              "delta": -22,
+              "delta": 0,
               "id": "tw-corpus-0061"
             },
             {
@@ -2045,7 +1991,7 @@
               "id": "tw-corpus-0067"
             },
             {
-              "delta": -10,
+              "delta": 0,
               "id": "tw-corpus-0068"
             },
             {
@@ -2113,7 +2059,7 @@
               "id": "tw-corpus-0084"
             },
             {
-              "delta": -2,
+              "delta": 0,
               "id": "tw-corpus-0085"
             },
             {
@@ -2181,7 +2127,7 @@
               "id": "tw-corpus-0101"
             },
             {
-              "delta": -6,
+              "delta": 0,
               "id": "tw-corpus-0102"
             },
             {
@@ -2221,7 +2167,7 @@
               "id": "tw-corpus-0111"
             },
             {
-              "delta": -20,
+              "delta": 0,
               "id": "tw-corpus-0112"
             },
             {
@@ -2253,7 +2199,7 @@
               "id": "tw-corpus-0119"
             },
             {
-              "delta": -22,
+              "delta": 0,
               "id": "tw-corpus-0120"
             },
             {
@@ -2265,11 +2211,11 @@
               "id": "tw-corpus-0122"
             },
             {
-              "delta": -14,
+              "delta": 0,
               "id": "tw-corpus-0123"
             },
             {
-              "delta": -16,
+              "delta": 0,
               "id": "tw-corpus-0124"
             },
             {
@@ -2285,11 +2231,11 @@
               "id": "tw-corpus-0127"
             },
             {
-              "delta": 2,
+              "delta": 0,
               "id": "tw-corpus-0128"
             },
             {
-              "delta": -16,
+              "delta": 0,
               "id": "tw-corpus-0129"
             },
             {
@@ -2301,28 +2247,28 @@
               "id": "tw-corpus-0131"
             }
           ],
-          "before": 334772,
+          "before": 334560,
           "character_corrections_after": 6044,
-          "character_corrections_before": 6046,
-          "correction_action_delta": -212,
+          "character_corrections_before": 6044,
+          "correction_action_delta": 0,
           "corrections_after": 5485,
-          "corrections_before": 5581,
-          "delta": -212,
-          "improved_articles": 17,
+          "corrections_before": 5485,
+          "delta": 0,
+          "improved_articles": 0,
           "passes": false,
-          "reduction_percent": 0.06332668204031401,
-          "regressed_articles": 3,
-          "saved_actions": 218,
+          "reduction_percent": 0.0,
+          "regressed_articles": 0,
+          "saved_actions": 0,
           "syllables": 93630,
-          "unchanged_articles": 111,
-          "worst_regression": 2
+          "unchanged_articles": 131,
+          "worst_regression": 0
         },
-        "worst_regression": 2
+        "worst_regression": 0
       },
       "decision": "adopted",
-      "delta_actions": 2,
+      "delta_actions": 0,
       "maximum_regression_actions": 30,
-      "reason": "排除人名及「她、他、時、十」後，總動作差 2 次，未超過 30 次門檻",
+      "reason": "排除人名及「她、他、時、十」後，總動作差 0 次，未超過 30 次門檻",
       "report": "../AISyntheticBigram/rebuild-review/latest.json",
       "validation_articles": 131
     },
