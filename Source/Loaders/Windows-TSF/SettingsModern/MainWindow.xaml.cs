@@ -23,7 +23,8 @@ public partial class MainWindow : Window
     private string savedPhraseReading = "";
     private NativeUserData? userData;
     private static readonly string[] Scales =
-        ["system", "75", "90", "100", "125", "150", "175", "200", "225", "250", "300", "350"];
+        ["system", "70", "75", "80", "90", "100", "110", "120", "125",
+         "130", "150", "175", "200", "225", "250", "300"];
     private static readonly string[] Colors = ["Default", "Green", "Yellow", "Red"];
     private static readonly string[] Layouts = ["Standard", "ETen", "ETen26", "Hsu", "Hanyu Pinyin"];
     private static readonly string[] SelectionKeys = ["12345678", "asdfghjk", "asdfzxcv"];
@@ -111,8 +112,8 @@ public partial class MainWindow : Window
         VerticalCandidate.IsChecked = SettingsStore.Read(loader,
             "OneDimensionalCandidatePanelStyle", "vertical") != "horizontal";
         HorizontalCandidate.IsChecked = !VerticalCandidate.IsChecked;
-        SelectValue(CandidateScale, Scales,
-            SettingsStore.Read(loader, "CandidateWindowScalePercent", "system"));
+        var candidateScale = SettingsStore.Read(loader, "CandidateWindowScalePercent", "system");
+        SelectValue(CandidateScale, Scales, candidateScale == "350" ? "300" : candidateScale);
         SelectValue(HighlightColor, Colors,
             SettingsStore.Read(loader, "HighlightColor", "Default"));
         ControlBackslash.IsChecked = ReadBool(loader, "ToggleInputMethodWithControlBackslash", true);
