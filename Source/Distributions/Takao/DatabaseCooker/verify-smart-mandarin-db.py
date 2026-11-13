@@ -45,7 +45,9 @@ def main() -> int:
         # counts are verified by verify_manifest; all first choices still
         # undergo the full CIN membership/count audit below.
         frequency_queries = set()
-        frequencies = load_manifest(MODEL_MANIFEST)["sources"].get("cin_reading_frequencies")
+        manifest = load_manifest(MODEL_MANIFEST)
+        expected_readings = manifest.get("single_syllable_readings", EXPECTED_SINGLE_SYLLABLE_READINGS)
+        frequencies = manifest["sources"].get("cin_reading_frequencies")
         if frequencies:
             from cin_reading_frequencies import load
             frequency_queries = {row["qstring"] for row in load(MODEL_MANIFEST.parent / frequencies["file"])}
@@ -106,13 +108,13 @@ def main() -> int:
             )
             return 1
 
-    if (len(all_first_candidates) != EXPECTED_SINGLE_SYLLABLE_READINGS
+    if (len(all_first_candidates) != expected_readings
             or missing_phonetic_entries):
         print(
             f"Smart Mandarin single-syllable audit: "
             f"{len(all_first_candidates)} readings, "
             f"{len(missing_phonetic_entries)} first choices missing from CIN; "
-            f"expected {EXPECTED_SINGLE_SYLLABLE_READINGS} readings; "
+            f"expected {expected_readings} readings; "
             f"examples: {missing_phonetic_entries[:5]}",
             file=sys.stderr,
         )

@@ -54,6 +54,15 @@ def make_cin(path):
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def add_cin_readings(database, cin):
+    """Add source readings while retaining the pinned CIN candidate order."""
+    table = '"Mandarin-bpmf-cin"'
+    known = set(database.execute(f"SELECT key, value FROM {table}"))
+    additions = [tuple(line.split()) for line in cin.read_text(encoding="utf-8").splitlines()[1:-1]]
+    database.executemany(f"INSERT INTO {table} (key, value) VALUES (?, ?)",
+                         (row for row in dict.fromkeys(additions) if row not in known))
+
+
 def cook(database, cin, work, custom=None, corpus=None, cin_reading_frequencies=DEFAULT_SOURCE):
     sql, report = work.with_suffix(".sql"), work.with_suffix(".json")
     command = ["ruby", "-E", "UTF-8", str(COOKER / "SmartMandarinCooker.rb"),

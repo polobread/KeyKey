@@ -33,13 +33,15 @@ def load_overrides(path):
         return result
 
 
-def apply(database, paths, total_count, overrides=None, frequency_policy="minimum", collision_index=None):
+def apply(database, paths, total_count, overrides=None, frequency_policy="minimum", collision_index=None,
+          *, reviewed_post_training=frozenset()):
     """Text deduplication: existing model wins, then first valid source row.
 
     Source filenames and row order define precedence. New entries default to
     count one; source frequency is retained in the audit, never summed or used
     to rescale existing unigrams. Unencodable rows are reported, never
-    converted to guessed pronunciations.
+    converted to guessed pronunciations. Explicitly reviewed readings
+    are deferred to the post-training phrase supplement.
     """
     if not isinstance(total_count, (int, float)) or not math.isfinite(total_count) or total_count <= 0:
         raise ValueError("total count must be positive and finite")
@@ -52,7 +54,8 @@ def apply(database, paths, total_count, overrides=None, frequency_policy="minimu
     seen, prepared, skipped, rejected, files, inserted, exclusions = set(), [], [], [], [], [], []
     partial_overlaps, downranked = [], []
     for path in sorted(paths):
-        counts = Counter(rows=0, inserted=0, existing=0, duplicate=0, rejected=0, collision=0)
+        counts = Counter(rows=0, inserted=0, existing=0, duplicate=0, rejected=0, collision=0,
+                         reviewed_post_training=0, single_character_source_only=0)
         with path.open(encoding="utf-8", newline="") as source:
             reader = csv.reader(source, delimiter="\t")
             if next(reader, [])[:4] != ["詞", "詞頻", "注音", "分類"]:
@@ -79,7 +82,7 @@ def apply(database, paths, total_count, overrides=None, frequency_policy="minimu
                     if len(fields) < 4:
                         raise ValueError("missing columns")
                     count, syllables = int(fields[1]), fields[2].split()
-                    if not 2 <= len(word) <= 7 or len(syllables) != len(word):
+                    if not 1 <= len(word) <= 7 or len(syllables) != len(word):
                         raise ValueError("word and syllable length mismatch or unsupported span")
                     if not 0 < count <= total_count:
                         raise ValueError("invalid frequency")
@@ -88,6 +91,13 @@ def apply(database, paths, total_count, overrides=None, frequency_policy="minimu
                     counts["rejected"] += 1
                     rejected.append({**item, "reading": fields[2] if len(fields) > 2 else "",
                                      "reason": str(error)})
+                    continue
+                if len(word) == 1 or (query, word) in reviewed_post_training:
+                    reason = "single_character_source_only" if len(word) == 1 else "reviewed_post_training"
+                    counts[reason] += 1
+                    skipped.append({**item, "reason": reason})
+                    exclusions.append(dict(source=path.name, line=line, source_word=item.get("source_word", word),
+                                           word=word, reading=fields[2], reason=reason, conflict_word=""))
                     continue
                 seen.add(word)
                 conflicts = collision_index.ranking_conflicts(word, fields[2])
@@ -108,7 +118,8 @@ def apply(database, paths, total_count, overrides=None, frequency_policy="minimu
     # transaction so this layer composes safely with the other supplements.
     database.executemany("INSERT INTO unigrams VALUES(?,?,?,?)", prepared)
     totals = {key: sum(row[key] for row in files)
-              for key in ("rows", "inserted", "existing", "duplicate", "rejected", "collision")}
+              for key in ("rows", "inserted", "existing", "duplicate", "rejected", "collision",
+                          "reviewed_post_training", "single_character_source_only")}
     return {"policy": "normalize reviewed Chinese aliases then skip by word text; existing model wins; first valid row in filename order wins; fixed base total; backoff zero",
             "frequency_policy": frequency_policy,
             "totals": totals, "files": files, "skipped": skipped, "rejected": rejected,

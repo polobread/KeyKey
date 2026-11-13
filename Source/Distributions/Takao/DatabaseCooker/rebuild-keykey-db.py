@@ -20,10 +20,12 @@ import subprocess
 import sys
 
 from collection_unigram_supplement import apply as apply_collection, load_overrides, source_records, write_list
-from phrase_unigram_supplement import POST_TRAINING, apply as apply_phrases, query_for_reading
+from phrase_unigram_supplement import (
+    POST_TRAINING, apply as apply_phrases, load as load_phrases, query_for_reading,
+)
 from smart_mandarin_model import file_sha256, semantic_sha256, verify_manifest
 from unigram_collisions import CollisionIndex, write_exclusions, POLICY
-from rebuild_model import make_cin, cook, write_lexicon, add_convenience_words
+from rebuild_model import add_cin_readings, add_convenience_words, cook, make_cin, write_lexicon
 from cin_reading_frequencies import DEFAULT_SOURCE as DEFAULT_CIN_FREQUENCIES, load as load_cin_frequencies
 import standalone_composition_weights
 
@@ -293,6 +295,8 @@ def main():
     # reading reference only. Both language-model tables are rebuilt from source.
     cin = output / "bpmf-absolute.cin"
     make_cin(cin)
+    with sqlite3.connect(database) as db:
+        add_cin_readings(db, cin)
     bootstrap = cook(database, cin, output / "bootstrap", cin_reading_frequencies=args.cin_reading_frequencies)
     total = int(bootstrap["unigram_total_count"])
     collision_index = CollisionIndex()
@@ -304,12 +308,18 @@ def main():
     if not paths:
         raise ValueError("no collection files")
     phrase_path = ROOT / DATA / "common-phrase-unigram.tsv"
+    use_reviewed_supplements = not args.training_articles and args.cin_reading_frequencies == DEFAULT_CIN_FREQUENCIES.resolve()
+    reviewed_post_training = {
+        (query, entry["word"]) for entry, _, query, _ in load_phrases(phrase_path, total, POST_TRAINING)
+        if entry.get("action") != "reweight"
+    } if use_reviewed_supplements else frozenset()
     overrides = load_overrides(ROOT / DATA / "collection-unigram-overrides.tsv")
     with sqlite3.connect(database) as db:
         apply_search(db, finalizer.load_search_trend(data / "search-trend-unigram.tsv"), total)
         # Explicitly reviewed common phrases remain separate from scraped words.
         phrases = apply_phrases(db, phrase_path, total)
-        collection = apply_collection(db, paths, total, overrides, collision_index=collision_index)
+        collection = apply_collection(db, paths, total, overrides, collision_index=collision_index,
+                                      reviewed_post_training=reviewed_post_training)
         if collection["rejected"]:
             raise ValueError(f"unresolved collection readings: {collection['rejected']}")
     anime_words, people_words = set(), set()
@@ -357,7 +367,7 @@ def main():
     weights_metadata = None
     post_training_phrases = []
     with sqlite3.connect(database) as db:
-        if not args.training_articles and args.cin_reading_frequencies == DEFAULT_CIN_FREQUENCIES.resolve():
+        if use_reviewed_supplements:
             weights_path = ROOT / STANDALONE_WEIGHTS
             weights_hash = file_sha256(weights_path)
             weights = standalone_composition_weights.load(weights_path, total)
@@ -377,6 +387,9 @@ def main():
         if db.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
             raise ValueError("rebuilt database failed integrity check")
         rows = db.execute("SELECT (SELECT COUNT(*) FROM unigrams),(SELECT COUNT(*) FROM bigrams)").fetchone()
+        single_syllable_readings = db.execute(
+            "SELECT COUNT(DISTINCT qstring) FROM unigrams WHERE length(qstring)=2 AND length(current)=1"
+        ).fetchone()[0]
         bigram_words = {word for pair in db.execute("SELECT DISTINCT previous,current FROM bigrams") for word in pair}
         if any(row["word"] in bigram_words for row in convenience):
             raise ValueError("convenience word leaked into Bigram training")
@@ -420,7 +433,8 @@ def main():
         with sqlite3.connect(database) as db:
             db.execute("ATTACH DATABASE ? AS previous", (str(baseline),))
             same = all(not db.execute(f"SELECT COUNT(*) FROM (SELECT * FROM {a}.{table} EXCEPT SELECT * FROM {b}.{table})").fetchone()[0]
-                       for table in ("associated_phrases", "collection_names") for a, b in (("main", "previous"), ("previous", "main")))
+                       for table in ("associated_phrases", "collection_names", '"Mandarin-bpmf-cin"')
+                       for a, b in (("main", "previous"), ("previous", "main")))
         if same:
             shutil.copyfile(baseline, database)
     db_hash = file_sha256(database)
@@ -463,10 +477,12 @@ def main():
     phrase_entries = [*phrases, *post_training_phrases]
     sources["phrase_unigram_supplement"].update(
         entries=len(phrase_entries), inserted=sum(r["status"] == "inserted" for r in phrase_entries),
-        retained=sum(r["status"] == "retained" for r in phrase_entries), pre_training_entries=len(phrases),
+        retained=sum(r["status"] == "retained" for r in phrase_entries),
+        reweighted=sum(r["status"] == "reweighted" for r in phrase_entries), pre_training_entries=len(phrases),
         post_training_entries=len(post_training_phrases),
         policy="Pre-training reviewed phrases use the minimum score above same-reading tokenizations and retain "
-               "existing probabilities. Post-training reviewed phrases use their explicit counts and add no Bigram edges.",
+               "existing probabilities. Post-training reviewed phrases use explicit counts and preserve existing "
+               "backoffs and Bigram edges without adding new edges.",
     )
     trend_report = json.loads((data / "search-trend-unigram-report.json").read_text())
     trend_report["output_sha256"] = file_sha256(data / "search-trend-unigram.tsv")
@@ -486,6 +502,7 @@ def main():
         c[key + "_sha256"] = file_sha256(path if path.exists() else ROOT / DATA / filename)
     manifest.update(unigram_rows=rows[0], bigram_rows=rows[1], canonical_database_sha256=db_hash, semantic_sha256=digest,
                     description="McBopomofo with deduplicated custom Unigrams; source-cooked document-frequency Bigram; personal names, anime and homophone additions inserted after training", unigram_total_count=total,
+                    single_syllable_readings=single_syllable_readings,
                     validation_articles=validation_corpus["article_count"])
     manifest["rebuild"] = {"seed_commit": BASE_COMMIT, "seed_database_sha256": BASE_SHA,
                            "policy": POLICY, "validation": "collection-unigram-validation.json",

@@ -1,14 +1,71 @@
-word	target_count	reading	training_occurrences	training_documents	reason	stage
-舊的	2029	ㄐㄧㄡˋ ㄉㄜ˙	40	34	使用者指定完整詞補償；剛好超過同音拆詞「就／的」的 Unigram 路徑，不修改「舊／就」單字或 Bigram	pre-training
-新的	1761	ㄒㄧㄣ ㄉㄜ˙	220	195	既有完整詞已勝過同音拆詞，保留原始詞頻，不重複新增或加分	pre-training
-另一位	306	ㄌㄧㄥˋ ㄧ ㄨㄟˋ	191	160	沿用固定 131 篇回歸採用的詞頻	post-training
-另一個	8	ㄌㄧㄥˋ ㄧ ㄍㄜ˙	206	191	沿用固定 131 篇回歸採用的詞頻	post-training
-攤商	22	ㄊㄢ ㄕㄤ	62	16	沿用固定 131 篇回歸採用的詞頻	post-training
-管理室	624	ㄍㄨㄢˇ ㄌㄧˇ ㄕˋ	144	55	沿用固定 131 篇回歸採用的詞頻	post-training
-截圖	23	ㄐㄧㄝˊ ㄊㄨˊ	567	257	沿用固定 131 篇回歸採用的詞頻	post-training
-濾網	20	ㄌㄩˋ ㄨㄤˇ	21	10	沿用固定 131 篇回歸採用的詞頻	post-training
-站務	57	ㄓㄢˋ ㄨˋ	246	65	沿用固定 131 篇回歸採用的詞頻	post-training
-預覽	3	ㄩˋ ㄌㄢˇ	54	23	沿用固定 131 篇回歸採用的詞頻	post-training
-錯題	207	ㄘㄨㄛˋ ㄊㄧˊ	24	13	沿用固定 131 篇回歸採用的詞頻	post-training
-圖面	305	ㄊㄨˊ ㄇㄧㄢˋ	91	43	沿用固定 131 篇回歸採用的詞頻	post-training
-站務員	1	ㄓㄢˋ ㄨˋ ㄩㄢˊ	25	7	沿用固定 131 篇回歸採用的詞頻	post-training
+word	target_count	reading	training_occurrences	training_documents	reason	stage	action
+舊的	2029	ㄐㄧㄡˋ ㄉㄜ˙	40	34	使用者指定完整詞補償；剛好超過同音拆詞「就／的」的 Unigram 路徑，不修改「舊／就」單字或 Bigram	pre-training	add
+新的	1761	ㄒㄧㄣ ㄉㄜ˙	220	195	既有完整詞已勝過同音拆詞，保留原始詞頻，不重複新增或加分	pre-training	add
+另一位	306	ㄌㄧㄥˋ ㄧ ㄨㄟˋ	191	160	沿用固定 131 篇回歸採用的詞頻	post-training	add
+另一個	8	ㄌㄧㄥˋ ㄧ ㄍㄜ˙	206	191	沿用固定 131 篇回歸採用的詞頻	post-training	add
+攤商	22	ㄊㄢ ㄕㄤ	62	16	沿用固定 131 篇回歸採用的詞頻	post-training	add
+管理室	624	ㄍㄨㄢˇ ㄌㄧˇ ㄕˋ	144	55	沿用固定 131 篇回歸採用的詞頻	post-training	add
+截圖	23	ㄐㄧㄝˊ ㄊㄨˊ	567	257	沿用固定 131 篇回歸採用的詞頻	post-training	add
+濾網	20	ㄌㄩˋ ㄨㄤˇ	21	10	沿用固定 131 篇回歸採用的詞頻	post-training	add
+站務	57	ㄓㄢˋ ㄨˋ	246	65	沿用固定 131 篇回歸採用的詞頻	post-training	add
+預覽	3	ㄩˋ ㄌㄢˇ	54	23	沿用固定 131 篇回歸採用的詞頻	post-training	add
+錯題	207	ㄘㄨㄛˋ ㄊㄧˊ	24	13	沿用固定 131 篇回歸採用的詞頻	post-training	add
+圖面	305	ㄊㄨˊ ㄇㄧㄢˋ	91	43	沿用固定 131 篇回歸採用的詞頻	post-training	add
+站務員	1	ㄓㄢˋ ㄨˋ ㄩㄢˊ	25	7	沿用固定 131 篇回歸採用的詞頻	post-training	add
+不想	614	ㄅㄨˊ ㄒㄧㄤˇ	783	546	補第二聲輸入，沿用第四聲完整詞的等效詞頻；出現次數以訓練分詞後的文字計算	post-training	add
+升版	20	ㄕㄥ ㄅㄢˇ	1	1	使用者指定版號用語；採可直接組字的低詞頻	post-training	add
+升版號	1	ㄕㄥ ㄅㄢˇ ㄏㄠˋ	0	0	使用者指定版號用語；採可直接組字的低詞頻	post-training	add
+降版	10	ㄐㄧㄤˋ ㄅㄢˇ	0	0	使用者指定版號用語；採可直接組字的低詞頻	post-training	add
+降版號	1	ㄐㄧㄤˋ ㄅㄢˇ ㄏㄠˋ	0	0	使用者指定版號用語；採可直接組字的低詞頻	post-training	add
+嘿呀	4	ㄏㄟ ㄧㄚ	0	0	台灣口語；取能勝過「黑／呀」拆詞的最低詞頻，保留「黑壓壓」完整組字	post-training	add
+駁二	38	ㄅㄛˊ ㄦˋ	24	4	高雄景點；取開啟上下文時可直接組字的最低詞頻，保留「一泊二食」完整組字	post-training	add
+十位	263	ㄕˊ ㄨㄟˋ	13	5	保留數量詞「共十位」	post-training	reweight
+十個	296	ㄕˊ ㄍㄜˋ	38	37	保留數量詞「買十個」的四聲讀音	post-training	reweight
+十個	296	ㄕˊ ㄍㄜ˙	38	37	保留數量詞「買十個」的輕聲讀音	post-training	reweight
+上午十時	1	ㄕㄤˋ ㄨˇ ㄕˊ ㄕˊ	17	13	補時刻語境，保留「時時」原順位	post-training	add
+晚上十時	1	ㄨㄢˇ ㄕㄤˋ ㄕˊ ㄕˊ	0	0	補時刻語境，保留「時時」原順位	post-training	add
+十起事故	1	ㄕˊ ㄑㄧˇ ㄕˋ ㄍㄨˋ	0	0	補數量語境，保留「拾起」原順位	post-training	add
+十起案件	1	ㄕˊ ㄑㄧˇ ㄢˋ ㄐㄧㄢˋ	0	0	補數量語境，保留「拾起」原順位	post-training	add
+十幾分鐘	1	ㄕˊ ㄐㄧˇ ㄈㄣ ㄓㄨㄥ	13	13	保留完整時間量詞	post-training	add
+十次	55	ㄕˊ ㄘˋ	12	12	取上下文開關皆可直接組字的最低詞頻	post-training	reweight
+十顆	34	ㄕˊ ㄎㄜ	0	0	取上下文開關皆可直接組字的最低詞頻	post-training	reweight
+十題	64	ㄕˊ ㄊㄧˊ	4	4	取上下文開關皆可直接組出「十題」與「做十題」的最低詞頻	post-training	reweight
+第十顆	1	ㄉㄧˋ ㄕˊ ㄎㄜ	0	0	保留完整序數，避免拆成「第十／科」或「地／十顆」	post-training	add
+十秒	40	ㄕˊ ㄇㄧㄠˇ	21	17	保留既有等效詞頻；試打「等十秒」「十秒後」均可直接組字	post-training	reweight
+不咋地	1	ㄅㄨˋ ㄗㄜˊ ㄉㄧˋ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+不咋地	1	ㄅㄨˋ ㄓㄚˋ ㄉㄧˋ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+你咋了	1	ㄋㄧˇ ㄗㄜˊ ㄌㄜ˙	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+你咋了	1	ㄋㄧˇ ㄓㄚˋ ㄌㄜ˙	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+你咋啦	1	ㄋㄧˇ ㄗㄜˊ ㄌㄚ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+你咋啦	1	ㄋㄧˇ ㄓㄚˋ ㄌㄚ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+可不咋地	1	ㄎㄜˇ ㄅㄨˋ ㄗㄜˊ ㄉㄧˋ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+可不咋地	1	ㄎㄜˇ ㄅㄨˋ ㄓㄚˋ ㄉㄧˋ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋回事	1	ㄗㄜˊ ㄏㄨㄟˊ ㄕˋ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋回事	1	ㄓㄚˋ ㄏㄨㄟˊ ㄕˋ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋回事啊	1	ㄗㄜˊ ㄏㄨㄟˊ ㄕˋ ㄚ˙	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋回事啊	1	ㄓㄚˋ ㄏㄨㄟˊ ㄕˋ ㄚ˙	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋整	1	ㄗㄜˊ ㄓㄥˇ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋整	1	ㄓㄚˋ ㄓㄥˇ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋整啊	1	ㄗㄜˊ ㄓㄥˇ ㄚ˙	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋整啊	1	ㄓㄚˋ ㄓㄥˇ ㄚ˙	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋樣	1	ㄗㄜˊ ㄧㄤˋ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋樣	1	ㄓㄚˋ ㄧㄤˋ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋的	1	ㄗㄜˊ ㄉㄜ˙	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋的	1	ㄓㄚˋ ㄉㄜ˙	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋說呢	1	ㄗㄜˊ ㄕㄨㄛ ㄋㄜ˙	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋說呢	1	ㄓㄚˋ ㄕㄨㄛ ㄋㄜ˙	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋辦	1	ㄗㄜˊ ㄅㄢˋ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+咋辦	1	ㄓㄚˋ ㄅㄢˋ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+恁咋了	1	ㄋㄣˋ ㄗㄜˊ ㄌㄜ˙	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+恁咋了	1	ㄋㄣˋ ㄓㄚˋ ㄌㄜ˙	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+愛咋咋地	1	ㄞˋ ㄗㄜˊ ㄗㄜˊ ㄉㄧˋ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+愛咋咋地	1	ㄞˋ ㄓㄚˋ ㄓㄚˋ ㄉㄧˋ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+這事咋辦	1	ㄓㄜˋ ㄕˋ ㄗㄜˊ ㄅㄢˋ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+這事咋辦	1	ㄓㄜˋ ㄕˋ ㄓㄚˋ ㄅㄢˋ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+這咋整	1	ㄓㄜˋ ㄗㄜˊ ㄓㄥˇ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+這咋整	1	ㄓㄜˋ ㄓㄚˋ ㄓㄥˇ	0	0	中國口語輸入別讀，沿用原詞詞頻	post-training	add
+庫爾勒	1	ㄎㄨˋ ㄦˇ ㄌㄜˋ	0	0	中國用語輸入別讀，沿用原詞詞頻	post-training	add
+阿勒泰	1	ㄚ ㄌㄜˋ ㄊㄞˋ	0	0	中國用語輸入別讀，沿用原詞詞頻	post-training	add
+哈囉出行	1	ㄏㄚ ㄌㄨㄛˊ ㄔㄨ ㄒㄧㄥˊ	0	0	中國用語輸入別讀，沿用原詞詞頻	post-training	add
+哈囉單車	1	ㄏㄚ ㄌㄨㄛˊ ㄉㄢ ㄔㄜ	0	0	中國用語輸入別讀，沿用原詞詞頻	post-training	add
+錫林郭勒	1	ㄒㄧˊ ㄌㄧㄣˊ ㄍㄨㄛ ㄌㄜˋ	0	0	中國用語輸入別讀，沿用原詞詞頻	post-training	add

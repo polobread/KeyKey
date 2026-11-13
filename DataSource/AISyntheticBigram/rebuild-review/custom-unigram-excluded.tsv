@@ -645,6 +645,409 @@ phrase.china.tsv	401	天大	天大	ㄊㄧㄢ ㄉㄚˋ	existing				天大
 phrase.china.tsv	405	復旦	復旦	ㄈㄨˋ ㄉㄢˋ	existing				復旦				
 phrase.china.tsv	410	清華	清華	ㄑㄧㄥ ㄏㄨㄚˊ	existing				清華				
 phrase.china.tsv	421	重大	重大	ㄔㄨㄥˊ ㄉㄚˋ	existing				重大				
+phrase.china.tsv	431	三門峽	三門峽	ㄙㄢ ㄇㄣˊ ㄒㄧㄚˊ	existing				三門峽				
+phrase.china.tsv	433	中山	中山	ㄓㄨㄥ ㄕㄢ	existing				中山				
+phrase.china.tsv	434	中衛	中衛	ㄓㄨㄥ ㄨㄟˋ	existing				中衛				
+phrase.china.tsv	436	九江	九江	ㄐㄧㄡˇ ㄐㄧㄤ	existing				九江				
+phrase.china.tsv	439	五指山	五指山	ㄨˇ ㄓˇ ㄕㄢ	existing				五指山				
+phrase.china.tsv	442	仙桃	仙桃	ㄒㄧㄢ ㄊㄠˊ	existing				仙桃				
+phrase.china.tsv	446	來賓	來賓	ㄌㄞˊ ㄅㄧㄣ	existing				來賓				
+phrase.china.tsv	447	保定	保定	ㄅㄠˇ ㄉㄧㄥˋ	existing				保定				
+phrase.china.tsv	449	信陽	信陽	ㄒㄧㄣˋ ㄧㄤˊ	existing				信陽				
+phrase.china.tsv	452	內江	內江	ㄋㄟˋ ㄐㄧㄤ	existing				內江				
+phrase.china.tsv	456	包頭	包頭	ㄅㄠ ㄊㄡˊ	existing				包頭				
+phrase.china.tsv	459	北海	北海	ㄅㄟˇ ㄏㄞˇ	existing				北海				
+phrase.china.tsv	461	南充	南充	ㄋㄢˊ ㄔㄨㄥ	existing				南充				
+phrase.china.tsv	465	南陽	南陽	ㄋㄢˊ ㄧㄤˊ	existing				南陽				
+phrase.china.tsv	469	吉安	吉安	ㄐㄧˊ ㄢ	existing				吉安				
+phrase.china.tsv	470	吉林	吉林	ㄐㄧˊ ㄌㄧㄣˊ	existing				吉林				
+phrase.china.tsv	479	咸陽	咸陽	ㄒㄧㄢˊ ㄧㄤˊ	existing				咸陽				
+phrase.china.tsv	480	哈密	哈密	ㄏㄚ ㄇㄧˋ	existing				哈密				
+phrase.china.tsv	481	唐山	唐山	ㄊㄤˊ ㄕㄢ	existing				唐山				
+phrase.china.tsv	484	嘉興	嘉興	ㄐㄧㄚ ㄒㄧㄥ	existing				嘉興				
+phrase.china.tsv	488	塔城	塔城	ㄊㄚˇ ㄔㄥˊ	existing				塔城				
+phrase.china.tsv	490	大慶	大慶	ㄉㄚˋ ㄑㄧㄥˋ	existing				大慶				
+phrase.china.tsv	491	天水	天水	ㄊㄧㄢ ㄕㄨㄟˇ	existing				天水				
+phrase.china.tsv	492	天門	天門	ㄊㄧㄢ ㄇㄣˊ	existing				天門				
+phrase.china.tsv	493	太倉	太倉	ㄊㄞˋ ㄘㄤ	existing				太倉				
+phrase.china.tsv	497	安康	安康	ㄢ ㄎㄤ	existing				安康				
+phrase.china.tsv	498	安慶	安慶	ㄢ ㄑㄧㄥˋ	existing				安慶				
+phrase.china.tsv	499	安陽	安陽	ㄢ ㄧㄤˊ	existing				安陽				
+phrase.china.tsv	503	宜昌	宜昌	ㄧˊ ㄔㄤ	existing				宜昌				
+phrase.china.tsv	504	宜春	宜春	ㄧˊ ㄔㄨㄣ	existing				宜春				
+phrase.china.tsv	505	宜興	宜興	ㄧˊ ㄒㄧㄥ	existing				宜興				
+phrase.china.tsv	506	宜賓	宜賓	ㄧˊ ㄅㄧㄣ	existing				宜賓				
+phrase.china.tsv	511	寶雞	寶雞	ㄅㄠˇ ㄐㄧ	existing				寶雞				
+phrase.china.tsv	512	山南	山南	ㄕㄢ ㄋㄢˊ	existing				山南				
+phrase.china.tsv	513	岳陽	岳陽	ㄩㄝˋ ㄧㄤˊ	existing				岳陽				
+phrase.china.tsv	515	崑山	崑山	ㄎㄨㄣ ㄕㄢ	existing				崑山				
+phrase.china.tsv	518	常州	常州	ㄔㄤˊ ㄓㄡ	existing				常州				
+phrase.china.tsv	519	常德	常德	ㄔㄤˊ ㄉㄜˊ	existing				常德				
+phrase.china.tsv	525	康定	康定	ㄎㄤ ㄉㄧㄥˋ	existing				康定				
+phrase.china.tsv	528	廣元	廣元	ㄍㄨㄤˇ ㄩㄢˊ	existing				廣元				
+phrase.china.tsv	529	廣安	廣安	ㄍㄨㄤˇ ㄢ	existing				廣安				
+phrase.china.tsv	530	延吉	延吉	ㄧㄢˊ ㄐㄧˊ	existing				延吉				
+phrase.china.tsv	531	延安	延安	ㄧㄢˊ ㄢ	existing				延安				
+phrase.china.tsv	532	張家口	張家口	ㄓㄤ ㄐㄧㄚ ㄎㄡˇ	existing				張家口				
+phrase.china.tsv	535	徐州	徐州	ㄒㄩˊ ㄓㄡ	existing				徐州				
+phrase.china.tsv	537	德州	德州	ㄉㄜˊ ㄓㄡ	existing				德州				
+phrase.china.tsv	547	承德	承德	ㄔㄥˊ ㄉㄜˊ	existing				承德				
+phrase.china.tsv	551	撫順	撫順	ㄈㄨˇ ㄕㄨㄣˋ	existing				撫順				
+phrase.china.tsv	553	敦化	敦化	ㄉㄨㄣ ㄏㄨㄚˋ	existing				敦化				
+phrase.china.tsv	554	文山	文山	ㄨㄣˊ ㄕㄢ	existing				文山				
+phrase.china.tsv	555	文昌	文昌	ㄨㄣˊ ㄔㄤ	existing				文昌				
+phrase.china.tsv	560	日照	日照	ㄖˋ ㄓㄠˋ	existing				日照				
+phrase.china.tsv	562	昌吉	昌吉	ㄔㄤ ㄐㄧˊ	existing				昌吉				
+phrase.china.tsv	563	昌都	昌都	ㄔㄤ ㄉㄨ	existing				昌都				
+phrase.china.tsv	567	晉江	晉江	ㄐㄧㄣˋ ㄐㄧㄤ	existing				晉江				
+phrase.china.tsv	570	景德鎮	景德鎮	ㄐㄧㄥˇ ㄉㄜˊ ㄓㄣˋ	existing				景德鎮				
+phrase.china.tsv	572	曲阜	曲阜	ㄑㄩ ㄈㄨˋ	existing				曲阜				
+phrase.china.tsv	575	本溪	本溪	ㄅㄣˇ ㄒㄧ	existing				本溪				
+phrase.china.tsv	576	東方	東方	ㄉㄨㄥ ㄈㄤ	existing				東方				
+phrase.china.tsv	579	東陽	東陽	ㄉㄨㄥ ㄧㄤˊ	existing				東陽				
+phrase.china.tsv	582	柳州	柳州	ㄌㄧㄡˇ ㄓㄡ	existing				柳州				
+phrase.china.tsv	588	梧州	梧州	ㄨˊ ㄓㄡ	existing				梧州				
+phrase.china.tsv	595	武威	武威	ㄨˇ ㄨㄟ	existing				武威				
+phrase.china.tsv	597	永康	永康	ㄩㄥˇ ㄎㄤ	existing				永康				
+phrase.china.tsv	601	江陰	江陰	ㄐㄧㄤ ㄧㄣ	existing				江陰				
+phrase.china.tsv	605	泰安	泰安	ㄊㄞˋ ㄢ	existing				泰安				
+phrase.china.tsv	611	淮南	淮南	ㄏㄨㄞˊ ㄋㄢˊ	existing				淮南				
+phrase.china.tsv	612	淮安	淮安	ㄏㄨㄞˊ ㄢ	existing				淮安				
+phrase.china.tsv	615	湖州	湖州	ㄏㄨˊ ㄓㄡ	existing				湖州				
+phrase.china.tsv	616	湘潭	湘潭	ㄒㄧㄤ ㄊㄢˊ	existing				湘潭				
+phrase.china.tsv	619	溫州	溫州	ㄨㄣ ㄓㄡ	existing				溫州				
+phrase.china.tsv	624	漢中	漢中	ㄏㄢˋ ㄓㄨㄥ	existing				漢中				
+phrase.china.tsv	626	漳州	漳州	ㄓㄤ ㄓㄡ	existing				漳州				
+phrase.china.tsv	628	潮州	潮州	ㄔㄠˊ ㄓㄡ	existing				潮州				
+phrase.china.tsv	635	瀘州	瀘州	ㄌㄨˊ ㄓㄡ	existing				瀘州				
+phrase.china.tsv	640	營口	營口	ㄧㄥˊ ㄎㄡˇ	existing				營口				
+phrase.china.tsv	643	玉林	玉林	ㄩˋ ㄌㄧㄣˊ	existing				玉林				
+phrase.china.tsv	644	玉樹	玉樹	ㄩˋ ㄕㄨˋ	existing				玉樹				
+phrase.china.tsv	646	瑞安	瑞安	ㄖㄨㄟˋ ㄢ	existing				瑞安				
+phrase.china.tsv	652	白銀	白銀	ㄅㄞˊ ㄧㄣˊ	existing				白銀				
+phrase.china.tsv	659	石獅	石獅	ㄕˊ ㄕ	existing				石獅				
+phrase.china.tsv	661	福安	福安	ㄈㄨˊ ㄢ	existing				福安				
+phrase.china.tsv	664	秦皇島	秦皇島	ㄑㄧㄣˊ ㄏㄨㄤˊ ㄉㄠˇ	existing				秦皇島				
+phrase.china.tsv	665	紹興	紹興	ㄕㄠˋ ㄒㄧㄥ	existing				紹興				
+phrase.china.tsv	671	膠州	膠州	ㄐㄧㄠ ㄓㄡ	existing				膠州				
+phrase.china.tsv	672	臨汾	臨汾	ㄌㄧㄣˊ ㄈㄣˊ	existing				臨汾				
+phrase.china.tsv	673	臨沂	臨沂	ㄌㄧㄣˊ ㄧˊ	existing				臨沂				
+phrase.china.tsv	677	舟山	舟山	ㄓㄡ ㄕㄢ	existing				舟山				
+phrase.china.tsv	680	荊州	荊州	ㄐㄧㄥ ㄓㄡ	existing				荊州				
+phrase.china.tsv	682	莆田	莆田	ㄆㄨˊ ㄊㄧㄢˊ	existing				莆田				
+phrase.china.tsv	684	萍鄉	萍鄉	ㄆㄧㄥˊ ㄒㄧㄤ	existing				萍鄉				
+phrase.china.tsv	688	蓬萊	蓬萊	ㄆㄥˊ ㄌㄞˊ	existing				蓬萊				
+phrase.china.tsv	692	衡陽	衡陽	ㄏㄥˊ ㄧㄤˊ	existing				衡陽				
+phrase.china.tsv	694	襄陽	襄陽	ㄒㄧㄤ ㄧㄤˊ	existing				襄陽				
+phrase.china.tsv	695	西昌	西昌	ㄒㄧ ㄔㄤ	existing				西昌				
+phrase.china.tsv	696	許昌	許昌	ㄒㄩˇ ㄔㄤ	existing				許昌				
+phrase.china.tsv	704	通化	通化	ㄊㄨㄥ ㄏㄨㄚˋ	existing				通化				
+phrase.china.tsv	710	遵義	遵義	ㄗㄨㄣ ㄧˋ	existing				遵義				
+phrase.china.tsv	715	邯鄲	邯鄲	ㄏㄢˊ ㄉㄢ	existing				邯鄲				
+phrase.china.tsv	721	酒泉	酒泉	ㄐㄧㄡˇ ㄑㄩㄢˊ	existing				酒泉				
+phrase.china.tsv	723	金華	金華	ㄐㄧㄣ ㄏㄨㄚˊ	existing				金華				
+phrase.china.tsv	727	錦州	錦州	ㄐㄧㄣˇ ㄓㄡ	existing				錦州				
+phrase.china.tsv	728	鎮江	鎮江	ㄓㄣˋ ㄐㄧㄤ	existing				鎮江				
+phrase.china.tsv	731	長樂	長樂	ㄔㄤˊ ㄌㄜˋ	existing				長樂				
+phrase.china.tsv	732	長治	長治	ㄔㄤˊ ㄓˋ	existing				長治				
+phrase.china.tsv	733	開封	開封	ㄎㄞ ㄈㄥ	existing				開封				
+phrase.china.tsv	734	開平	開平	ㄎㄞ ㄆㄧㄥˊ	existing				開平				
+phrase.china.tsv	741	陸豐	陸豐	ㄌㄨˋ ㄈㄥ	existing				陸豐				
+phrase.china.tsv	747	雅安	雅安	ㄧㄚˇ ㄢ	existing				雅安				
+phrase.china.tsv	753	鞍山	鞍山	ㄢ ㄕㄢ	existing				鞍山				
+phrase.china.tsv	755	餘姚	餘姚	ㄩˊ ㄧㄠˊ	existing				餘姚				
+phrase.china.tsv	756	香格里拉	香格里拉	ㄒㄧㄤ ㄍㄜˊ ㄌㄧˇ ㄌㄚ	existing				香格里拉				
+phrase.china.tsv	759	騰衝	騰衝	ㄊㄥˊ ㄔㄨㄥ	existing				騰衝				
+phrase.china.tsv	764	鹽城	鹽城	ㄧㄢˊ ㄔㄥˊ	existing				鹽城				
+phrase.china.tsv	765	麗水	麗水	ㄌㄧˋ ㄕㄨㄟˇ	existing				麗水				
+phrase.china.tsv	767	黃石	黃石	ㄏㄨㄤˊ ㄕˊ	existing				黃石				
+phrase.china.tsv	770	龍岩	龍岩	ㄌㄨㄥˊ ㄧㄢˊ	existing				龍岩				
+phrase.china.tsv	804	工業園區	工業園區	ㄍㄨㄥ ㄧㄝˋ ㄩㄢˊ ㄑㄩ	existing				工業園區				
+phrase.china.tsv	876	虹橋	虹橋	ㄏㄨㄥˊ ㄑㄧㄠˊ	existing				虹橋				
+phrase.china.tsv	915	中山北路	中山北路	ㄓㄨㄥ ㄕㄢ ㄅㄟˇ ㄌㄨˋ	existing				中山北路				
+phrase.china.tsv	916	中山南路	中山南路	ㄓㄨㄥ ㄕㄢ ㄋㄢˊ ㄌㄨˋ	existing				中山南路				
+phrase.china.tsv	917	中山路	中山路	ㄓㄨㄥ ㄕㄢ ㄌㄨˋ	existing				中山路				
+phrase.china.tsv	974	新天地	新天地	ㄒㄧㄣ ㄊㄧㄢ ㄉㄧˋ	existing				新天地				
+phrase.china.tsv	986	東湖路	東湖路	ㄉㄨㄥ ㄏㄨˊ ㄌㄨˋ	existing				東湖路				
+phrase.china.tsv	994	民生路	民生路	ㄇㄧㄣˊ ㄕㄥ ㄌㄨˋ	existing				民生路				
+phrase.china.tsv	1086	北戴河	北戴河	ㄅㄟˇ ㄉㄞˋ ㄏㄜˊ	existing				北戴河				
+phrase.china.tsv	1098	博物院	博物院	ㄅㄛˊ ㄨˋ ㄩㄢˋ	existing				博物院				
+phrase.china.tsv	1135	嵩山	嵩山	ㄙㄨㄥ ㄕㄢ	existing				嵩山				
+phrase.china.tsv	1162	普陀山	普陀山	ㄆㄨˇ ㄊㄨㄛˊ ㄕㄢ	existing				普陀山				
+phrase.china.tsv	1172	東湖	東湖	ㄉㄨㄥ ㄏㄨˊ	existing				東湖				
+phrase.china.tsv	1175	桃花源	桃花源	ㄊㄠˊ ㄏㄨㄚ ㄩㄢˊ	existing				桃花源				
+phrase.china.tsv	1182	武當山	武當山	ㄨˇ ㄉㄤ ㄕㄢ	existing				武當山				
+phrase.china.tsv	1183	殷墟	殷墟	ㄧㄣ ㄒㄩ	existing				殷墟				
+phrase.china.tsv	1188	洞庭湖	洞庭湖	ㄉㄨㄥˋ ㄊㄧㄥˊ ㄏㄨˊ	existing				洞庭湖				
+phrase.china.tsv	1194	湖心亭	湖心亭	ㄏㄨˊ ㄒㄧㄣ ㄊㄧㄥˊ	existing				湖心亭				
+phrase.china.tsv	1195	滇池	滇池	ㄉㄧㄢ ㄔˊ	existing				滇池				
+phrase.china.tsv	1205	玉門關	玉門關	ㄩˋ ㄇㄣˊ ㄍㄨㄢ	existing				玉門關				
+phrase.china.tsv	1218	祁連山	祁連山	ㄑㄧˊ ㄌㄧㄢˊ ㄕㄢ	existing				祁連山				
+phrase.china.tsv	1224	秦淮河	秦淮河	ㄑㄧㄣˊ ㄏㄨㄞˊ ㄏㄜˊ	existing				秦淮河				
+phrase.china.tsv	1229	紫金山	紫金山	ㄗˇ ㄐㄧㄣ ㄕㄢ	existing				紫金山				
+phrase.china.tsv	1230	終南山	終南山	ㄓㄨㄥ ㄋㄢˊ ㄕㄢ	existing				終南山				
+phrase.china.tsv	1257	西島	西島	ㄒㄧ ㄉㄠˇ	existing				西島				
+phrase.china.tsv	1258	西湖	西湖	ㄒㄧ ㄏㄨˊ	existing				西湖				
+phrase.china.tsv	1259	西街	西街	ㄒㄧ ㄐㄧㄝ	existing				西街				
+phrase.china.tsv	1277	鏡泊湖	鏡泊湖	ㄐㄧㄥˋ ㄆㄛ ㄏㄨˊ	existing				鏡泊湖				
+phrase.china.tsv	1279	長城	長城	ㄔㄤˊ ㄔㄥˊ	existing				長城				
+phrase.china.tsv	1280	長江三峽	長江三峽	ㄔㄤˊ ㄐㄧㄤ ㄙㄢ ㄒㄧㄚˊ	existing				長江三峽				
+phrase.china.tsv	1281	開封府	開封府	ㄎㄞ ㄈㄥ ㄈㄨˇ	existing				開封府				
+phrase.china.tsv	1283	陽關	陽關	ㄧㄤˊ ㄍㄨㄢ	existing				陽關				
+phrase.china.tsv	1298	韶山	韶山	ㄕㄠˊ ㄕㄢ	existing				韶山				
+phrase.china.tsv	1303	鳥巢	鳥巢	ㄋㄧㄠˇ ㄔㄠˊ	existing				鳥巢				
+phrase.china.tsv	1316	一塊兒	一塊兒	ㄧ ㄎㄨㄞˋ ㄦˊ	existing				一塊兒				
+phrase.china.tsv	1326	乖乖	乖乖	ㄍㄨㄞ ㄍㄨㄞ	existing				乖乖				
+phrase.china.tsv	1346	吃不消	吃不消	ㄔ ㄅㄨˋ ㄒㄧㄠ	existing				吃不消				
+phrase.china.tsv	1356	咱倆	咱倆	ㄗㄢˊ ㄌㄧㄚˇ	existing				咱倆				
+phrase.china.tsv	1357	咱家	咱家	ㄗㄢˊ ㄐㄧㄚ	existing				咱家				
+phrase.china.tsv	1365	啥	啥	ㄕㄚˊ	existing				啥				
+phrase.china.tsv	1368	啥子	啥子	ㄕㄚˊ ㄗˇ	existing				啥子				
+phrase.china.tsv	1392	好傢伙	好傢伙	ㄏㄠˇ ㄐㄧㄚ ㄏㄨㄛˇ	existing				好傢伙				
+phrase.china.tsv	1396	小意思	小意思	ㄒㄧㄠˇ ㄧˋ ㄙ	existing				小意思				
+phrase.china.tsv	1398	小老弟	小老弟	ㄒㄧㄠˇ ㄌㄠˇ ㄉㄧˋ	existing				小老弟				
+phrase.china.tsv	1400	幹什麼	幹什麼	ㄍㄢˋ ㄕˊ ㄇㄜ˙	existing				幹什麼				
+phrase.china.tsv	1408	心裡有數	心裡有數	ㄒㄧㄣ ㄌㄧˇ ㄧㄡˇ ㄕㄨˋ	existing				心裡有數				
+phrase.china.tsv	1412	怎麼著	怎麼著	ㄗㄣˇ ㄇㄜ˙ ㄓㄜ˙	existing				怎麼著				
+phrase.china.tsv	1427	擺龍門陣	擺龍門陣	ㄅㄞˇ ㄌㄨㄥˊ ㄇㄣˊ ㄓㄣˋ	existing				擺龍門陣				
+phrase.china.tsv	1442	沒譜	沒譜	ㄇㄟˊ ㄆㄨˇ	existing				沒譜				
+phrase.china.tsv	1443	沒轍	沒轍	ㄇㄟˊ ㄓㄜˊ	existing				沒轍				
+phrase.china.tsv	1446	爺們	爺們	ㄧㄝˊ ㄇㄣ˙	existing				爺們				
+phrase.china.tsv	1459	瞎扯	瞎扯	ㄒㄧㄚ ㄔㄜˇ	existing				瞎扯				
+phrase.china.tsv	1460	瞎搞	瞎搞	ㄒㄧㄚ ㄍㄠˇ	existing				瞎搞				
+phrase.china.tsv	1461	瞎說	瞎說	ㄒㄧㄚ ㄕㄨㄛ	existing				瞎說				
+phrase.china.tsv	1468	管用	管用	ㄍㄨㄢˇ ㄩㄥˋ	existing				管用				
+phrase.china.tsv	1471	老哥	老哥	ㄌㄠˇ ㄍㄜ	existing				老哥				
+phrase.china.tsv	1473	老姐	老姐	ㄌㄠˇ ㄐㄧㄝˇ	existing				老姐				
+phrase.china.tsv	1474	老實說	老實說	ㄌㄠˇ ㄕˊ ㄕㄨㄛ	existing				老實說				
+phrase.china.tsv	1486	說實話	說實話	ㄕㄨㄛ ㄕˊ ㄏㄨㄚˋ	existing				說實話				
+phrase.china.tsv	1495	過日子	過日子	ㄍㄨㄛˋ ㄖˋ ㄗˇ	existing				過日子				
+phrase.china.tsv	1500	面子	面子	ㄇㄧㄢˋ ㄗˇ	existing				面子				
+phrase.china.tsv	1502	上頭	上頭	ㄕㄤˋ ㄊㄡˊ	existing				上頭				
+phrase.china.tsv	1504	主播	主播	ㄓㄨˇ ㄅㄛ	existing				主播				
+phrase.china.tsv	1506	乾飯	乾飯	ㄍㄢ ㄈㄢˋ	existing				乾飯				
+phrase.china.tsv	1518	六六六	六六六	ㄌㄧㄡˋ ㄌㄧㄡˋ ㄌㄧㄡˋ	existing				六六六				
+phrase.china.tsv	1520	凡爾賽	凡爾賽	ㄈㄢˊ ㄦˇ ㄙㄞˋ	existing				凡爾賽				
+phrase.china.tsv	1532	友軍	友軍	ㄧㄡˇ ㄐㄩㄣ	existing				友軍				
+phrase.china.tsv	1540	周邊	周邊	ㄓㄡ ㄅㄧㄢ	existing				周邊				
+phrase.china.tsv	1554	天花板	天花板	ㄊㄧㄢ ㄏㄨㄚ ㄅㄢˇ	existing				天花板				
+phrase.china.tsv	1560	孤寡	孤寡	ㄍㄨ ㄍㄨㄚˇ	existing				孤寡				
+phrase.china.tsv	1569	小哥哥	小哥哥	ㄒㄧㄠˇ ㄍㄜ ㄍㄜ	existing				小哥哥				
+phrase.china.tsv	1579	應援	應援	ㄧㄥˋ ㄩㄢˊ	existing				應援				
+phrase.china.tsv	1583	抽象	抽象	ㄔㄡ ㄒㄧㄤˋ	existing				抽象				
+phrase.china.tsv	1587	拔草	拔草	ㄅㄚˊ ㄘㄠˇ	existing				拔草				
+phrase.china.tsv	1589	捲起來	捲起來	ㄐㄩㄢˇ ㄑㄧˇ ㄌㄞˊ	existing				捲起來				
+phrase.china.tsv	1596	擺爛	擺爛	ㄅㄞˇ ㄌㄢˋ	existing				擺爛				
+phrase.china.tsv	1606	水軍	水軍	ㄕㄨㄟˇ ㄐㄩㄣ	existing				水軍				
+phrase.china.tsv	1622	牆頭	牆頭	ㄑㄧㄤˊ ㄊㄡˊ	existing				牆頭				
+phrase.china.tsv	1637	真香	真香	ㄓㄣ ㄒㄧㄤ	existing				真香				
+phrase.china.tsv	1639	短劇	短劇	ㄉㄨㄢˇ ㄐㄩˋ	existing				短劇				
+phrase.china.tsv	1650	穀子	穀子	ㄍㄨˇ ㄗˇ	existing				穀子				
+phrase.china.tsv	1661	網紅	網紅	ㄨㄤˇ ㄏㄨㄥˊ	existing				網紅				
+phrase.china.tsv	1680	衝浪	衝浪	ㄔㄨㄥ ㄌㄤˋ	existing				衝浪				
+phrase.china.tsv	1682	誤傷	誤傷	ㄨˋ ㄕㄤ	existing				誤傷				
+phrase.china.tsv	1693	躺平	躺平	ㄊㄤˇ ㄆㄧㄥˊ	existing				躺平				
+phrase.china.tsv	1708	鐵證	鐵證	ㄊㄧㄝˇ ㄓㄥˋ	existing				鐵證				
+phrase.china.tsv	1712	電子寵物	電子寵物	ㄉㄧㄢˋ ㄗˇ ㄔㄨㄥˇ ㄨˋ	existing				電子寵物				
+phrase.china.tsv	1727	黑子	黑子	ㄏㄟ ㄗˇ	existing				黑子				
+phrase.china.tsv	1733	下單	下單	ㄒㄧㄚˋ ㄉㄢ	existing				下單				
+phrase.china.tsv	1736	事業單位	事業單位	ㄕˋ ㄧㄝˋ ㄉㄢ ㄨㄟˋ	existing				事業單位				
+phrase.china.tsv	1750	保姆	保姆	ㄅㄠˇ ㄇㄨˇ	existing				保姆				
+phrase.china.tsv	1754	停車位	停車位	ㄊㄧㄥˊ ㄔㄜ ㄨㄟˋ	existing				停車位				
+phrase.china.tsv	1755	停車場	停車場	ㄊㄧㄥˊ ㄔㄜ ㄔㄤˇ	existing				停車場				
+phrase.china.tsv	1756	停車費	停車費	ㄊㄧㄥˊ ㄔㄜ ㄈㄟˋ	existing				停車費				
+phrase.china.tsv	1758	優惠價	優惠價	ㄧㄡ ㄏㄨㄟˋ ㄐㄧㄚˋ	existing				優惠價				
+phrase.china.tsv	1768	公務員	公務員	ㄍㄨㄥ ㄨˋ ㄩㄢˊ	existing				公務員				
+phrase.china.tsv	1769	公安局	公安局	ㄍㄨㄥ ㄢ ㄐㄩˊ	existing				公安局				
+phrase.china.tsv	1770	公寓	公寓	ㄍㄨㄥ ㄩˋ	existing				公寓				
+phrase.china.tsv	1782	包裹	包裹	ㄅㄠ ㄍㄨㄛˇ	existing				包裹				
+phrase.china.tsv	1784	升學率	升學率	ㄕㄥ ㄒㄩㄝˊ ㄌㄩˋ	existing				升學率				
+phrase.china.tsv	1786	卷子	卷子	ㄐㄩㄢˇ ㄗˇ	existing				卷子				
+phrase.china.tsv	1791	叫號	叫號	ㄐㄧㄠˋ ㄏㄠˋ	existing				叫號				
+phrase.china.tsv	1792	合租	合租	ㄏㄜˊ ㄗㄨ	existing				合租				
+phrase.china.tsv	1798	國考	國考	ㄍㄨㄛˊ ㄎㄠˇ	existing				國考				
+phrase.china.tsv	1799	團長	團長	ㄊㄨㄢˊ ㄓㄤˇ	existing				團長				
+phrase.china.tsv	1809	學籍	學籍	ㄒㄩㄝˊ ㄐㄧˊ	existing				學籍				
+phrase.china.tsv	1811	客服	客服	ㄎㄜˋ ㄈㄨˊ	existing				客服				
+phrase.china.tsv	1844	戶籍	戶籍	ㄏㄨˋ ㄐㄧˊ	existing				戶籍				
+phrase.china.tsv	1846	房客	房客	ㄈㄤˊ ㄎㄜˋ	existing				房客				
+phrase.china.tsv	1849	房東	房東	ㄈㄤˊ ㄉㄨㄥ	existing				房東				
+phrase.china.tsv	1852	房租	房租	ㄈㄤˊ ㄗㄨ	existing				房租				
+phrase.china.tsv	1853	房貸	房貸	ㄈㄤˊ ㄉㄞˋ	existing				房貸				
+phrase.china.tsv	1861	掛號	掛號	ㄍㄨㄚˋ ㄏㄠˋ	existing				掛號				
+phrase.china.tsv	1862	掛號費	掛號費	ㄍㄨㄚˋ ㄏㄠˋ ㄈㄟˋ	existing				掛號費				
+phrase.china.tsv	1869	新房	新房	ㄒㄧㄣ ㄈㄤˊ	existing				新房				
+phrase.china.tsv	1871	晚自習	晚自習	ㄨㄢˇ ㄗˋ ㄒㄧˊ	existing				晚自習				
+phrase.china.tsv	1889	民政局	民政局	ㄇㄧㄣˊ ㄓㄥˋ ㄐㄩˊ	existing				民政局				
+phrase.china.tsv	1891	津貼	津貼	ㄐㄧㄣ ㄊㄧㄝ	existing				津貼				
+phrase.china.tsv	1892	派出所	派出所	ㄆㄞˋ ㄔㄨ ㄙㄨㄛˇ	existing				派出所				
+phrase.china.tsv	1898	熱水器	熱水器	ㄖㄜˋ ㄕㄨㄟˇ ㄑㄧˋ	existing				熱水器				
+phrase.china.tsv	1910	產假	產假	ㄔㄢˇ ㄐㄧㄚˋ	existing				產假				
+phrase.china.tsv	1926	秒殺	秒殺	ㄇㄧㄠˇ ㄕㄚ	existing				秒殺				
+phrase.china.tsv	1931	空調	空調	ㄎㄨㄥ ㄉㄧㄠˋ	existing				空調				
+phrase.china.tsv	1938	編制	編制	ㄅㄧㄢ ㄓˋ	existing				編制				
+phrase.china.tsv	1957	補課	補課	ㄅㄨˇ ㄎㄜˋ	existing				補課				
+phrase.china.tsv	1958	補貼	補貼	ㄅㄨˇ ㄊㄧㄝ	existing				補貼				
+phrase.china.tsv	1965	貨到付款	貨到付款	ㄏㄨㄛˋ ㄉㄠˋ ㄈㄨˋ ㄎㄨㄢˇ	existing				貨到付款				
+phrase.china.tsv	1968	路由器	路由器	ㄌㄨˋ ㄧㄡˊ ㄑㄧˋ	existing				路由器				
+phrase.china.tsv	1973	輔導員	輔導員	ㄈㄨˇ ㄉㄠˇ ㄩㄢˊ	existing				輔導員				
+phrase.china.tsv	1974	轉帳	轉帳	ㄓㄨㄢˇ ㄓㄤˋ	existing				轉帳				
+phrase.china.tsv	1975	轉租	轉租	ㄓㄨㄢˇ ㄗㄨ	existing				轉租				
+phrase.china.tsv	1977	退休金	退休金	ㄊㄨㄟˋ ㄒㄧㄡ ㄐㄧㄣ	existing				退休金				
+phrase.china.tsv	1978	退租	退租	ㄊㄨㄟˋ ㄗㄨ	existing				退租				
+phrase.china.tsv	1985	遙控器	遙控器	ㄧㄠˊ ㄎㄨㄥˋ ㄑㄧˋ	existing				遙控器				
+phrase.china.tsv	1986	郵費	郵費	ㄧㄡˊ ㄈㄟˋ	existing				郵費				
+phrase.china.tsv	1995	門診	門診	ㄇㄣˊ ㄓㄣˇ	existing				門診				
+phrase.china.tsv	1998	阿姨	阿姨	ㄚ ㄧˊ	existing				阿姨				
+phrase.china.tsv	2010	養老金	養老金	ㄧㄤˇ ㄌㄠˇ ㄐㄧㄣ	existing				養老金				
+phrase.china.tsv	2015	高考	高考	ㄍㄠ ㄎㄠˇ	existing				高考				
+phrase.china.tsv	2032	候車室	候車室	ㄏㄡˋ ㄔㄜ ㄕˋ	existing				候車室				
+phrase.china.tsv	2034	充電樁	充電樁	ㄔㄨㄥ ㄉㄧㄢˋ ㄓㄨㄤ	existing				充電樁				
+phrase.china.tsv	2037	出港	出港	ㄔㄨ ㄍㄤˇ	existing				出港				
+phrase.china.tsv	2050	地鐵站	地鐵站	ㄉㄧˋ ㄊㄧㄝˇ ㄓㄢˋ	existing				地鐵站				
+phrase.china.tsv	2052	壓線	壓線	ㄧㄚ ㄒㄧㄢˋ	existing				壓線				
+phrase.china.tsv	2053	安檢	安檢	ㄢ ㄐㄧㄢˇ	existing				安檢				
+phrase.china.tsv	2056	專車	專車	ㄓㄨㄢ ㄔㄜ	existing				專車				
+phrase.china.tsv	2057	導航	導航	ㄉㄠˇ ㄏㄤˊ	existing				導航				
+phrase.china.tsv	2059	延誤	延誤	ㄧㄢˊ ㄨˋ	existing				延誤				
+phrase.china.tsv	2060	快充	快充	ㄎㄨㄞˋ ㄔㄨㄥ	existing				快充				
+phrase.china.tsv	2061	快車	快車	ㄎㄨㄞˋ ㄔㄜ	existing				快車				
+phrase.china.tsv	2065	掉頭	掉頭	ㄉㄧㄠˋ ㄊㄡˊ	existing				掉頭				
+phrase.china.tsv	2073	收費站	收費站	ㄕㄡ ㄈㄟˋ ㄓㄢˋ	existing				收費站				
+phrase.china.tsv	2075	斑馬線	斑馬線	ㄅㄢ ㄇㄚˇ ㄒㄧㄢˋ	existing				斑馬線				
+phrase.china.tsv	2080	月台	月台	ㄩㄝˋ ㄊㄞˊ	existing				月台				
+phrase.china.tsv	2081	末班車	末班車	ㄇㄛˋ ㄅㄢ ㄔㄜ	existing				末班車				
+phrase.china.tsv	2085	機票	機票	ㄐㄧ ㄆㄧㄠˋ	existing				機票				
+phrase.china.tsv	2087	民航	民航	ㄇㄧㄣˊ ㄏㄤˊ	existing				民航				
+phrase.china.tsv	2090	火車票	火車票	ㄏㄨㄛˇ ㄔㄜ ㄆㄧㄠˋ	existing				火車票				
+phrase.china.tsv	2093	牌照	牌照	ㄆㄞˊ ㄓㄠˋ	existing				牌照				
+phrase.china.tsv	2095	直飛	直飛	ㄓˊ ㄈㄟ	existing				直飛				
+phrase.china.tsv	2103	站台	站台	ㄓㄢˋ ㄊㄞˊ	existing				站台				
+phrase.china.tsv	2104	站票	站票	ㄓㄢˋ ㄆㄧㄠˋ	existing				站票				
+phrase.china.tsv	2105	紅綠燈	紅綠燈	ㄏㄨㄥˊ ㄌㄩˋ ㄉㄥ	existing				紅綠燈				
+phrase.china.tsv	2107	續航	續航	ㄒㄩˋ ㄏㄤˊ	existing				續航				
+phrase.china.tsv	2112	行人道	行人道	ㄒㄧㄥˊ ㄖㄣˊ ㄉㄠˋ	existing				行人道				
+phrase.china.tsv	2126	跑車	跑車	ㄆㄠˇ ㄔㄜ	existing				跑車				
+phrase.china.tsv	2127	路口	路口	ㄌㄨˋ ㄎㄡˇ	existing				路口				
+phrase.china.tsv	2128	路況	路況	ㄌㄨˋ ㄎㄨㄤˋ	existing				路況				
+phrase.china.tsv	2130	車主	車主	ㄔㄜ ㄓㄨˇ	existing				車主				
+phrase.china.tsv	2132	車牌	車牌	ㄔㄜ ㄆㄞˊ	existing				車牌				
+phrase.china.tsv	2136	車費	車費	ㄔㄜ ㄈㄟˋ	existing				車費				
+phrase.china.tsv	2137	車道	車道	ㄔㄜ ㄉㄠˋ	existing				車道				
+phrase.china.tsv	2140	轉乘	轉乘	ㄓㄨㄢˇ ㄔㄥˊ	existing				轉乘				
+phrase.china.tsv	2141	轉機	轉機	ㄓㄨㄢˇ ㄐㄧ	existing				轉機				
+phrase.china.tsv	2142	退票	退票	ㄊㄨㄟˋ ㄆㄧㄠˋ	existing				退票				
+phrase.china.tsv	2143	通道	通道	ㄊㄨㄥ ㄉㄠˋ	existing				通道				
+phrase.china.tsv	2144	進港	進港	ㄐㄧㄣˋ ㄍㄤˇ	existing				進港				
+phrase.china.tsv	2150	闖紅燈	闖紅燈	ㄔㄨㄤˇ ㄏㄨㄥˊ ㄉㄥ	existing				闖紅燈				
+phrase.china.tsv	2153	電動車	電動車	ㄉㄧㄢˋ ㄉㄨㄥˋ ㄔㄜ	existing				電動車				
+phrase.china.tsv	2161	駕照	駕照	ㄐㄧㄚˋ ㄓㄠˋ	existing				駕照				
+phrase.china.tsv	2164	騎行	騎行	ㄑㄧˊ ㄒㄧㄥˊ	existing				騎行				
+phrase.china.tsv	2167	高速公路	高速公路	ㄍㄠ ㄙㄨˋ ㄍㄨㄥ ㄌㄨˋ	existing				高速公路				
+phrase.china.tsv	2171	高鐵站	高鐵站	ㄍㄠ ㄊㄧㄝˇ ㄓㄢˋ	existing				高鐵站				
+phrase.china.tsv	2173	上傳	上傳	ㄕㄤˋ ㄔㄨㄢˊ	existing				上傳				
+phrase.china.tsv	2174	下載	下載	ㄒㄧㄚˋ ㄗㄞˋ	existing				下載				
+phrase.china.tsv	2188	原神	原神	ㄩㄢˊ ㄕㄣˊ	existing				原神				
+phrase.china.tsv	2191	口碑	口碑	ㄎㄡˇ ㄅㄟ	existing				口碑				
+phrase.china.tsv	2194	合拍	合拍	ㄏㄜˊ ㄆㄞ	existing				合拍				
+phrase.china.tsv	2208	封號	封號	ㄈㄥ ㄏㄠˋ	existing				封號				
+phrase.china.tsv	2212	彈幕	彈幕	ㄉㄢˋ ㄇㄨˋ	existing				彈幕				
+phrase.china.tsv	2213	影評	影評	ㄧㄥˇ ㄆㄧㄥˊ	existing				影評				
+phrase.china.tsv	2239	收藏	收藏	ㄕㄡ ㄘㄤˊ	existing				收藏				
+phrase.china.tsv	2250	沙發	沙發	ㄕㄚ ㄈㄚ	existing				沙發				
+phrase.china.tsv	2255	滴滴	滴滴	ㄉㄧ ㄉㄧ	existing				滴滴				
+phrase.china.tsv	2261	熱門話題	熱門話題	ㄖㄜˋ ㄇㄣˊ ㄏㄨㄚˋ ㄊㄧˊ	existing				熱門話題				
+phrase.china.tsv	2285	私信	私信	ㄙ ㄒㄧㄣˋ	existing				私信				
+phrase.china.tsv	2317	豆瓣	豆瓣	ㄉㄡˋ ㄅㄢˋ	existing				豆瓣				
+phrase.china.tsv	2324	轉發	轉發	ㄓㄨㄢˇ ㄈㄚ	existing				轉發				
+phrase.china.tsv	2336	關注	關注	ㄍㄨㄢ ㄓㄨˋ	existing				關注				
+phrase.china.tsv	2337	限流	限流	ㄒㄧㄢˋ ㄌㄧㄡˊ	existing				限流				
+phrase.china.tsv	2352	黑名單	黑名單	ㄏㄟ ㄇㄧㄥˊ ㄉㄢ	existing				黑名單				
+phrase.china.tsv	2357	一品鍋	一品鍋	ㄧ ㄆㄧㄣˇ ㄍㄨㄛ	existing				一品鍋				
+phrase.china.tsv	2365	佛跳牆	佛跳牆	ㄈㄛˊ ㄊㄧㄠˋ ㄑㄧㄤˊ	existing				佛跳牆				
+phrase.china.tsv	2379	叉燒	叉燒	ㄔㄚ ㄕㄠ	existing				叉燒				
+phrase.china.tsv	2395	套餐	套餐	ㄊㄠˋ ㄘㄢ	existing				套餐				
+phrase.china.tsv	2402	小籠包	小籠包	ㄒㄧㄠˇ ㄌㄨㄥˊ ㄅㄠ	existing				小籠包				
+phrase.china.tsv	2409	川菜	川菜	ㄔㄨㄢ ㄘㄞˋ	existing				川菜				
+phrase.china.tsv	2420	拉麵	拉麵	ㄌㄚ ㄇㄧㄢˋ	existing				拉麵				
+phrase.china.tsv	2421	拌麵	拌麵	ㄅㄢˋ ㄇㄧㄢˋ	existing				拌麵				
+phrase.china.tsv	2424	擔擔麵	擔擔麵	ㄉㄢ ㄉㄢ ㄇㄧㄢˋ	existing				擔擔麵				
+phrase.china.tsv	2452	涮羊肉	涮羊肉	ㄕㄨㄢˋ ㄧㄤˊ ㄖㄡˋ	existing				涮羊肉				
+phrase.china.tsv	2454	涼粉	涼粉	ㄌㄧㄤˊ ㄈㄣˇ	existing				涼粉				
+phrase.china.tsv	2458	清蒸鱸魚	清蒸鱸魚	ㄑㄧㄥ ㄓㄥ ㄌㄨˊ ㄩˊ	existing				清蒸鱸魚				
+phrase.china.tsv	2470	潤餅	潤餅	ㄖㄨㄣˋ ㄅㄧㄥˇ	existing				潤餅				
+phrase.china.tsv	2475	火鍋	火鍋	ㄏㄨㄛˇ ㄍㄨㄛ	existing				火鍋				
+phrase.china.tsv	2485	烤鴨	烤鴨	ㄎㄠˇ ㄧㄚ	existing				烤鴨				
+phrase.china.tsv	2490	煲仔飯	煲仔飯	ㄅㄠ ㄗㄞˇ ㄈㄢˋ	existing				煲仔飯				
+phrase.china.tsv	2492	燒肉粽	燒肉粽	ㄕㄠ ㄖㄡˋ ㄗㄨㄥˋ	existing				燒肉粽				
+phrase.china.tsv	2493	燒賣	燒賣	ㄕㄠ ㄇㄞˋ	existing				燒賣				
+phrase.china.tsv	2498	牛肉丸	牛肉丸	ㄋㄧㄡˊ ㄖㄡˋ ㄨㄢˊ	existing				牛肉丸				
+phrase.china.tsv	2499	牛肉麵	牛肉麵	ㄋㄧㄡˊ ㄖㄡˋ ㄇㄧㄢˋ	existing				牛肉麵				
+phrase.china.tsv	2502	獅子頭	獅子頭	ㄕ ㄗˇ ㄊㄡˊ	existing				獅子頭				
+phrase.china.tsv	2512	竹筒飯	竹筒飯	ㄓㄨˊ ㄊㄨㄥˇ ㄈㄢˋ	existing				竹筒飯				
+phrase.china.tsv	2514	粵菜	粵菜	ㄩㄝˋ ㄘㄞˋ	existing				粵菜				
+phrase.china.tsv	2518	糖醋排骨	糖醋排骨	ㄊㄤˊ ㄘㄨˋ ㄆㄞˊ ㄍㄨˇ	existing				糖醋排骨				
+phrase.china.tsv	2520	紅燒肉	紅燒肉	ㄏㄨㄥˊ ㄕㄠ ㄖㄡˋ	existing				紅燒肉				
+phrase.china.tsv	2523	老豆腐	老豆腐	ㄌㄠˇ ㄉㄡˋ ㄈㄨˇ	existing				老豆腐				
+phrase.china.tsv	2529	腸粉	腸粉	ㄔㄤˊ ㄈㄣˇ	existing				腸粉				
+phrase.china.tsv	2530	臘肉	臘肉	ㄌㄚˋ ㄖㄡˋ	existing				臘肉				
+phrase.china.tsv	2531	自助餐	自助餐	ㄗˋ ㄓㄨˋ ㄘㄢ	existing				自助餐				
+phrase.china.tsv	2535	芋泥	芋泥	ㄩˋ ㄋㄧˊ	existing				芋泥				
+phrase.china.tsv	2539	蒜泥白肉	蒜泥白肉	ㄙㄨㄢˋ ㄋㄧˊ ㄅㄞˊ ㄖㄡˋ	existing				蒜泥白肉				
+phrase.china.tsv	2543	薑母鴨	薑母鴨	ㄐㄧㄤ ㄇㄨˇ ㄧㄚ	existing				薑母鴨				
+phrase.china.tsv	2546	蚵仔煎	蚵仔煎	ㄏㄜˊ ㄗㄞˇ ㄐㄧㄢ	existing				蚵仔煎				
+phrase.china.tsv	2548	蝦餃	蝦餃	ㄒㄧㄚ ㄐㄧㄠˇ	existing				蝦餃				
+phrase.china.tsv	2552	血腸	血腸	ㄒㄩㄝˋ ㄔㄤˊ	existing				血腸				
+phrase.china.tsv	2559	路邊攤	路邊攤	ㄌㄨˋ ㄅㄧㄢ ㄊㄢ	existing				路邊攤				
+phrase.china.tsv	2578	陽春麵	陽春麵	ㄧㄤˊ ㄔㄨㄣ ㄇㄧㄢˋ	existing				陽春麵				
+phrase.china.tsv	2583	雲吞麵	雲吞麵	ㄩㄣˊ ㄊㄨㄣ ㄇㄧㄢˋ	existing				雲吞麵				
+phrase.china.tsv	2588	食堂	食堂	ㄕˊ ㄊㄤˊ	existing				食堂				
+phrase.china.tsv	2589	餡餅	餡餅	ㄒㄧㄢˋ ㄅㄧㄥˇ	existing				餡餅				
+phrase.china.tsv	2601	麻婆豆腐	麻婆豆腐	ㄇㄚˊ ㄆㄛˊ ㄉㄡˋ ㄈㄨˇ	existing				麻婆豆腐				
+phrase.china.tsv	2602	麻花	麻花	ㄇㄚˊ ㄏㄨㄚ	existing				麻花				
+phrase.china.tsv	2622	中信集團	中信集團	ㄓㄨㄥ ㄒㄧㄣˋ ㄐㄧˊ ㄊㄨㄢˊ	existing				中信集團				
+phrase.china.tsv	2638	中國銀行	中國銀行	ㄓㄨㄥ ㄍㄨㄛˊ ㄧㄣˊ ㄏㄤˊ	existing				中國銀行				
+phrase.china.tsv	2647	中石化	中石化	ㄓㄨㄥ ㄕˊ ㄏㄨㄚˋ	existing				中石化				
+phrase.china.tsv	2655	交通銀行	交通銀行	ㄐㄧㄠ ㄊㄨㄥ ㄧㄣˊ ㄏㄤˊ	existing				交通銀行				
+phrase.china.tsv	2672	吉利	吉利	ㄐㄧˊ ㄌㄧˋ	existing				吉利				
+phrase.china.tsv	2679	圓通	圓通	ㄩㄢˊ ㄊㄨㄥ	existing				圓通				
+phrase.china.tsv	2690	寒武紀	寒武紀	ㄏㄢˊ ㄨˇ ㄐㄧˋ	existing				寒武紀				
+phrase.china.tsv	2692	小米	小米	ㄒㄧㄠˇ ㄇㄧˇ	existing				小米				
+phrase.china.tsv	2699	康師傅	康師傅	ㄎㄤ ㄕ ㄈㄨˋ	existing				康師傅				
+phrase.china.tsv	2714	榮耀	榮耀	ㄖㄨㄥˊ ㄧㄠˋ	existing				榮耀				
+phrase.china.tsv	2738	百度	百度	ㄅㄞˇ ㄉㄨˋ	existing				百度				
+phrase.china.tsv	2751	美的	美的	ㄇㄟˇ ㄉㄜ˙	existing				美的				
+phrase.china.tsv	2753	聯想	聯想	ㄌㄧㄢˊ ㄒㄧㄤˇ	existing				聯想				
+phrase.china.tsv	2760	菜鳥	菜鳥	ㄘㄞˋ ㄋㄧㄠˇ	existing				菜鳥				
+phrase.china.tsv	2804	一點點	一點點	ㄧ ㄉㄧㄢˇ ㄉㄧㄢˇ	existing				一點點				
+phrase.china.tsv	2816	大潤發	大潤發	ㄉㄚˋ ㄖㄨㄣˋ ㄈㄚ	existing				大潤發				
+phrase.china.tsv	2822	家樂福	家樂福	ㄐㄧㄚ ㄌㄜˋ ㄈㄨˊ	existing				家樂福				
+phrase.china.tsv	2836	必勝客	必勝客	ㄅㄧˋ ㄕㄥˋ ㄎㄜˋ	existing				必勝客				
+phrase.china.tsv	2856	理想	理想	ㄌㄧˇ ㄒㄧㄤˇ	existing				理想				
+phrase.china.tsv	2865	肯德基	肯德基	ㄎㄣˇ ㄉㄜˊ ㄐㄧ	existing				肯德基				
+phrase.china.tsv	2886	麥當勞	麥當勞	ㄇㄞˋ ㄉㄤ ㄌㄠˊ	existing				麥當勞				
+phrase.china.tsv	2904	交大	交大	ㄐㄧㄠ ㄉㄚˋ	existing				交大				
+phrase.china.tsv	2990	人大代表	人大代表	ㄖㄣˊ ㄉㄚˋ ㄉㄞˋ ㄅㄧㄠˇ	existing				人大代表				
+phrase.china.tsv	2996	公安部	公安部	ㄍㄨㄥ ㄢ ㄅㄨˋ	existing				公安部				
+phrase.china.tsv	2999	商務部	商務部	ㄕㄤ ㄨˋ ㄅㄨˋ	existing				商務部				
+phrase.china.tsv	3000	國務院	國務院	ㄍㄨㄛˊ ㄨˋ ㄩㄢˋ	existing				國務院				
+phrase.china.tsv	3008	央行	央行	ㄧㄤ ㄏㄤˊ	existing				央行				
+phrase.china.tsv	3012	市政府	市政府	ㄕˋ ㄓㄥˋ ㄈㄨˇ	existing				市政府				
+phrase.china.tsv	3022	教育部	教育部	ㄐㄧㄠˋ ㄩˋ ㄅㄨˋ	existing				教育部				
+phrase.china.tsv	3027	消費券	消費券	ㄒㄧㄠ ㄈㄟˋ ㄑㄩㄢˋ	existing				消費券				
+phrase.china.tsv	3035	省政府	省政府	ㄕㄥˇ ㄓㄥˋ ㄈㄨˇ	existing				省政府				
+phrase.china.tsv	3038	稅務局	稅務局	ㄕㄨㄟˋ ㄨˋ ㄐㄩˊ	existing				稅務局				
+phrase.china.tsv	3040	縣政府	縣政府	ㄒㄧㄢˋ ㄓㄥˋ ㄈㄨˇ	existing				縣政府				
+phrase.china.tsv	3044	財政部	財政部	ㄘㄞˊ ㄓㄥˋ ㄅㄨˋ	existing				財政部				
+phrase.china.tsv	3052	南海	南海	ㄋㄢˊ ㄏㄞˇ	existing				南海				
+phrase.china.tsv	3058	怒江	怒江	ㄋㄨˋ ㄐㄧㄤ	existing				怒江				
+phrase.china.tsv	3060	海北	海北	ㄏㄞˇ ㄅㄟˇ	existing				海北				
+phrase.china.tsv	3063	涼山	涼山	ㄌㄧㄤˊ ㄕㄢ	existing				涼山				
+phrase.china.tsv	3069	紅河	紅河	ㄏㄨㄥˊ ㄏㄜˊ	existing				紅河				
+phrase.china.tsv	3076	阿里	阿里	ㄚ ㄌㄧˇ	existing				阿里				
+phrase.china.tsv	3077	順德	順德	ㄕㄨㄣˋ ㄉㄜˊ	existing				順德				
+phrase.china.tsv	3089	大數據	大數據	ㄉㄚˋ ㄕㄨˋ ㄐㄩˋ	existing				大數據				
+phrase.china.tsv	3104	無人駕駛	無人駕駛	ㄨˊ ㄖㄣˊ ㄐㄧㄚˋ ㄕˇ	existing				無人駕駛				
 phrase.chinese.tsv	15	余光中	余光中	ㄩˊ ㄍㄨㄤ ㄓㄨㄥ	existing				余光中				
 phrase.chinese.tsv	48	屈原	屈原	ㄑㄩ ㄩㄢˊ	existing				屈原				
 phrase.chinese.tsv	53	徐志摩	徐志摩	ㄒㄩˊ ㄓˋ ㄇㄛˊ	existing				徐志摩				
@@ -927,6 +1330,7 @@ phrase.general.tsv	29	哆啦A夢	哆啦欸夢	ㄉㄨㄛ ㄌㄚ ㄟ ㄇㄥˋ	dupl
 phrase.general.tsv	30	哆啦a夢	哆啦欸夢	ㄉㄨㄛ ㄌㄚ ㄟ ㄇㄥˋ	duplicate				哆啦欸夢				
 phrase.general.tsv	33	地震速報	地震速報	ㄉㄧˋ ㄓㄣˋ ㄙㄨˋ ㄅㄠˋ	existing				地震速報				
 phrase.general.tsv	38	大型	大型	ㄉㄚˋ ㄒㄧㄥˊ	existing				大型				
+phrase.general.tsv	39	大語言模型	大語言模型	ㄉㄚˋ ㄩˇ ㄧㄢˊ ㄇㄛˊ ㄒㄧㄥˊ	duplicate				大語言模型				
 phrase.general.tsv	40	學習歷程	學習歷程	ㄒㄩㄝˊ ㄒㄧˊ ㄌㄧˋ ㄔㄥˊ	existing				學習歷程				
 phrase.general.tsv	45	實況主	實況主	ㄕˊ ㄎㄨㄤˋ ㄓㄨˇ	existing				實況主				
 phrase.general.tsv	46	寶可夢	寶可夢	ㄅㄠˇ ㄎㄜˇ ㄇㄥˋ	existing				寶可夢				
@@ -937,11 +1341,14 @@ phrase.general.tsv	53	志願序	志願序	ㄓˋ ㄩㄢˋ ㄒㄩˋ	existing				�
 phrase.general.tsv	54	快充	快充	ㄎㄨㄞˋ ㄔㄨㄥ	existing				快充				
 phrase.general.tsv	60	手遊	手遊	ㄕㄡˇ ㄧㄡˊ	existing				手遊				
 phrase.general.tsv	61	抖音	抖音	ㄉㄡˇ ㄧㄣ	duplicate				抖音				
+phrase.general.tsv	63	掃碼支付	掃碼支付	ㄙㄠˇ ㄇㄚˇ ㄓ ㄈㄨˋ	duplicate				掃碼支付				
 phrase.general.tsv	64	排球少年	排球少年	ㄆㄞˊ ㄑㄧㄡˊ ㄕㄠˋ ㄋㄧㄢˊ	existing				排球少年				
+phrase.general.tsv	67	提示詞	提示詞	ㄊㄧˊ ㄕˋ ㄘˊ	duplicate				提示詞				
 phrase.general.tsv	68	數位帳戶	數位帳戶	ㄕㄨˋ ㄨㄟˋ ㄓㄤˋ ㄏㄨˋ	existing				數位帳戶				
 phrase.general.tsv	75	晶片	晶片	ㄐㄧㄥ ㄆㄧㄢˋ	existing				晶片				
 phrase.general.tsv	76	梗圖	梗圖	ㄍㄥˇ ㄊㄨˊ	existing				梗圖				
 phrase.general.tsv	78	模型	模型	ㄇㄛˊ ㄒㄧㄥˊ	existing				模型				
+phrase.general.tsv	80	模型訓練	模型訓練	ㄇㄛˊ ㄒㄧㄥˊ ㄒㄩㄣˋ ㄌㄧㄢˋ	duplicate				模型訓練				
 phrase.general.tsv	81	檔案	檔案	ㄉㄤˇ ㄢˋ	existing				檔案				
 phrase.general.tsv	82	比特幣	比特幣	ㄅㄧˇ ㄊㄜˋ ㄅㄧˋ	existing				比特幣				
 phrase.general.tsv	86	深度學習	深度學習	ㄕㄣ ㄉㄨˋ ㄒㄩㄝˊ ㄒㄧˊ	existing				深度學習				
@@ -955,9 +1362,11 @@ phrase.general.tsv	102	社群網站	社群網站	ㄕㄜˋ ㄑㄩㄣˊ ㄨㄤˇ �
 phrase.general.tsv	103	神經網路	神經網路	ㄕㄣˊ ㄐㄧㄥ ㄨㄤˇ ㄌㄨˋ	duplicate				神經網路				
 phrase.general.tsv	106	索尼	索尼	ㄙㄨㄛˇ ㄋㄧˊ	duplicate				索尼				
 phrase.general.tsv	108	網紅	網紅	ㄨㄤˇ ㄏㄨㄥˊ	existing				網紅				
+phrase.general.tsv	109	網購	網購	ㄨㄤˇ ㄍㄡˋ	duplicate				網購				
 phrase.general.tsv	111	網路銀行	網路銀行	ㄨㄤˇ ㄌㄨˋ ㄧㄣˊ ㄏㄤˊ	existing				網路銀行				
 phrase.general.tsv	114	繁星推薦	繁星推薦	ㄈㄢˊ ㄒㄧㄥ ㄊㄨㄟ ㄐㄧㄢˋ	existing				繁星推薦				
 phrase.general.tsv	115	聊天機器人	聊天機器人	ㄌㄧㄠˊ ㄊㄧㄢ ㄐㄧ ㄑㄧˋ ㄖㄣˊ	existing				聊天機器人				
+phrase.general.tsv	117	自媒體	自媒體	ㄗˋ ㄇㄟˊ ㄊㄧˇ	duplicate				自媒體				
 phrase.general.tsv	118	自然	自然	ㄗˋ ㄖㄢˊ	existing				自然				
 phrase.general.tsv	119	自然語言	自然語言	ㄗˋ ㄖㄢˊ ㄩˇ ㄧㄢˊ	duplicate				自然語言				
 phrase.general.tsv	122	航海王	航海王	ㄏㄤˊ ㄏㄞˇ ㄨㄤˊ	existing				航海王				
@@ -971,6 +1380,7 @@ phrase.general.tsv	149	迷因	迷因	ㄇㄧˊ ㄧㄣ	existing				迷因
 phrase.general.tsv	150	進擊的巨人	進擊的巨人	ㄐㄧㄣˋ ㄐㄧˊ ㄉㄜ˙ ㄐㄩˋ ㄖㄣˊ	existing				進擊的巨人				
 phrase.general.tsv	151	遠距工作	遠距工作	ㄩㄢˇ ㄐㄩˋ ㄍㄨㄥ ㄗㄨㄛˋ	existing				遠距工作				
 phrase.general.tsv	161	長照	長照	ㄔㄤˊ ㄓㄠˋ	existing				長照				
+phrase.general.tsv	163	開源模型	開源模型	ㄎㄞ ㄩㄢˊ ㄇㄛˊ ㄒㄧㄥˊ	duplicate				開源模型				
 phrase.general.tsv	165	間諜家家酒	間諜家家酒	ㄐㄧㄢˋ ㄉㄧㄝˊ ㄐㄧㄚ ㄐㄧㄚ ㄐㄧㄡˇ	existing				間諜家家酒				
 phrase.general.tsv	166	限時動態	限時動態	ㄒㄧㄢˋ ㄕˊ ㄉㄨㄥˋ ㄊㄞˋ	existing				限時動態				
 phrase.general.tsv	167	雙重驗證	雙重驗證	ㄕㄨㄤ ㄔㄨㄥˊ ㄧㄢˋ ㄓㄥˋ	existing				雙重驗證				
@@ -1093,12 +1503,14 @@ phrase.hongkong-macao.tsv	48	獅子山	獅子山	ㄕ ㄗ˙ ㄕㄢ	existing				�
 phrase.hongkong-macao.tsv	57	西貢	西貢	ㄒㄧ ㄍㄨㄥˋ	existing				西貢				
 phrase.hongkong-macao.tsv	59	金鐘	金鐘	ㄐㄧㄣ ㄓㄨㄥ	existing				金鐘				
 phrase.hongkong-macao.tsv	60	銅鑼灣	銅鑼灣	ㄊㄨㄥˊ ㄌㄨㄛˊ ㄨㄢ	existing				銅鑼灣				
+phrase.hongkong-macao.tsv	63	馬鞍山	馬鞍山	ㄇㄚˇ ㄢ ㄕㄢ	duplicate				馬鞍山				
 phrase.hongkong-macao.tsv	102	太平山頂	太平山頂	ㄊㄞˋ ㄆㄧㄥˊ ㄕㄢ ㄉㄧㄥˇ	existing				太平山頂				
 phrase.hongkong-macao.tsv	110	星光大道	星光大道	ㄒㄧㄥ ㄍㄨㄤ ㄉㄚˋ ㄉㄠˋ	existing				星光大道				
 phrase.hongkong-macao.tsv	138	多謝	多謝	ㄉㄨㄛ ㄒㄧㄝˋ	existing				多謝				
 phrase.hongkong-macao.tsv	145	收工	收工	ㄕㄡ ㄍㄨㄥ	existing				收工				
 phrase.hongkong-macao.tsv	150	街坊	街坊	ㄐㄧㄝ ㄈㄤ	existing				街坊				
 phrase.hongkong-macao.tsv	155	點算	點算	ㄉㄧㄢˇ ㄙㄨㄢˋ	existing				點算				
+phrase.hongkong-macao.tsv	157	乾炒牛河	乾炒牛河	ㄍㄢ ㄔㄠˇ ㄋㄧㄡˊ ㄏㄜˊ	duplicate				乾炒牛河				
 phrase.hongkong-macao.tsv	160	叉燒飯	叉燒飯	ㄔㄚ ㄕㄠ ㄈㄢˋ	existing				叉燒飯				
 phrase.hongkong-macao.tsv	165	煲仔飯	煲仔飯	ㄅㄠ ㄗㄞˇ ㄈㄢˋ	existing				煲仔飯				
 phrase.hongkong-macao.tsv	168	絲襪奶茶	絲襪奶茶	ㄙ ㄨㄚˋ ㄋㄞˇ ㄔㄚˊ	existing				絲襪奶茶				
@@ -1106,11 +1518,185 @@ phrase.hongkong-macao.tsv	169	茶餐廳	茶餐廳	ㄔㄚˊ ㄘㄢ ㄊㄧㄥ	exis
 phrase.hongkong-macao.tsv	171	菠蘿油	菠蘿油	ㄅㄛ ㄌㄨㄛˊ ㄧㄡˊ	existing				菠蘿油				
 phrase.hongkong-macao.tsv	183	大家樂	大家樂	ㄉㄚˋ ㄐㄧㄚ ㄌㄜˋ	existing				大家樂				
 phrase.hongkong-macao.tsv	186	屈臣氏	屈臣氏	ㄑㄩ ㄔㄣˊ ㄕˋ	existing				屈臣氏				
+phrase.hongkong-macao.tsv	199	萬寧	萬寧	ㄨㄢˋ ㄋㄧㄥˊ	duplicate				萬寧				
 phrase.hongkong-macao.tsv	224	澳門	澳門	ㄠˋ ㄇㄣˊ	existing				澳門				
 phrase.hongkong-macao.tsv	267	威尼斯人	威尼斯人	ㄨㄟ ㄋㄧˊ ㄙ ㄖㄣˊ	existing				威尼斯人				
 phrase.hongkong-macao.tsv	311	巴士	巴士	ㄅㄚ ㄕˋ	existing				巴士				
 phrase.hongkong-macao.tsv	312	泊車	泊車	ㄅㄛˊ ㄔㄜ	existing				泊車				
 phrase.hongkong-macao.tsv	314	街市	街市	ㄐㄧㄝ ㄕˋ	existing				街市				
+phrase.hongkong-macao.tsv	344	半山	半山	ㄅㄢˋ ㄕㄢ	existing				半山				
+phrase.hongkong-macao.tsv	357	天后	天后	ㄊㄧㄢ ㄏㄡˋ	existing				天后				
+phrase.hongkong-macao.tsv	358	太古	太古	ㄊㄞˋ ㄍㄨˇ	existing				太古				
+phrase.hongkong-macao.tsv	360	太子	太子	ㄊㄞˋ ㄗˇ	existing				太子				
+phrase.hongkong-macao.tsv	368	彩虹	彩虹	ㄘㄞˇ ㄏㄨㄥˊ	existing				彩虹				
+phrase.hongkong-macao.tsv	388	深井	深井	ㄕㄣ ㄐㄧㄥˇ	existing				深井				
+phrase.hongkong-macao.tsv	390	火炭	火炭	ㄏㄨㄛˇ ㄊㄢˋ	existing				火炭				
+phrase.hongkong-macao.tsv	396	白沙灣	白沙灣	ㄅㄞˊ ㄕㄚ ㄨㄢ	existing				白沙灣				
+phrase.hongkong-macao.tsv	402	石門	石門	ㄕˊ ㄇㄣˊ	existing				石門				
+phrase.hongkong-macao.tsv	404	科學園	科學園	ㄎㄜ ㄒㄩㄝˊ ㄩㄢˊ	existing				科學園				
+phrase.hongkong-macao.tsv	418	西沙	西沙	ㄒㄧ ㄕㄚ	existing				西沙				
+phrase.hongkong-macao.tsv	423	調景嶺	調景嶺	ㄊㄧㄠˊ ㄐㄧㄥˇ ㄌㄧㄥˇ	existing				調景嶺				
+phrase.hongkong-macao.tsv	430	青衣	青衣	ㄑㄧㄥ ㄧ	existing				青衣				
+phrase.hongkong-macao.tsv	434	鳳凰山	鳳凰山	ㄈㄥˋ ㄏㄨㄤˊ ㄕㄢ	existing				鳳凰山				
+phrase.hongkong-macao.tsv	437	黃大仙	黃大仙	ㄏㄨㄤˊ ㄉㄚˋ ㄒㄧㄢ	existing				黃大仙				
+phrase.hongkong-macao.tsv	445	南昌街	南昌街	ㄋㄢˊ ㄔㄤ ㄐㄧㄝ	existing				南昌街				
+phrase.hongkong-macao.tsv	535	文化中心	文化中心	ㄨㄣˊ ㄏㄨㄚˋ ㄓㄨㄥ ㄒㄧㄣ	existing				文化中心				
+phrase.hongkong-macao.tsv	536	文武廟	文武廟	ㄨㄣˊ ㄨˇ ㄇㄧㄠˋ	existing				文武廟				
+phrase.hongkong-macao.tsv	560	鐘樓	鐘樓	ㄓㄨㄥ ㄌㄡˊ	existing				鐘樓				
+phrase.hongkong-macao.tsv	572	㗎	㗎	ㄍㄚˋ	single_character_source_only								
+phrase.hongkong-macao.tsv	573	一陣	一陣	ㄧ ㄓㄣˋ	existing				一陣				
+phrase.hongkong-macao.tsv	577	乜	乜	ㄇㄧㄝ	existing				乜				
+phrase.hongkong-macao.tsv	584	佢	佢	ㄑㄩˊ	existing				佢				
+phrase.hongkong-macao.tsv	607	八卦	八卦	ㄅㄚ ㄍㄨㄚˋ	existing				八卦				
+phrase.hongkong-macao.tsv	608	冇	冇	ㄇㄡˇ	existing				冇				
+phrase.hongkong-macao.tsv	631	咁	咁	ㄏㄢˊ	existing				咁				
+phrase.hongkong-macao.tsv	644	咗	咗	ㄗㄨㄛˇ	single_character_source_only								
+phrase.hongkong-macao.tsv	645	咩	咩	ㄇㄧㄝ	existing				咩				
+phrase.hongkong-macao.tsv	647	哋	哋	ㄉㄧㄝˋ	single_character_source_only								
+phrase.hongkong-macao.tsv	648	唔	唔	ㄨˊ	existing				唔				
+phrase.hongkong-macao.tsv	681	啫	啫	ㄓㄜˇ	single_character_source_only								
+phrase.hongkong-macao.tsv	682	啱	啱	ㄧㄢˊ	single_character_source_only								
+phrase.hongkong-macao.tsv	687	啲	啲	ㄉㄧ	single_character_source_only								
+phrase.hongkong-macao.tsv	688	喎	喎	ㄨㄞ	single_character_source_only								
+phrase.hongkong-macao.tsv	689	喺	喺	ㄒㄧˊ	single_character_source_only								
+phrase.hongkong-macao.tsv	692	嘅	嘅	ㄍㄜˊ	single_character_source_only								
+phrase.hongkong-macao.tsv	694	嘩	嘩	ㄏㄨㄚ	existing				嘩				
+phrase.hongkong-macao.tsv	696	嚟	嚟	ㄌㄧˊ	single_character_source_only								
+phrase.hongkong-macao.tsv	707	大姐	大姐	ㄉㄚˋ ㄐㄧㄝˇ	existing				大姐				
+phrase.hongkong-macao.tsv	721	好正	好正	ㄏㄠˇ ㄓㄥˋ	existing				好正				
+phrase.hongkong-macao.tsv	734	幾多	幾多	ㄐㄧˇ ㄉㄨㄛ	existing				幾多				
+phrase.hongkong-macao.tsv	735	幾多錢	幾多錢	ㄐㄧˇ ㄉㄨㄛ ㄑㄧㄢˊ	existing				幾多錢				
+phrase.hongkong-macao.tsv	736	幾時	幾時	ㄐㄧˇ ㄕˊ	existing				幾時				
+phrase.hongkong-macao.tsv	737	幾點	幾點	ㄐㄧˇ ㄉㄧㄢˇ	existing				幾點				
+phrase.hongkong-macao.tsv	738	廢柴	廢柴	ㄈㄟˋ ㄔㄞˊ	existing				廢柴				
+phrase.hongkong-macao.tsv	742	成日	成日	ㄔㄥˊ ㄖˋ	existing				成日				
+phrase.hongkong-macao.tsv	747	抽水	抽水	ㄔㄡ ㄕㄨㄟˇ	existing				抽水				
+phrase.hongkong-macao.tsv	749	搞笑	搞笑	ㄍㄠˇ ㄒㄧㄠˋ	existing				搞笑				
+phrase.hongkong-macao.tsv	758	攞	攞	ㄌㄨㄛˊ	single_character_source_only								
+phrase.hongkong-macao.tsv	759	放毒	放毒	ㄈㄤˋ ㄉㄨˊ	existing				放毒				
+phrase.hongkong-macao.tsv	776	無厘頭	無厘頭	ㄨˊ ㄌㄧˊ ㄊㄡˊ	existing				無厘頭				
+phrase.hongkong-macao.tsv	780	爆笑	爆笑	ㄅㄠˋ ㄒㄧㄠˋ	existing				爆笑				
+phrase.hongkong-macao.tsv	781	畀	畀	ㄅㄧˋ	existing				畀				
+phrase.hongkong-macao.tsv	809	老母	老母	ㄌㄠˇ ㄇㄨˇ	existing				老母				
+phrase.hongkong-macao.tsv	821	諗	諗	ㄕㄣˇ	existing				諗				
+phrase.hongkong-macao.tsv	831	識貨	識貨	ㄕˊ ㄏㄨㄛˋ	existing				識貨				
+phrase.hongkong-macao.tsv	842	邊間	邊間	ㄅㄧㄢ ㄐㄧㄢ	existing				邊間				
+phrase.hongkong-macao.tsv	843	阿公	阿公	ㄚ ㄍㄨㄥ	existing				阿公				
+phrase.hongkong-macao.tsv	844	阿婆	阿婆	ㄚ ㄆㄛˊ	existing				阿婆				
+phrase.hongkong-macao.tsv	845	阿媽	阿媽	ㄚ ㄇㄚ	existing				阿媽				
+phrase.hongkong-macao.tsv	847	阿爸	阿爸	ㄚ ㄅㄚˋ	existing				阿爸				
+phrase.hongkong-macao.tsv	876	下午茶	下午茶	ㄒㄧㄚˋ ㄨˇ ㄔㄚˊ	existing				下午茶				
+phrase.hongkong-macao.tsv	880	凍檸茶	凍檸茶	ㄉㄨㄥˋ ㄋㄧㄥˊ ㄔㄚˊ	existing				凍檸茶				
+phrase.hongkong-macao.tsv	884	叉燒	叉燒	ㄔㄚ ㄕㄠ	existing				叉燒				
+phrase.hongkong-macao.tsv	885	叉燒包	叉燒包	ㄔㄚ ㄕㄠ ㄅㄠ	existing				叉燒包				
+phrase.hongkong-macao.tsv	887	叉燒酥	叉燒酥	ㄔㄚ ㄕㄠ ㄙㄨ	existing				叉燒酥				
+phrase.hongkong-macao.tsv	888	及第粥	及第粥	ㄐㄧˊ ㄉㄧˋ ㄓㄡ	duplicate				及第粥				
+phrase.hongkong-macao.tsv	894	奶皇包	奶皇包	ㄋㄞˇ ㄏㄨㄤˊ ㄅㄠ	existing				奶皇包				
+phrase.hongkong-macao.tsv	895	奶黃包	奶黃包	ㄋㄞˇ ㄏㄨㄤˊ ㄅㄠ	duplicate				奶黃包				
+phrase.hongkong-macao.tsv	897	宵夜	宵夜	ㄒㄧㄠ ㄧㄝˋ	existing				宵夜				
+phrase.hongkong-macao.tsv	901	廣東粥	廣東粥	ㄍㄨㄤˇ ㄉㄨㄥ ㄓㄡ	existing				廣東粥				
+phrase.hongkong-macao.tsv	902	排骨飯	排骨飯	ㄆㄞˊ ㄍㄨˇ ㄈㄢˋ	existing				排骨飯				
+phrase.hongkong-macao.tsv	903	揚州炒飯	揚州炒飯	ㄧㄤˊ ㄓㄡ ㄔㄠˇ ㄈㄢˋ	duplicate				揚州炒飯				
+phrase.hongkong-macao.tsv	904	早餐	早餐	ㄗㄠˇ ㄘㄢ	existing				早餐				
+phrase.hongkong-macao.tsv	906	杏仁豆腐	杏仁豆腐	ㄒㄧㄥˋ ㄖㄣˊ ㄉㄡˋ ㄈㄨˇ	existing				杏仁豆腐				
+phrase.hongkong-macao.tsv	909	檸檬水	檸檬水	ㄋㄧㄥˊ ㄇㄥˊ ㄕㄨㄟˇ	existing				檸檬水				
+phrase.hongkong-macao.tsv	914	水晶餃	水晶餃	ㄕㄨㄟˇ ㄐㄧㄥ ㄐㄧㄠˇ	existing				水晶餃				
+phrase.hongkong-macao.tsv	918	河粉	河粉	ㄏㄜˊ ㄈㄣˇ	existing				河粉				
+phrase.hongkong-macao.tsv	921	流沙包	流沙包	ㄌㄧㄡˊ ㄕㄚ ㄅㄠ	duplicate				流沙包				
+phrase.hongkong-macao.tsv	928	炒河粉	炒河粉	ㄔㄠˇ ㄏㄜˊ ㄈㄣˇ	existing				炒河粉				
+phrase.hongkong-macao.tsv	935	熱飲	熱飲	ㄖㄜˋ ㄧㄣˇ	existing				熱飲				
+phrase.hongkong-macao.tsv	938	燒賣	燒賣	ㄕㄠ ㄇㄞˋ	existing				燒賣				
+phrase.hongkong-macao.tsv	939	燒鴨	燒鴨	ㄕㄠ ㄧㄚ	existing				燒鴨				
+phrase.hongkong-macao.tsv	940	燒鵝	燒鵝	ㄕㄠ ㄜˊ	duplicate				燒鵝				
+phrase.hongkong-macao.tsv	947	特餐	特餐	ㄊㄜˋ ㄘㄢ	existing				特餐				
+phrase.hongkong-macao.tsv	948	生滾粥	生滾粥	ㄕㄥ ㄍㄨㄣˇ ㄓㄡ	duplicate				生滾粥				
+phrase.hongkong-macao.tsv	950	白切雞	白切雞	ㄅㄞˊ ㄑㄧㄝˋ ㄐㄧ	duplicate				白切雞				
+phrase.hongkong-macao.tsv	951	皮蛋瘦肉粥	皮蛋瘦肉粥	ㄆㄧˊ ㄉㄢˋ ㄕㄡˋ ㄖㄡˋ ㄓㄡ	existing				皮蛋瘦肉粥				
+phrase.hongkong-macao.tsv	967	腸粉	腸粉	ㄔㄤˊ ㄈㄣˇ	existing				腸粉				
+phrase.hongkong-macao.tsv	968	艇仔粥	艇仔粥	ㄊㄧㄥˇ ㄗㄞˇ ㄓㄡ	duplicate				艇仔粥				
+phrase.hongkong-macao.tsv	972	菜心	菜心	ㄘㄞˋ ㄒㄧㄣ	existing				菜心				
+phrase.hongkong-macao.tsv	974	落單	落單	ㄌㄨㄛˋ ㄉㄢ	existing				落單				
+phrase.hongkong-macao.tsv	976	蘿蔔糕	蘿蔔糕	ㄌㄨㄛˊ ㄅㄛˊ ㄍㄠ	existing				蘿蔔糕				
+phrase.hongkong-macao.tsv	978	蝦餃	蝦餃	ㄒㄧㄚ ㄐㄧㄠˇ	existing				蝦餃				
+phrase.hongkong-macao.tsv	981	西米露	西米露	ㄒㄧ ㄇㄧˇ ㄌㄨˋ	existing				西米露				
+phrase.hongkong-macao.tsv	985	豉油雞	豉油雞	ㄔˇ ㄧㄡˊ ㄐㄧ	duplicate				豉油雞				
+phrase.hongkong-macao.tsv	989	通心粉	通心粉	ㄊㄨㄥ ㄒㄧㄣ ㄈㄣˇ	existing				通心粉				
+phrase.hongkong-macao.tsv	993	阿華田	阿華田	ㄚ ㄏㄨㄚˊ ㄊㄧㄢˊ	existing				阿華田				
+phrase.hongkong-macao.tsv	995	雙皮奶	雙皮奶	ㄕㄨㄤ ㄆㄧˊ ㄋㄞˇ	duplicate				雙皮奶				
+phrase.hongkong-macao.tsv	998	雲吞麵	雲吞麵	ㄩㄣˊ ㄊㄨㄣ ㄇㄧㄢˋ	existing				雲吞麵				
+phrase.hongkong-macao.tsv	1010	鴛鴦	鴛鴦	ㄩㄢ ㄧㄤ	existing				鴛鴦				
+phrase.hongkong-macao.tsv	1017	上車	上車	ㄕㄤˋ ㄔㄜ	existing				上車				
+phrase.hongkong-macao.tsv	1023	便利店	便利店	ㄅㄧㄢˋ ㄌㄧˋ ㄉㄧㄢˋ	existing				便利店				
+phrase.hongkong-macao.tsv	1024	優惠券	優惠券	ㄧㄡ ㄏㄨㄟˋ ㄑㄩㄢˋ	duplicate				優惠券				
+phrase.hongkong-macao.tsv	1025	入伙	入伙	ㄖㄨˋ ㄏㄨㄛˇ	existing				入伙				
+phrase.hongkong-macao.tsv	1032	兼職	兼職	ㄐㄧㄢ ㄓˊ	existing				兼職				
+phrase.hongkong-macao.tsv	1036	加價	加價	ㄐㄧㄚ ㄐㄧㄚˋ	existing				加價				
+phrase.hongkong-macao.tsv	1037	加班	加班	ㄐㄧㄚ ㄅㄢ	existing				加班				
+phrase.hongkong-macao.tsv	1041	叮叮	叮叮	ㄉㄧㄥ ㄉㄧㄥ	existing				叮叮				
+phrase.hongkong-macao.tsv	1049	夜校	夜校	ㄧㄝˋ ㄒㄧㄠˋ	existing				夜校				
+phrase.hongkong-macao.tsv	1063	巴士站	巴士站	ㄅㄚ ㄕˋ ㄓㄢˋ	existing				巴士站				
+phrase.hongkong-macao.tsv	1064	幼稚園	幼稚園	ㄧㄡˋ ㄓˋ ㄩㄢˊ	existing				幼稚園				
+phrase.hongkong-macao.tsv	1068	打工仔	打工仔	ㄉㄚˇ ㄍㄨㄥ ㄗㄞˇ	existing				打工仔				
+phrase.hongkong-macao.tsv	1072	換貨	換貨	ㄏㄨㄢˋ ㄏㄨㄛˋ	existing				換貨				
+phrase.hongkong-macao.tsv	1073	搭車	搭車	ㄉㄚ ㄔㄜ	existing				搭車				
+phrase.hongkong-macao.tsv	1078	放工	放工	ㄈㄤˋ ㄍㄨㄥ	existing				放工				
+phrase.hongkong-macao.tsv	1080	放租	放租	ㄈㄤˋ ㄗㄨ	existing				放租				
+phrase.hongkong-macao.tsv	1083	日校	日校	ㄖˋ ㄒㄧㄠˋ	existing				日校				
+phrase.hongkong-macao.tsv	1093	樓花	樓花	ㄌㄡˊ ㄏㄨㄚ	duplicate				樓花				
+phrase.hongkong-macao.tsv	1096	法定假期	法定假期	ㄈㄚˇ ㄉㄧㄥˋ ㄐㄧㄚˋ ㄑㄧ	duplicate				法定假期				
+phrase.hongkong-macao.tsv	1099	海底隧道	海底隧道	ㄏㄞˇ ㄉㄧˇ ㄙㄨㄟˋ ㄉㄠˋ	existing				海底隧道				
+phrase.hongkong-macao.tsv	1100	消費券	消費券	ㄒㄧㄠ ㄈㄟˋ ㄑㄩㄢˋ	existing				消費券				
+phrase.hongkong-macao.tsv	1112	管理費	管理費	ㄍㄨㄢˇ ㄌㄧˇ ㄈㄟˋ	existing				管理費				
+phrase.hongkong-macao.tsv	1116	紅日	紅日	ㄏㄨㄥˊ ㄖˋ	existing				紅日				
+phrase.hongkong-macao.tsv	1118	紅雨	紅雨	ㄏㄨㄥˊ ㄩˇ	existing				紅雨				
+phrase.hongkong-macao.tsv	1137	警務處	警務處	ㄐㄧㄥˇ ㄨˋ ㄔㄨˋ	existing				警務處				
+phrase.hongkong-macao.tsv	1140	超級市場	超級市場	ㄔㄠ ㄐㄧˊ ㄕˋ ㄔㄤˇ	existing				超級市場				
+phrase.hongkong-macao.tsv	1141	跌價	跌價	ㄉㄧㄝ ㄐㄧㄚˋ	existing				跌價				
+phrase.hongkong-macao.tsv	1148	退貨	退貨	ㄊㄨㄟˋ ㄏㄨㄛˋ	existing				退貨				
+phrase.hongkong-macao.tsv	1155	電車	電車	ㄉㄧㄢˋ ㄔㄜ	existing				電車				
+phrase.hongkong-macao.tsv	1156	面試	面試	ㄇㄧㄢˋ ㄕˋ	existing				面試				
+phrase.hongkong-macao.tsv	1161	高鐵	高鐵	ㄍㄠ ㄊㄧㄝˇ	existing				高鐵				
+phrase.hongkong-macao.tsv	1167	佛誕	佛誕	ㄈㄛˊ ㄉㄢˋ	existing				佛誕				
+phrase.hongkong-macao.tsv	1172	城隍廟	城隍廟	ㄔㄥˊ ㄏㄨㄤˊ ㄇㄧㄠˋ	existing				城隍廟				
+phrase.hongkong-macao.tsv	1175	年宵	年宵	ㄋㄧㄢˊ ㄒㄧㄠ	existing				年宵				
+phrase.hongkong-macao.tsv	1185	求籤	求籤	ㄑㄧㄡˊ ㄑㄧㄢ	existing				求籤				
+phrase.hongkong-macao.tsv	1195	祈福	祈福	ㄑㄧˊ ㄈㄨˊ	existing				祈福				
+phrase.hongkong-macao.tsv	1197	祠堂	祠堂	ㄘˊ ㄊㄤˊ	existing				祠堂				
+phrase.hongkong-macao.tsv	1204	舞龍	舞龍	ㄨˇ ㄌㄨㄥˊ	existing				舞龍				
+phrase.hongkong-macao.tsv	1211	醒獅	醒獅	ㄒㄧㄥˇ ㄕ	existing				醒獅				
+phrase.hongkong-macao.tsv	1240	新世界	新世界	ㄒㄧㄣ ㄕˋ ㄐㄧㄝˋ	existing				新世界				
+phrase.hongkong-macao.tsv	1255	煤氣公司	煤氣公司	ㄇㄟˊ ㄑㄧˋ ㄍㄨㄥ ㄙ	existing				煤氣公司				
+phrase.hongkong-macao.tsv	1256	稻香	稻香	ㄉㄠˋ ㄒㄧㄤ	existing				稻香				
+phrase.hongkong-macao.tsv	1266	華潤萬家	華潤萬家	ㄏㄨㄚˊ ㄖㄨㄣˋ ㄨㄢˋ ㄐㄧㄚ	duplicate				華潤萬家				
+phrase.hongkong-macao.tsv	1269	順豐	順豐	ㄕㄨㄣˋ ㄈㄥ	duplicate				順豐				
+phrase.hongkong-macao.tsv	1279	中大	中大	ㄓㄨㄥ ㄉㄚˋ	existing				中大				
+phrase.hongkong-macao.tsv	1283	科大	科大	ㄎㄜ ㄉㄚˋ	existing				科大				
+phrase.hongkong-macao.tsv	1309	北安	北安	ㄅㄟˇ ㄢ	existing				北安				
+phrase.hongkong-macao.tsv	1310	南灣	南灣	ㄋㄢˊ ㄨㄢ	existing				南灣				
+phrase.hongkong-macao.tsv	1312	台山	台山	ㄊㄞˊ ㄕㄢ	duplicate				台山				
+phrase.hongkong-macao.tsv	1328	漁人碼頭	漁人碼頭	ㄩˊ ㄖㄣˊ ㄇㄚˇ ㄊㄡˊ	existing				漁人碼頭				
+phrase.hongkong-macao.tsv	1337	離島	離島	ㄌㄧˊ ㄉㄠˇ	existing				離島				
+phrase.hongkong-macao.tsv	1340	馬場	馬場	ㄇㄚˇ ㄔㄤˇ	existing				馬場				
+phrase.hongkong-macao.tsv	1377	巴黎人	巴黎人	ㄅㄚ ㄌㄧˊ ㄖㄣˊ	existing				巴黎人				
+phrase.hongkong-macao.tsv	1410	伴手禮	伴手禮	ㄅㄢˋ ㄕㄡˇ ㄌㄧˇ	existing				伴手禮				
+phrase.hongkong-macao.tsv	1426	牛肉乾	牛肉乾	ㄋㄧㄡˊ ㄖㄡˋ ㄍㄢ	existing				牛肉乾				
+phrase.hongkong-macao.tsv	1431	肉乾	肉乾	ㄖㄡˋ ㄍㄢ	existing				肉乾				
+phrase.hongkong-macao.tsv	1433	花生糖	花生糖	ㄏㄨㄚ ㄕㄥ ㄊㄤˊ	existing				花生糖				
+phrase.hongkong-macao.tsv	1457	出入境	出入境	ㄔㄨ ㄖㄨˋ ㄐㄧㄥˋ	existing				出入境				
+phrase.hongkong-macao.tsv	1461	口岸	口岸	ㄎㄡˇ ㄢˋ	existing				口岸				
+phrase.hongkong-macao.tsv	1468	娛樂場	娛樂場	ㄩˊ ㄌㄜˋ ㄔㄤˇ	existing				娛樂場				
+phrase.hongkong-macao.tsv	1471	打卡	打卡	ㄉㄚˇ ㄎㄚˇ	existing				打卡				
+phrase.hongkong-macao.tsv	1473	收銀台	收銀台	ㄕㄡ ㄧㄣˊ ㄊㄞˊ	existing				收銀台				
+phrase.hongkong-macao.tsv	1475	月台	月台	ㄩㄝˋ ㄊㄞˊ	existing				月台				
+phrase.hongkong-macao.tsv	1487	煲湯	煲湯	ㄅㄠ ㄊㄤ	existing				煲湯				
+phrase.hongkong-macao.tsv	1489	發財車	發財車	ㄈㄚ ㄘㄞˊ ㄔㄜ	existing				發財車				
+phrase.hongkong-macao.tsv	1491	站台	站台	ㄓㄢˋ ㄊㄞˊ	existing				站台				
+phrase.hongkong-macao.tsv	1492	茶樓	茶樓	ㄔㄚˊ ㄌㄡˊ	existing				茶樓				
+phrase.hongkong-macao.tsv	1497	行政長官	行政長官	ㄒㄧㄥˊ ㄓㄥˋ ㄔㄤˊ ㄍㄨㄢ	existing				行政長官				
+phrase.hongkong-macao.tsv	1503	過關	過關	ㄍㄨㄛˋ ㄍㄨㄢ	existing				過關				
+phrase.hongkong-macao.tsv	1510	飲茶	飲茶	ㄧㄣˇ ㄔㄚˊ	existing				飲茶				
+phrase.hongkong-macao.tsv	1511	騎樓	騎樓	ㄑㄧˊ ㄌㄡˊ	existing				騎樓				
+phrase.hongkong-macao.tsv	1527	金沙	金沙	ㄐㄧㄣ ㄕㄚ	existing				金沙				
 phrase.industrial-engineering.tsv	2	事件	事件	ㄕˋ ㄐㄧㄢˋ	existing				事件				
 phrase.industrial-engineering.tsv	3	人員	人員	ㄖㄣˊ ㄩㄢˊ	existing				人員				
 phrase.industrial-engineering.tsv	6	佈置	佈置	ㄅㄨˋ ㄓˋ	existing				佈置				
@@ -2025,6 +2611,7 @@ phrase.taiwan.tsv	100	古坑鄉	古坑鄉	ㄍㄨˇ ㄎㄥ ㄒㄧㄤ	existing				
 phrase.taiwan.tsv	101	台東市	台東市	ㄊㄞˊ ㄉㄨㄥ ㄕˋ	existing				台東市				
 phrase.taiwan.tsv	103	吉安鄉	吉安鄉	ㄐㄧˊ ㄢ ㄒㄧㄤ	existing				吉安鄉				
 phrase.taiwan.tsv	104	名間鄉	名間鄉	ㄇㄧㄥˊ ㄐㄧㄢ ㄒㄧㄤ	existing				名間鄉				
+phrase.taiwan.tsv	106	和平區	和平區	ㄏㄜˊ ㄆㄧㄥˊ ㄑㄩ	duplicate				和平區				
 phrase.taiwan.tsv	110	善化區	善化區	ㄕㄢˋ ㄏㄨㄚˋ ㄑㄩ	existing				善化區				
 phrase.taiwan.tsv	111	四湖鄉	四湖鄉	ㄙˋ ㄏㄨˊ ㄒㄧㄤ	existing				四湖鄉				
 phrase.taiwan.tsv	112	國姓鄉	國姓鄉	ㄍㄨㄛˊ ㄒㄧㄥˋ ㄒㄧㄤ	existing				國姓鄉				
@@ -2137,6 +2724,7 @@ phrase.taiwan.tsv	338	通霄鎮	通霄鎮	ㄊㄨㄥ ㄒㄧㄠ ㄓㄣˋ	existing	
 phrase.taiwan.tsv	339	造橋鄉	造橋鄉	ㄗㄠˋ ㄑㄧㄠˊ ㄒㄧㄤ	existing				造橋鄉				
 phrase.taiwan.tsv	340	達仁鄉	達仁鄉	ㄉㄚˊ ㄖㄣˊ ㄒㄧㄤ	existing				達仁鄉				
 phrase.taiwan.tsv	343	金城鎮	金城鎮	ㄐㄧㄣ ㄔㄥˊ ㄓㄣˋ	existing				金城鎮				
+phrase.taiwan.tsv	345	金山區	金山區	ㄐㄧㄣ ㄕㄢ ㄑㄩ	duplicate				金山區				
 phrase.taiwan.tsv	349	銅鑼鄉	銅鑼鄉	ㄊㄨㄥˊ ㄌㄨㄛˊ ㄒㄧㄤ	existing				銅鑼鄉				
 phrase.taiwan.tsv	350	長治鄉	長治鄉	ㄔㄤˊ ㄓˋ ㄒㄧㄤ	existing				長治鄉				
 phrase.taiwan.tsv	351	長濱鄉	長濱鄉	ㄔㄤˊ ㄅㄧㄣ ㄒㄧㄤ	existing				長濱鄉				
@@ -2158,6 +2746,7 @@ phrase.taiwan.tsv	381	麥寮鄉	麥寮鄉	ㄇㄞˋ ㄌㄧㄠˊ ㄒㄧㄤ	existin
 phrase.taiwan.tsv	383	鼓山區	鼓山區	ㄍㄨˇ ㄕㄢ ㄑㄩ	existing				鼓山區				
 phrase.taiwan.tsv	390	三民路	三民路	ㄙㄢ ㄇㄧㄣˊ ㄌㄨˋ	existing				三民路				
 phrase.taiwan.tsv	394	中坡南路	中坡南路	ㄓㄨㄥ ㄆㄛ ㄋㄢˊ ㄌㄨˋ	existing				中坡南路				
+phrase.taiwan.tsv	395	中央大道	中央大道	ㄓㄨㄥ ㄧㄤ ㄉㄚˋ ㄉㄠˋ	duplicate				中央大道				
 phrase.taiwan.tsv	399	中山二路	中山二路	ㄓㄨㄥ ㄕㄢ ㄦˋ ㄌㄨˋ	existing				中山二路				
 phrase.taiwan.tsv	400	中山北路	中山北路	ㄓㄨㄥ ㄕㄢ ㄅㄟˇ ㄌㄨˋ	existing				中山北路				
 phrase.taiwan.tsv	401	中山南路	中山南路	ㄓㄨㄥ ㄕㄢ ㄋㄢˊ ㄌㄨˋ	existing				中山南路				
@@ -2175,6 +2764,7 @@ phrase.taiwan.tsv	454	公園路	公園路	ㄍㄨㄥ ㄩㄢˊ ㄌㄨˋ	existing		
 phrase.taiwan.tsv	469	北安路	北安路	ㄅㄟˇ ㄢ ㄌㄨˋ	existing				北安路				
 phrase.taiwan.tsv	478	南京東路	南京東路	ㄋㄢˊ ㄐㄧㄥ ㄉㄨㄥ ㄌㄨˋ	existing				南京東路				
 phrase.taiwan.tsv	479	南京西路	南京西路	ㄋㄢˊ ㄐㄧㄥ ㄒㄧ ㄌㄨˋ	existing				南京西路				
+phrase.taiwan.tsv	480	南京路	南京路	ㄋㄢˊ ㄐㄧㄥ ㄌㄨˋ	duplicate				南京路				
 phrase.taiwan.tsv	490	博愛街	博愛街	ㄅㄛˊ ㄞˋ ㄐㄧㄝ	existing				博愛街				
 phrase.taiwan.tsv	491	博愛路	博愛路	ㄅㄛˊ ㄞˋ ㄌㄨˋ	existing				博愛路				
 phrase.taiwan.tsv	497	和平東路	和平東路	ㄏㄜˊ ㄆㄧㄥˊ ㄉㄨㄥ ㄌㄨˋ	existing				和平東路				
@@ -2207,6 +2797,8 @@ phrase.taiwan.tsv	629	民權路	民權路	ㄇㄧㄣˊ ㄑㄩㄢˊ ㄌㄨˋ	exist
 phrase.taiwan.tsv	631	民生東路	民生東路	ㄇㄧㄣˊ ㄕㄥ ㄉㄨㄥ ㄌㄨˋ	existing				民生東路				
 phrase.taiwan.tsv	632	民生西路	民生西路	ㄇㄧㄣˊ ㄕㄥ ㄒㄧ ㄌㄨˋ	existing				民生西路				
 phrase.taiwan.tsv	633	民生路	民生路	ㄇㄧㄣˊ ㄕㄥ ㄌㄨˋ	existing				民生路				
+phrase.taiwan.tsv	653	濱海大道	濱海大道	ㄅㄧㄣ ㄏㄞˇ ㄉㄚˋ ㄉㄠˋ	duplicate				濱海大道				
+phrase.taiwan.tsv	670	環市東路	環市東路	ㄏㄨㄢˊ ㄕˋ ㄉㄨㄥ ㄌㄨˋ	duplicate				環市東路				
 phrase.taiwan.tsv	671	環河北路	環河北路	ㄏㄨㄢˊ ㄏㄜˊ ㄅㄟˇ ㄌㄨˋ	existing				環河北路				
 phrase.taiwan.tsv	690	羅斯福路	羅斯福路	ㄌㄨㄛˊ ㄙ ㄈㄨˊ ㄌㄨˋ	existing				羅斯福路				
 phrase.taiwan.tsv	708	莊敬路	莊敬路	ㄓㄨㄤ ㄐㄧㄥˋ ㄌㄨˋ	existing				莊敬路				
@@ -2274,12 +2866,14 @@ phrase.taiwan.tsv	913	關子嶺	關子嶺	ㄍㄨㄢ ㄗˇ ㄌㄧㄥˇ	existing		
 phrase.taiwan.tsv	914	阿里山	阿里山	ㄚ ㄌㄧˇ ㄕㄢ	existing				阿里山				
 phrase.taiwan.tsv	917	陽明山	陽明山	ㄧㄤˊ ㄇㄧㄥˊ ㄕㄢ	existing				陽明山				
 phrase.taiwan.tsv	922	青草湖	青草湖	ㄑㄧㄥ ㄘㄠˇ ㄏㄨˊ	existing				青草湖				
+phrase.taiwan.tsv	925	駁二	駁二	ㄅㄛˊ ㄦˋ	reviewed_post_training								
 phrase.taiwan.tsv	929	鵝鑾鼻	鵝鑾鼻	ㄜˊ ㄌㄨㄢˊ ㄅㄧˊ	existing				鵝鑾鼻				
 phrase.taiwan.tsv	939	龜山島	龜山島	ㄍㄨㄟ ㄕㄢ ㄉㄠˇ	existing				龜山島				
 phrase.taiwan.tsv	944	傻眼	傻眼	ㄕㄚˇ ㄧㄢˇ	existing				傻眼				
 phrase.taiwan.tsv	947	哎呀	哎呀	ㄞ ㄧㄚ	existing				哎呀				
 phrase.taiwan.tsv	948	哎唷	哎唷	ㄞ ㄧㄛ	existing				哎唷				
 phrase.taiwan.tsv	954	啥咪	啥咪	ㄕㄚˊ ㄇㄧ	existing				啥咪				
+phrase.taiwan.tsv	955	嘿呀	嘿呀	ㄏㄟ ㄧㄚ	reviewed_post_training								
 phrase.taiwan.tsv	958	太扯了	太扯了	ㄊㄞˋ ㄔㄜˇ ㄌㄜ˙	existing				太扯了				
 phrase.taiwan.tsv	974	有夠	有夠	ㄧㄡˇ ㄍㄡˋ	existing				有夠				
 phrase.taiwan.tsv	976	歹勢	歹勢	ㄉㄞˇ ㄕˋ	existing				歹勢				
@@ -2323,6 +2917,7 @@ phrase.taiwan.tsv	1134	六角	六角	ㄌㄧㄡˋ ㄐㄧㄠˇ	existing				六角
 phrase.taiwan.tsv	1144	大江	大江	ㄉㄚˋ ㄐㄧㄤ	existing				大江				
 phrase.taiwan.tsv	1159	橘子	橘子	ㄐㄩˊ ㄗ˙	existing				橘子				
 phrase.taiwan.tsv	1185	三陽	三陽	ㄙㄢ ㄧㄤˊ	existing				三陽				
+phrase.taiwan.tsv	1186	中信銀行	中信銀行	ㄓㄨㄥ ㄒㄧㄣˋ ㄧㄣˊ ㄏㄤˊ	duplicate				中信銀行				
 phrase.taiwan.tsv	1187	中油	中油	ㄓㄨㄥ ㄧㄡˊ	existing				中油				
 phrase.taiwan.tsv	1190	中華電信	中華電信	ㄓㄨㄥ ㄏㄨㄚˊ ㄉㄧㄢˋ ㄒㄧㄣˋ	existing				中華電信				
 phrase.taiwan.tsv	1200	博客來	博客來	ㄅㄛˊ ㄎㄜˋ ㄌㄞˊ	existing				博客來				
@@ -2372,6 +2967,534 @@ phrase.taiwan.tsv	1363	高大	高大	ㄍㄠ ㄉㄚˋ	existing				高大
 phrase.taiwan.tsv	1364	高師大	高師大	ㄍㄠ ㄕ ㄉㄚˋ	existing				高師大				
 phrase.taiwan.tsv	1366	高醫	高醫	ㄍㄠ ㄧ	existing				高醫				
 phrase.taiwan.tsv	1369	龍華科大	龍華科大	ㄌㄨㄥˊ ㄏㄨㄚˊ ㄎㄜ ㄉㄚˋ	existing				龍華科大				
+phrase.taiwan.tsv	1378	對對對	對對對	ㄉㄨㄟˋ ㄉㄨㄟˋ ㄉㄨㄟˋ	existing				對對對				
+phrase.taiwan.tsv	1388	好啊	好啊	ㄏㄠˇ ㄚ	existing				好啊				
+phrase.taiwan.tsv	1389	好呀	好呀	ㄏㄠˇ ㄧㄚ	existing				好呀				
+phrase.taiwan.tsv	1393	好吧	好吧	ㄏㄠˇ ㄅㄚ˙	existing				好吧				
+phrase.taiwan.tsv	1401	好好笑	好好笑	ㄏㄠˇ ㄏㄠˇ ㄒㄧㄠˋ	existing				好好笑				
+phrase.taiwan.tsv	1430	沒問題	沒問題	ㄇㄟˊ ㄨㄣˋ ㄊㄧˊ	existing				沒問題				
+phrase.taiwan.tsv	1432	沒關係	沒關係	ㄇㄟˊ ㄍㄨㄢ ㄒㄧˋ	existing				沒關係				
+phrase.taiwan.tsv	1462	你幹嘛	你幹嘛	ㄋㄧˇ ㄍㄢˋ ㄇㄚ˙	duplicate				你幹嘛				
+phrase.taiwan.tsv	1470	這樣子	這樣子	ㄓㄜˋ ㄧㄤˋ ㄗˇ	existing				這樣子				
+phrase.taiwan.tsv	1488	真的是	真的是	ㄓㄣ ㄉㄜ˙ ㄕˋ	existing				真的是				
+phrase.taiwan.tsv	1503	沒事吧	沒事吧	ㄇㄟˊ ㄕˋ ㄅㄚ˙	existing				沒事吧				
+phrase.taiwan.tsv	1518	蛤	蛤	ㄏㄚˊ	existing				蛤				
+phrase.taiwan.tsv	1524	哇靠	哇靠	ㄨㄚ ㄎㄠˋ	existing				哇靠				
+phrase.taiwan.tsv	1529	天啊	天啊	ㄊㄧㄢ ㄚ	existing				天啊				
+phrase.taiwan.tsv	1531	有沒有搞錯	有沒有搞錯	ㄧㄡˇ ㄇㄟˊ ㄧㄡˇ ㄍㄠˇ ㄘㄨㄛˋ	existing				有沒有搞錯				
+phrase.taiwan.tsv	1546	好猛	好猛	ㄏㄠˇ ㄇㄥˇ	existing				好猛				
+phrase.taiwan.tsv	1555	好險	好險	ㄏㄠˇ ㄒㄧㄢˇ	existing				好險				
+phrase.taiwan.tsv	1558	還不是	還不是	ㄏㄞˊ ㄅㄨˊ ㄕˋ	existing				還不是				
+phrase.taiwan.tsv	1562	哪有	哪有	ㄋㄚˇ ㄧㄡˇ	existing				哪有				
+phrase.taiwan.tsv	1567	好不好	好不好	ㄏㄠˇ ㄅㄨˋ ㄏㄠˇ	existing				好不好				
+phrase.taiwan.tsv	1571	好了吧	好了吧	ㄏㄠˇ ㄌㄜ˙ ㄅㄚ˙	existing				好了吧				
+phrase.taiwan.tsv	1579	等一下	等一下	ㄉㄥˇ ㄧˊ ㄒㄧㄚˋ	existing				等一下				
+phrase.taiwan.tsv	1589	再看看	再看看	ㄗㄞˋ ㄎㄢˋ ㄎㄢˋ	existing				再看看				
+phrase.taiwan.tsv	1601	說真的	說真的	ㄕㄨㄛ ㄓㄣ ㄉㄜ˙	existing				說真的				
+phrase.taiwan.tsv	1605	老實說	老實說	ㄌㄠˇ ㄕˊ ㄕㄨㄛ	existing				老實說				
+phrase.taiwan.tsv	1608	我也是	我也是	ㄨㄛˇ ㄧㄝˇ ㄕˋ	existing				我也是				
+phrase.taiwan.tsv	1613	我知道	我知道	ㄨㄛˇ ㄓ ㄉㄠˋ	existing				我知道				
+phrase.taiwan.tsv	1623	原來如此	原來如此	ㄩㄢˊ ㄌㄞˊ ㄖㄨˊ ㄘˇ	existing				原來如此				
+phrase.taiwan.tsv	1651	沒辦法	沒辦法	ㄇㄟˊ ㄅㄢˋ ㄈㄚˇ	existing				沒辦法				
+phrase.taiwan.tsv	1654	沒救了	沒救了	ㄇㄟˊ ㄐㄧㄡˋ ㄌㄜ˙	existing				沒救了				
+phrase.taiwan.tsv	1656	笑死	笑死	ㄒㄧㄠˋ ㄙˇ	existing				笑死				
+phrase.taiwan.tsv	1669	再聯絡	再聯絡	ㄗㄞˋ ㄌㄧㄢˊ ㄌㄨㄛˋ	existing				再聯絡				
+phrase.taiwan.tsv	1672	要不要	要不要	ㄧㄠˋ ㄅㄨˊ ㄧㄠˋ	existing				要不要				
+phrase.taiwan.tsv	1680	做得到	做得到	ㄗㄨㄛˋ ㄉㄜˊ ㄉㄠˋ	existing				做得到				
+phrase.taiwan.tsv	1681	做不到	做不到	ㄗㄨㄛˋ ㄅㄨˊ ㄉㄠˋ	existing				做不到				
+phrase.taiwan.tsv	1683	不曉得	不曉得	ㄅㄨˋ ㄒㄧㄠˇ ㄉㄜˊ	existing				不曉得				
+phrase.taiwan.tsv	1687	好料	好料	ㄏㄠˇ ㄌㄧㄠˋ	existing				好料				
+phrase.taiwan.tsv	1691	阿莎力	阿莎力	ㄚ ㄕㄚ ㄌㄧˋ	existing				阿莎力				
+phrase.taiwan.tsv	1693	白目	白目	ㄅㄞˊ ㄇㄨˋ	existing				白目				
+phrase.taiwan.tsv	1696	龜毛	龜毛	ㄍㄨㄟ ㄇㄠˊ	existing				龜毛				
+phrase.taiwan.tsv	1698	牽拖	牽拖	ㄑㄧㄢ ㄊㄨㄛ	existing				牽拖				
+phrase.taiwan.tsv	1700	出槌	出槌	ㄔㄨ ㄔㄨㄟˊ	existing				出槌				
+phrase.taiwan.tsv	1703	漏氣	漏氣	ㄌㄡˋ ㄑㄧˋ	existing				漏氣				
+phrase.taiwan.tsv	1708	夭壽	夭壽	ㄧㄠ ㄕㄡˋ	existing				夭壽				
+phrase.taiwan.tsv	1716	蝦米	蝦米	ㄒㄧㄚ ㄇㄧˇ	existing				蝦米				
+phrase.taiwan.tsv	1722	趴趴走	趴趴走	ㄆㄚ ㄆㄚ ㄗㄡˇ	existing				趴趴走				
+phrase.taiwan.tsv	1723	加減	加減	ㄐㄧㄚ ㄐㄧㄢˇ	existing				加減				
+phrase.taiwan.tsv	1729	鴨霸	鴨霸	ㄧㄚ ㄅㄚˋ	existing				鴨霸				
+phrase.taiwan.tsv	1731	古意	古意	ㄍㄨˇ ㄧˋ	existing				古意				
+phrase.taiwan.tsv	1735	起毛	起毛	ㄑㄧˇ ㄇㄠˊ	existing				起毛				
+phrase.taiwan.tsv	1741	嗆聲	嗆聲	ㄑㄧㄤ ㄕㄥ	existing				嗆聲				
+phrase.taiwan.tsv	1759	賭爛	賭爛	ㄉㄨˇ ㄌㄢˋ	existing				賭爛				
+phrase.taiwan.tsv	1761	靠北	靠北	ㄎㄠˋ ㄅㄟˇ	existing				靠北				
+phrase.taiwan.tsv	1766	不爽	不爽	ㄅㄨˋ ㄕㄨㄤˇ	existing				不爽				
+phrase.taiwan.tsv	1771	黑白講	黑白講	ㄏㄟ ㄅㄞˊ ㄐㄧㄤˇ	existing				黑白講				
+phrase.taiwan.tsv	1780	見笑	見笑	ㄐㄧㄢˋ ㄒㄧㄠˋ	existing				見笑				
+phrase.taiwan.tsv	1787	好彩頭	好彩頭	ㄏㄠˇ ㄘㄞˇ ㄊㄡˊ	existing				好彩頭				
+phrase.taiwan.tsv	1789	已讀	已讀	ㄧˇ ㄉㄨˊ	existing				已讀				
+phrase.taiwan.tsv	1798	留言	留言	ㄌㄧㄡˊ ㄧㄢˊ	existing				留言				
+phrase.taiwan.tsv	1800	貼圖	貼圖	ㄊㄧㄝ ㄊㄨˊ	existing				貼圖				
+phrase.taiwan.tsv	1802	截圖	截圖	ㄐㄧㄝˊ ㄊㄨˊ	reviewed_post_training								
+phrase.taiwan.tsv	1805	轉發	轉發	ㄓㄨㄢˇ ㄈㄚ	existing				轉發				
+phrase.taiwan.tsv	1812	置頂留言	置頂留言	ㄓˋ ㄉㄧㄥˇ ㄌㄧㄡˊ ㄧㄢˊ	duplicate				置頂留言				
+phrase.taiwan.tsv	1813	推推	推推	ㄊㄨㄟ ㄊㄨㄟ	existing				推推				
+phrase.taiwan.tsv	1820	開箱	開箱	ㄎㄞ ㄒㄧㄤ	existing				開箱				
+phrase.taiwan.tsv	1821	開箱文	開箱文	ㄎㄞ ㄒㄧㄤ ㄨㄣˊ	existing				開箱文				
+phrase.taiwan.tsv	1823	開團	開團	ㄎㄞ ㄊㄨㄢˊ	duplicate				開團				
+phrase.taiwan.tsv	1826	踩雷	踩雷	ㄘㄞˇ ㄌㄟˊ	duplicate				踩雷				
+phrase.taiwan.tsv	1836	求救	求救	ㄑㄧㄡˊ ㄐㄧㄡˋ	existing				求救				
+phrase.taiwan.tsv	1837	求解	求解	ㄑㄧㄡˊ ㄐㄧㄝˇ	existing				求解				
+phrase.taiwan.tsv	1838	求助	求助	ㄑㄧㄡˊ ㄓㄨˋ	existing				求助				
+phrase.taiwan.tsv	1840	鄉民	鄉民	ㄒㄧㄤ ㄇㄧㄣˊ	existing				鄉民				
+phrase.taiwan.tsv	1842	網友	網友	ㄨㄤˇ ㄧㄡˇ	existing				網友				
+phrase.taiwan.tsv	1844	社群	社群	ㄕㄜˋ ㄑㄩㄣˊ	existing				社群				
+phrase.taiwan.tsv	1845	出征	出征	ㄔㄨ ㄓㄥ	existing				出征				
+phrase.taiwan.tsv	1848	朝聖	朝聖	ㄔㄠˊ ㄕㄥˋ	existing				朝聖				
+phrase.taiwan.tsv	1849	上車	上車	ㄕㄤˋ ㄔㄜ	existing				上車				
+phrase.taiwan.tsv	1850	下車	下車	ㄒㄧㄚˋ ㄔㄜ	existing				下車				
+phrase.taiwan.tsv	1855	佛系	佛系	ㄈㄛˊ ㄒㄧˋ	duplicate				佛系				
+phrase.taiwan.tsv	1857	躺平	躺平	ㄊㄤˇ ㄆㄧㄥˊ	existing				躺平				
+phrase.taiwan.tsv	1859	社畜	社畜	ㄕㄜˋ ㄔㄨˋ	duplicate				社畜				
+phrase.taiwan.tsv	1862	魯蛇	魯蛇	ㄌㄨˇ ㄕㄜˊ	duplicate				魯蛇				
+phrase.taiwan.tsv	1868	盤子	盤子	ㄆㄢˊ ㄗ˙	existing				盤子				
+phrase.taiwan.tsv	1869	鍵盤俠	鍵盤俠	ㄐㄧㄢˋ ㄆㄢˊ ㄒㄧㄚˊ	duplicate				鍵盤俠				
+phrase.taiwan.tsv	1872	網紅	網紅	ㄨㄤˇ ㄏㄨㄥˊ	existing				網紅				
+phrase.taiwan.tsv	1873	實況主	實況主	ㄕˊ ㄎㄨㄤˋ ㄓㄨˇ	existing				實況主				
+phrase.taiwan.tsv	1876	訂閱	訂閱	ㄉㄧㄥˋ ㄩㄝˋ	existing				訂閱				
+phrase.taiwan.tsv	1877	追蹤	追蹤	ㄓㄨㄟ ㄗㄨㄥ	existing				追蹤				
+phrase.taiwan.tsv	1883	懶人包	懶人包	ㄌㄢˇ ㄖㄣˊ ㄅㄠ	existing				懶人包				
+phrase.taiwan.tsv	1890	梗圖	梗圖	ㄍㄥˇ ㄊㄨˊ	existing				梗圖				
+phrase.taiwan.tsv	1891	迷因	迷因	ㄇㄧˊ ㄧㄣ	existing				迷因				
+phrase.taiwan.tsv	1892	破防	破防	ㄆㄛˋ ㄈㄤˊ	duplicate				破防				
+phrase.taiwan.tsv	1894	崩潰	崩潰	ㄅㄥ ㄎㄨㄟˋ	existing				崩潰				
+phrase.taiwan.tsv	1897	內行	內行	ㄋㄟˋ ㄏㄤˊ	existing				內行				
+phrase.taiwan.tsv	1898	內行人	內行人	ㄋㄟˋ ㄏㄤˊ ㄖㄣˊ	existing				內行人				
+phrase.taiwan.tsv	1908	神回覆	神回覆	ㄕㄣˊ ㄏㄨㄟˊ ㄈㄨˋ	duplicate				神回覆				
+phrase.taiwan.tsv	1920	存在感	存在感	ㄘㄨㄣˊ ㄗㄞˋ ㄍㄢˇ	existing				存在感				
+phrase.taiwan.tsv	1923	秒殺	秒殺	ㄇㄧㄠˇ ㄕㄚ	existing				秒殺				
+phrase.taiwan.tsv	1925	搶購	搶購	ㄑㄧㄤˇ ㄍㄡˋ	existing				搶購				
+phrase.taiwan.tsv	1931	跟上	跟上	ㄍㄣ ㄕㄤˋ	existing				跟上				
+phrase.taiwan.tsv	1935	滷肉飯	滷肉飯	ㄌㄨˇ ㄖㄡˋ ㄈㄢˋ	existing				滷肉飯				
+phrase.taiwan.tsv	1936	魯肉飯	魯肉飯	ㄌㄨˇ ㄖㄡˋ ㄈㄢˋ	existing				魯肉飯				
+phrase.taiwan.tsv	1938	雞肉飯	雞肉飯	ㄐㄧ ㄖㄡˋ ㄈㄢˋ	existing				雞肉飯				
+phrase.taiwan.tsv	1939	火雞肉飯	火雞肉飯	ㄏㄨㄛˇ ㄐㄧ ㄖㄡˋ ㄈㄢˋ	existing				火雞肉飯				
+phrase.taiwan.tsv	1940	雞腿飯	雞腿飯	ㄐㄧ ㄊㄨㄟˇ ㄈㄢˋ	existing				雞腿飯				
+phrase.taiwan.tsv	1941	排骨飯	排骨飯	ㄆㄞˊ ㄍㄨˇ ㄈㄢˋ	existing				排骨飯				
+phrase.taiwan.tsv	1942	焢肉飯	焢肉飯	ㄏㄨㄥ ㄖㄡˋ ㄈㄢˋ	existing				焢肉飯				
+phrase.taiwan.tsv	1947	便當店	便當店	ㄅㄧㄢˋ ㄉㄤ ㄉㄧㄢˋ	existing				便當店				
+phrase.taiwan.tsv	1948	自助餐	自助餐	ㄗˋ ㄓㄨˋ ㄘㄢ	existing				自助餐				
+phrase.taiwan.tsv	1950	大腸麵線	大腸麵線	ㄉㄚˋ ㄔㄤˊ ㄇㄧㄢˋ ㄒㄧㄢˋ	existing				大腸麵線				
+phrase.taiwan.tsv	1951	蚵仔麵線	蚵仔麵線	ㄏㄜˊ ㄗˇ ㄇㄧㄢˋ ㄒㄧㄢˋ	existing				蚵仔麵線				
+phrase.taiwan.tsv	1952	蚵仔煎	蚵仔煎	ㄏㄜˊ ㄗˇ ㄐㄧㄢ	existing				蚵仔煎				
+phrase.taiwan.tsv	1955	米粉湯	米粉湯	ㄇㄧˇ ㄈㄣˇ ㄊㄤ	existing				米粉湯				
+phrase.taiwan.tsv	1956	米苔目	米苔目	ㄇㄧˇ ㄊㄞˊ ㄇㄨˋ	existing				米苔目				
+phrase.taiwan.tsv	1958	粄條	粄條	ㄅㄢˇ ㄊㄧㄠˊ	existing				粄條				
+phrase.taiwan.tsv	1959	炒米粉	炒米粉	ㄔㄠˇ ㄇㄧˇ ㄈㄣˇ	existing				炒米粉				
+phrase.taiwan.tsv	1960	碗粿	碗粿	ㄨㄢˇ ㄍㄨㄛˇ	existing				碗粿				
+phrase.taiwan.tsv	1961	肉圓	肉圓	ㄖㄡˋ ㄩㄢˊ	existing				肉圓				
+phrase.taiwan.tsv	1962	甜不辣	甜不辣	ㄊㄧㄢˊ ㄅㄨˊ ㄌㄚˋ	existing				甜不辣				
+phrase.taiwan.tsv	1963	黑輪	黑輪	ㄏㄟ ㄌㄨㄣˊ	existing				黑輪				
+phrase.taiwan.tsv	1966	豬血糕	豬血糕	ㄓㄨ ㄒㄩㄝˋ ㄍㄠ	existing				豬血糕				
+phrase.taiwan.tsv	1967	鹹酥雞	鹹酥雞	ㄒㄧㄢˊ ㄙㄨ ㄐㄧ	existing				鹹酥雞				
+phrase.taiwan.tsv	1968	鹽酥雞	鹽酥雞	ㄧㄢˊ ㄙㄨ ㄐㄧ	existing				鹽酥雞				
+phrase.taiwan.tsv	1969	雞排	雞排	ㄐㄧ ㄆㄞˊ	existing				雞排				
+phrase.taiwan.tsv	1970	香雞排	香雞排	ㄒㄧㄤ ㄐㄧ ㄆㄞˊ	existing				香雞排				
+phrase.taiwan.tsv	1973	雞蛋糕	雞蛋糕	ㄐㄧ ㄉㄢˋ ㄍㄠ	existing				雞蛋糕				
+phrase.taiwan.tsv	1974	車輪餅	車輪餅	ㄔㄜ ㄌㄨㄣˊ ㄅㄧㄥˇ	existing				車輪餅				
+phrase.taiwan.tsv	1977	蔥油餅	蔥油餅	ㄘㄨㄥ ㄧㄡˊ ㄅㄧㄥˇ	existing				蔥油餅				
+phrase.taiwan.tsv	1978	蔥抓餅	蔥抓餅	ㄘㄨㄥ ㄓㄨㄚ ㄅㄧㄥˇ	existing				蔥抓餅				
+phrase.taiwan.tsv	1979	蛋餅	蛋餅	ㄉㄢˋ ㄅㄧㄥˇ	existing				蛋餅				
+phrase.taiwan.tsv	1980	蘿蔔糕	蘿蔔糕	ㄌㄨㄛˊ ㄅㄛˊ ㄍㄠ	existing				蘿蔔糕				
+phrase.taiwan.tsv	1981	水煎包	水煎包	ㄕㄨㄟˇ ㄐㄧㄢ ㄅㄠ	existing				水煎包				
+phrase.taiwan.tsv	1982	鍋貼	鍋貼	ㄍㄨㄛ ㄊㄧㄝ	existing				鍋貼				
+phrase.taiwan.tsv	1983	韭菜盒子	韭菜盒子	ㄐㄧㄡˇ ㄘㄞˋ ㄏㄜˊ ㄗˇ	duplicate				韭菜盒子				
+phrase.taiwan.tsv	1985	牛肉麵	牛肉麵	ㄋㄧㄡˊ ㄖㄡˋ ㄇㄧㄢˋ	existing				牛肉麵				
+phrase.taiwan.tsv	1987	羊肉爐	羊肉爐	ㄧㄤˊ ㄖㄡˋ ㄌㄨˊ	existing				羊肉爐				
+phrase.taiwan.tsv	1988	薑母鴨	薑母鴨	ㄐㄧㄤ ㄇㄨˇ ㄧㄚ	existing				薑母鴨				
+phrase.taiwan.tsv	1989	麻油雞	麻油雞	ㄇㄚˊ ㄧㄡˊ ㄐㄧ	existing				麻油雞				
+phrase.taiwan.tsv	1990	三杯雞	三杯雞	ㄙㄢ ㄅㄟ ㄐㄧ	existing				三杯雞				
+phrase.taiwan.tsv	1993	東山鴨頭	東山鴨頭	ㄉㄨㄥ ㄕㄢ ㄧㄚ ㄊㄡˊ	existing				東山鴨頭				
+phrase.taiwan.tsv	1994	藥燉排骨	藥燉排骨	ㄧㄠˋ ㄉㄨㄣˋ ㄆㄞˊ ㄍㄨˇ	existing				藥燉排骨				
+phrase.taiwan.tsv	1996	四神湯	四神湯	ㄙˋ ㄕㄣˊ ㄊㄤ	existing				四神湯				
+phrase.taiwan.tsv	1997	肉羹	肉羹	ㄖㄡˋ ㄍㄥ	existing				肉羹				
+phrase.taiwan.tsv	1998	魷魚羹	魷魚羹	ㄧㄡˊ ㄩˊ ㄍㄥ	existing				魷魚羹				
+phrase.taiwan.tsv	1999	土魠魚羹	土魠魚羹	ㄊㄨˇ ㄊㄨㄛ ㄩˊ ㄍㄥ	existing				土魠魚羹				
+phrase.taiwan.tsv	2000	土魠魚	土魠魚	ㄊㄨˇ ㄊㄨㄛ ㄩˊ	existing				土魠魚				
+phrase.taiwan.tsv	2001	大腸包小腸	大腸包小腸	ㄉㄚˋ ㄔㄤˊ ㄅㄠ ㄒㄧㄠˇ ㄔㄤˊ	existing				大腸包小腸				
+phrase.taiwan.tsv	2004	熱炒店	熱炒店	ㄖㄜˋ ㄔㄠˇ ㄉㄧㄢˋ	existing				熱炒店				
+phrase.taiwan.tsv	2005	辦桌	辦桌	ㄅㄢˋ ㄓㄨㄛ	existing				辦桌				
+phrase.taiwan.tsv	2006	流水席	流水席	ㄌㄧㄡˊ ㄕㄨㄟˇ ㄒㄧˊ	existing				流水席				
+phrase.taiwan.tsv	2008	合菜	合菜	ㄏㄜˊ ㄘㄞˋ	existing				合菜				
+phrase.taiwan.tsv	2009	九層塔	九層塔	ㄐㄧㄡˇ ㄘㄥˊ ㄊㄚˇ	existing				九層塔				
+phrase.taiwan.tsv	2010	沙茶醬	沙茶醬	ㄕㄚ ㄔㄚˊ ㄐㄧㄤˋ	existing				沙茶醬				
+phrase.taiwan.tsv	2012	古早味	古早味	ㄍㄨˇ ㄗㄠˇ ㄨㄟˋ	existing				古早味				
+phrase.taiwan.tsv	2018	去冰	去冰	ㄑㄩˋ ㄅㄧㄥ	existing				去冰				
+phrase.taiwan.tsv	2019	常溫	常溫	ㄔㄤˊ ㄨㄣ	existing				常溫				
+phrase.taiwan.tsv	2020	珍奶	珍奶	ㄓㄣ ㄋㄞˇ	existing				珍奶				
+phrase.taiwan.tsv	2021	珍珠奶茶	珍珠奶茶	ㄓㄣ ㄓㄨ ㄋㄞˇ ㄔㄚˊ	existing				珍珠奶茶				
+phrase.taiwan.tsv	2023	手搖飲	手搖飲	ㄕㄡˇ ㄧㄠˊ ㄧㄣˇ	existing				手搖飲				
+phrase.taiwan.tsv	2025	飲料店	飲料店	ㄧㄣˇ ㄌㄧㄠˋ ㄉㄧㄢˋ	existing				飲料店				
+phrase.taiwan.tsv	2036	無糖	無糖	ㄨˊ ㄊㄤˊ	existing				無糖				
+phrase.taiwan.tsv	2041	冬瓜茶	冬瓜茶	ㄉㄨㄥ ㄍㄨㄚ ㄔㄚˊ	existing				冬瓜茶				
+phrase.taiwan.tsv	2044	粉圓	粉圓	ㄈㄣˇ ㄩㄢˊ	existing				粉圓				
+phrase.taiwan.tsv	2046	仙草	仙草	ㄒㄧㄢ ㄘㄠˇ	existing				仙草				
+phrase.taiwan.tsv	2047	燒仙草	燒仙草	ㄕㄠ ㄒㄧㄢ ㄘㄠˇ	existing				燒仙草				
+phrase.taiwan.tsv	2048	仙草凍	仙草凍	ㄒㄧㄢ ㄘㄠˇ ㄉㄨㄥˋ	existing				仙草凍				
+phrase.taiwan.tsv	2049	豆花	豆花	ㄉㄡˋ ㄏㄨㄚ	existing				豆花				
+phrase.taiwan.tsv	2052	刨冰	刨冰	ㄆㄠˊ ㄅㄧㄥ	existing				刨冰				
+phrase.taiwan.tsv	2054	芒果冰	芒果冰	ㄇㄤˊ ㄍㄨㄛˇ ㄅㄧㄥ	existing				芒果冰				
+phrase.taiwan.tsv	2055	愛玉	愛玉	ㄞˋ ㄩˋ	existing				愛玉				
+phrase.taiwan.tsv	2057	粉圓冰	粉圓冰	ㄈㄣˇ ㄩㄢˊ ㄅㄧㄥ	existing				粉圓冰				
+phrase.taiwan.tsv	2058	綠豆沙	綠豆沙	ㄌㄩˋ ㄉㄡˋ ㄕㄚ	duplicate				綠豆沙				
+phrase.taiwan.tsv	2060	紅豆湯	紅豆湯	ㄏㄨㄥˊ ㄉㄡˋ ㄊㄤ	existing				紅豆湯				
+phrase.taiwan.tsv	2066	臭豆腐	臭豆腐	ㄔㄡˋ ㄉㄡˋ ㄈㄨˇ	existing				臭豆腐				
+phrase.taiwan.tsv	2070	擂茶	擂茶	ㄌㄟˊ ㄔㄚˊ	existing				擂茶				
+phrase.taiwan.tsv	2072	菜脯	菜脯	ㄘㄞˋ ㄆㄨˊ	existing				菜脯				
+phrase.taiwan.tsv	2074	魚丸湯	魚丸湯	ㄩˊ ㄨㄢˊ ㄊㄤ	existing				魚丸湯				
+phrase.taiwan.tsv	2075	虱目魚	虱目魚	ㄕ ㄇㄨˋ ㄩˊ	existing				虱目魚				
+phrase.taiwan.tsv	2076	虱目魚肚	虱目魚肚	ㄕ ㄇㄨˋ ㄩˊ ㄉㄨˋ	existing				虱目魚肚				
+phrase.taiwan.tsv	2077	虱目魚粥	虱目魚粥	ㄕ ㄇㄨˋ ㄩˊ ㄓㄡ	existing				虱目魚粥				
+phrase.taiwan.tsv	2080	肉粽	肉粽	ㄖㄡˋ ㄗㄨㄥˋ	existing				肉粽				
+phrase.taiwan.tsv	2083	水晶餃	水晶餃	ㄕㄨㄟˇ ㄐㄧㄥ ㄐㄧㄠˇ	existing				水晶餃				
+phrase.taiwan.tsv	2084	粉腸	粉腸	ㄈㄣˇ ㄔㄤˊ	existing				粉腸				
+phrase.taiwan.tsv	2087	草仔粿	草仔粿	ㄘㄠˇ ㄗˇ ㄍㄨㄛˇ	existing				草仔粿				
+phrase.taiwan.tsv	2088	紅龜粿	紅龜粿	ㄏㄨㄥˊ ㄍㄨㄟ ㄍㄨㄛˇ	existing				紅龜粿				
+phrase.taiwan.tsv	2089	麻糬	麻糬	ㄇㄚˊ ㄕㄨˇ	existing				麻糬				
+phrase.taiwan.tsv	2092	筒仔米糕	筒仔米糕	ㄊㄨㄥˇ ㄗˇ ㄇㄧˇ ㄍㄠ	existing				筒仔米糕				
+phrase.taiwan.tsv	2093	米糕	米糕	ㄇㄧˇ ㄍㄠ	existing				米糕				
+phrase.taiwan.tsv	2094	油飯	油飯	ㄧㄡˊ ㄈㄢˋ	existing				油飯				
+phrase.taiwan.tsv	2095	炒麵	炒麵	ㄔㄠˇ ㄇㄧㄢˋ	existing				炒麵				
+phrase.taiwan.tsv	2097	早餐店	早餐店	ㄗㄠˇ ㄘㄢ ㄉㄧㄢˋ	existing				早餐店				
+phrase.taiwan.tsv	2098	鐵板麵	鐵板麵	ㄊㄧㄝˇ ㄅㄢˇ ㄇㄧㄢˋ	existing				鐵板麵				
+phrase.taiwan.tsv	2106	豆漿	豆漿	ㄉㄡˋ ㄐㄧㄤ	existing				豆漿				
+phrase.taiwan.tsv	2107	米漿	米漿	ㄇㄧˇ ㄐㄧㄤ	existing				米漿				
+phrase.taiwan.tsv	2108	鹹豆漿	鹹豆漿	ㄒㄧㄢˊ ㄉㄡˋ ㄐㄧㄤ	existing				鹹豆漿				
+phrase.taiwan.tsv	2109	飯糰	飯糰	ㄈㄢˋ ㄊㄨㄢˊ	existing				飯糰				
+phrase.taiwan.tsv	2113	外帶	外帶	ㄨㄞˋ ㄉㄞˋ	existing				外帶				
+phrase.taiwan.tsv	2115	外送	外送	ㄨㄞˋ ㄙㄨㄥˋ	existing				外送				
+phrase.taiwan.tsv	2117	切仔麵	切仔麵	ㄑㄧㄝˋ ㄗˇ ㄇㄧㄢˋ	existing				切仔麵				
+phrase.taiwan.tsv	2118	乾麵	乾麵	ㄍㄢ ㄇㄧㄢˋ	existing				乾麵				
+phrase.taiwan.tsv	2119	麻醬麵	麻醬麵	ㄇㄚˊ ㄐㄧㄤˋ ㄇㄧㄢˋ	existing				麻醬麵				
+phrase.taiwan.tsv	2121	貢丸湯	貢丸湯	ㄍㄨㄥˋ ㄨㄢˊ ㄊㄤ	existing				貢丸湯				
+phrase.taiwan.tsv	2122	肉包	肉包	ㄖㄡˋ ㄅㄠ	existing				肉包				
+phrase.taiwan.tsv	2123	菜包	菜包	ㄘㄞˋ ㄅㄠ	existing				菜包				
+phrase.taiwan.tsv	2125	割包	割包	ㄍㄜ ㄅㄠ	existing				割包				
+phrase.taiwan.tsv	2127	機車	機車	ㄐㄧ ㄔㄜ	existing				機車				
+phrase.taiwan.tsv	2128	騎機車	騎機車	ㄑㄧˊ ㄐㄧ ㄔㄜ	existing				騎機車				
+phrase.taiwan.tsv	2131	停車格	停車格	ㄊㄧㄥˊ ㄔㄜ ㄍㄜˊ	existing				停車格				
+phrase.taiwan.tsv	2140	區間車	區間車	ㄑㄩ ㄐㄧㄢ ㄔㄜ	existing				區間車				
+phrase.taiwan.tsv	2142	自強號	自強號	ㄗˋ ㄑㄧㄤˊ ㄏㄠˋ	existing				自強號				
+phrase.taiwan.tsv	2143	普悠瑪	普悠瑪	ㄆㄨˇ ㄧㄡ ㄇㄚˇ	existing				普悠瑪				
+phrase.taiwan.tsv	2145	莒光號	莒光號	ㄐㄩˇ ㄍㄨㄤ ㄏㄠˋ	existing				莒光號				
+phrase.taiwan.tsv	2146	高鐵	高鐵	ㄍㄠ ㄊㄧㄝˇ	existing				高鐵				
+phrase.taiwan.tsv	2147	高鐵站	高鐵站	ㄍㄠ ㄊㄧㄝˇ ㄓㄢˋ	existing				高鐵站				
+phrase.taiwan.tsv	2151	高捷	高捷	ㄍㄠ ㄐㄧㄝˊ	existing				高捷				
+phrase.taiwan.tsv	2154	一卡通	一卡通	ㄧ ㄎㄚˇ ㄊㄨㄥ	existing				一卡通				
+phrase.taiwan.tsv	2155	悠遊卡	悠遊卡	ㄧㄡ ㄧㄡˊ ㄎㄚˇ	existing				悠遊卡				
+phrase.taiwan.tsv	2156	悠遊付	悠遊付	ㄧㄡ ㄧㄡˊ ㄈㄨˋ	duplicate				悠遊付				
+phrase.taiwan.tsv	2159	電子票證	電子票證	ㄉㄧㄢˋ ㄗˇ ㄆㄧㄠˋ ㄓㄥˋ	existing				電子票證				
+phrase.taiwan.tsv	2161	客運	客運	ㄎㄜˋ ㄩㄣˋ	existing				客運				
+phrase.taiwan.tsv	2166	國一	國一	ㄍㄨㄛˊ ㄧ	existing				國一				
+phrase.taiwan.tsv	2167	國三	國三	ㄍㄨㄛˊ ㄙㄢ	existing				國三				
+phrase.taiwan.tsv	2169	交流道	交流道	ㄐㄧㄠ ㄌㄧㄡˊ ㄉㄠˋ	existing				交流道				
+phrase.taiwan.tsv	2170	快速道路	快速道路	ㄎㄨㄞˋ ㄙㄨˋ ㄉㄠˋ ㄌㄨˋ	existing				快速道路				
+phrase.taiwan.tsv	2171	省道	省道	ㄕㄥˇ ㄉㄠˋ	existing				省道				
+phrase.taiwan.tsv	2172	縣道	縣道	ㄒㄧㄢˋ ㄉㄠˋ	existing				縣道				
+phrase.taiwan.tsv	2173	台一線	台一線	ㄊㄞˊ ㄧˊ ㄒㄧㄢˋ	existing				台一線				
+phrase.taiwan.tsv	2174	台九線	台九線	ㄊㄞˊ ㄐㄧㄡˇ ㄒㄧㄢˋ	existing				台九線				
+phrase.taiwan.tsv	2177	北宜高	北宜高	ㄅㄟˇ ㄧˊ ㄍㄠ	existing				北宜高				
+phrase.taiwan.tsv	2178	公車專用道	公車專用道	ㄍㄨㄥ ㄔㄜ ㄓㄨㄢ ㄩㄥˋ ㄉㄠˋ	existing				公車專用道				
+phrase.taiwan.tsv	2179	違停	違停	ㄨㄟˊ ㄊㄧㄥˊ	duplicate				違停				
+phrase.taiwan.tsv	2181	迴轉	迴轉	ㄏㄨㄟˊ ㄓㄨㄢˇ	existing				迴轉				
+phrase.taiwan.tsv	2186	行照	行照	ㄒㄧㄥˊ ㄓㄠˋ	existing				行照				
+phrase.taiwan.tsv	2187	駕照	駕照	ㄐㄧㄚˋ ㄓㄠˋ	existing				駕照				
+phrase.taiwan.tsv	2189	停車費	停車費	ㄊㄧㄥˊ ㄔㄜ ㄈㄟˋ	existing				停車費				
+phrase.taiwan.tsv	2190	過路費	過路費	ㄍㄨㄛˋ ㄌㄨˋ ㄈㄟˋ	existing				過路費				
+phrase.taiwan.tsv	2195	筆試	筆試	ㄅㄧˇ ㄕˋ	existing				筆試				
+phrase.taiwan.tsv	2198	共乘	共乘	ㄍㄨㄥˋ ㄔㄥˊ	existing				共乘				
+phrase.taiwan.tsv	2199	計程車	計程車	ㄐㄧˋ ㄔㄥˊ ㄔㄜ	existing				計程車				
+phrase.taiwan.tsv	2200	跳表	跳表	ㄊㄧㄠˋ ㄅㄧㄠˇ	existing				跳表				
+phrase.taiwan.tsv	2201	叫車	叫車	ㄐㄧㄠˋ ㄔㄜ	existing				叫車				
+phrase.taiwan.tsv	2202	包車	包車	ㄅㄠ ㄔㄜ	existing				包車				
+phrase.taiwan.tsv	2204	紅綠燈	紅綠燈	ㄏㄨㄥˊ ㄌㄩˋ ㄉㄥ	existing				紅綠燈				
+phrase.taiwan.tsv	2205	行人穿越道	行人穿越道	ㄒㄧㄥˊ ㄖㄣˊ ㄔㄨㄢ ㄩㄝˋ ㄉㄠˋ	existing				行人穿越道				
+phrase.taiwan.tsv	2207	斑馬線	斑馬線	ㄅㄢ ㄇㄚˇ ㄒㄧㄢˋ	existing				斑馬線				
+phrase.taiwan.tsv	2211	超商	超商	ㄔㄠ ㄕㄤ	existing				超商				
+phrase.taiwan.tsv	2212	超商取貨	超商取貨	ㄔㄠ ㄕㄤ ㄑㄩˇ ㄏㄨㄛˋ	duplicate				超商取貨				
+phrase.taiwan.tsv	2214	貨到付款	貨到付款	ㄏㄨㄛˋ ㄉㄠˋ ㄈㄨˋ ㄎㄨㄢˇ	existing				貨到付款				
+phrase.taiwan.tsv	2217	宅配	宅配	ㄓㄞˊ ㄆㄟˋ	duplicate				宅配				
+phrase.taiwan.tsv	2219	便利商店	便利商店	ㄅㄧㄢˋ ㄌㄧˋ ㄕㄤ ㄉㄧㄢˋ	existing				便利商店				
+phrase.taiwan.tsv	2220	包裹	包裹	ㄅㄠ ㄍㄨㄛˇ	existing				包裹				
+phrase.taiwan.tsv	2222	寄件	寄件	ㄐㄧˋ ㄐㄧㄢˋ	existing				寄件				
+phrase.taiwan.tsv	2225	運費	運費	ㄩㄣˋ ㄈㄟˋ	existing				運費				
+phrase.taiwan.tsv	2226	免運	免運	ㄇㄧㄢˇ ㄩㄣˋ	duplicate				免運				
+phrase.taiwan.tsv	2227	免運費	免運費	ㄇㄧㄢˇ ㄩㄣˋ ㄈㄟˋ	duplicate				免運費				
+phrase.taiwan.tsv	2228	團購	團購	ㄊㄨㄢˊ ㄍㄡˋ	existing				團購				
+phrase.taiwan.tsv	2229	出清	出清	ㄔㄨ ㄑㄧㄥ	existing				出清				
+phrase.taiwan.tsv	2233	買一送一	買一送一	ㄇㄞˇ ㄧˊ ㄙㄨㄥˋ ㄧ	existing				買一送一				
+phrase.taiwan.tsv	2235	折價券	折價券	ㄓㄜˊ ㄐㄧㄚˋ ㄑㄩㄢˋ	existing				折價券				
+phrase.taiwan.tsv	2237	集點	集點	ㄐㄧˊ ㄉㄧㄢˇ	existing				集點				
+phrase.taiwan.tsv	2241	會員卡	會員卡	ㄏㄨㄟˋ ㄩㄢˊ ㄎㄚˇ	existing				會員卡				
+phrase.taiwan.tsv	2243	載具	載具	ㄗㄞˋ ㄐㄩˋ	existing				載具				
+phrase.taiwan.tsv	2245	電子發票	電子發票	ㄉㄧㄢˋ ㄗˇ ㄈㄚ ㄆㄧㄠˋ	existing				電子發票				
+phrase.taiwan.tsv	2246	雲端發票	雲端發票	ㄩㄣˊ ㄉㄨㄢ ㄈㄚ ㄆㄧㄠˋ	existing				雲端發票				
+phrase.taiwan.tsv	2251	報帳	報帳	ㄅㄠˋ ㄓㄤˋ	existing				報帳				
+phrase.taiwan.tsv	2252	對獎	對獎	ㄉㄨㄟˋ ㄐㄧㄤˇ	existing				對獎				
+phrase.taiwan.tsv	2253	中獎	中獎	ㄓㄨㄥˋ ㄐㄧㄤˇ	existing				中獎				
+phrase.taiwan.tsv	2254	統一發票	統一發票	ㄊㄨㄥˇ ㄧ ㄈㄚ ㄆㄧㄠˋ	existing				統一發票				
+phrase.taiwan.tsv	2258	騎樓	騎樓	ㄑㄧˊ ㄌㄡˊ	existing				騎樓				
+phrase.taiwan.tsv	2259	透天	透天	ㄊㄡˋ ㄊㄧㄢ	existing				透天				
+phrase.taiwan.tsv	2260	透天厝	透天厝	ㄊㄡˋ ㄊㄧㄢ ㄘㄨㄛˋ	existing				透天厝				
+phrase.taiwan.tsv	2263	華廈	華廈	ㄏㄨㄚˊ ㄕㄚˋ	existing				華廈				
+phrase.taiwan.tsv	2264	公寓	公寓	ㄍㄨㄥ ㄩˋ	existing				公寓				
+phrase.taiwan.tsv	2265	套房	套房	ㄊㄠˋ ㄈㄤˊ	existing				套房				
+phrase.taiwan.tsv	2267	雅房	雅房	ㄧㄚˇ ㄈㄤˊ	existing				雅房				
+phrase.taiwan.tsv	2268	管委會	管委會	ㄍㄨㄢˇ ㄨㄟˇ ㄏㄨㄟˋ	existing				管委會				
+phrase.taiwan.tsv	2269	管理費	管理費	ㄍㄨㄢˇ ㄌㄧˇ ㄈㄟˋ	existing				管理費				
+phrase.taiwan.tsv	2271	權狀	權狀	ㄑㄩㄢˊ ㄓㄨㄤˋ	existing				權狀				
+phrase.taiwan.tsv	2274	生活圈	生活圈	ㄕㄥ ㄏㄨㄛˊ ㄑㄩㄢ	existing				生活圈				
+phrase.taiwan.tsv	2275	學區	學區	ㄒㄩㄝˊ ㄑㄩ	existing				學區				
+phrase.taiwan.tsv	2277	預售屋	預售屋	ㄩˋ ㄕㄡˋ ㄨ	existing				預售屋				
+phrase.taiwan.tsv	2280	實價登錄	實價登錄	ㄕˊ ㄐㄧㄚˋ ㄉㄥ ㄌㄨˋ	existing				實價登錄				
+phrase.taiwan.tsv	2283	垃圾車	垃圾車	ㄌㄚ ㄐㄧ ㄔㄜ	existing				垃圾車				
+phrase.taiwan.tsv	2284	資源回收	資源回收	ㄗ ㄩㄢˊ ㄏㄨㄟˊ ㄕㄡ	existing				資源回收				
+phrase.taiwan.tsv	2286	清潔隊	清潔隊	ㄑㄧㄥ ㄐㄧㄝˊ ㄉㄨㄟˋ	existing				清潔隊				
+phrase.taiwan.tsv	2287	倒垃圾	倒垃圾	ㄉㄠˋ ㄌㄚ ㄐㄧ	existing				倒垃圾				
+phrase.taiwan.tsv	2289	里長	里長	ㄌㄧˇ ㄓㄤˇ	existing				里長				
+phrase.taiwan.tsv	2291	鄰長	鄰長	ㄌㄧㄣˊ ㄓㄤˇ	existing				鄰長				
+phrase.taiwan.tsv	2293	區公所	區公所	ㄑㄩ ㄍㄨㄥ ㄙㄨㄛˇ	existing				區公所				
+phrase.taiwan.tsv	2294	戶政	戶政	ㄏㄨˋ ㄓㄥˋ	existing				戶政				
+phrase.taiwan.tsv	2295	戶政事務所	戶政事務所	ㄏㄨˋ ㄓㄥˋ ㄕˋ ㄨˋ ㄙㄨㄛˇ	existing				戶政事務所				
+phrase.taiwan.tsv	2296	戶口名簿	戶口名簿	ㄏㄨˋ ㄎㄡˇ ㄇㄧㄥˊ ㄅㄨˋ	existing				戶口名簿				
+phrase.taiwan.tsv	2297	身分證	身分證	ㄕㄣ ㄈㄣ ㄓㄥˋ	existing				身分證				
+phrase.taiwan.tsv	2299	戶籍謄本	戶籍謄本	ㄏㄨˋ ㄐㄧˊ ㄊㄥˊ ㄅㄣˇ	existing				戶籍謄本				
+phrase.taiwan.tsv	2300	戶籍	戶籍	ㄏㄨˋ ㄐㄧˊ	existing				戶籍				
+phrase.taiwan.tsv	2302	報稅	報稅	ㄅㄠˋ ㄕㄨㄟˋ	existing				報稅				
+phrase.taiwan.tsv	2303	國稅局	國稅局	ㄍㄨㄛˊ ㄕㄨㄟˋ ㄐㄩˊ	existing				國稅局				
+phrase.taiwan.tsv	2304	地政	地政	ㄉㄧˋ ㄓㄥˋ	existing				地政				
+phrase.taiwan.tsv	2306	健保	健保	ㄐㄧㄢˋ ㄅㄠˇ	existing				健保				
+phrase.taiwan.tsv	2307	健保卡	健保卡	ㄐㄧㄢˋ ㄅㄠˇ ㄎㄚˇ	existing				健保卡				
+phrase.taiwan.tsv	2309	掛號	掛號	ㄍㄨㄚˋ ㄏㄠˋ	existing				掛號				
+phrase.taiwan.tsv	2311	複診	複診	ㄈㄨˋ ㄓㄣˇ	existing				複診				
+phrase.taiwan.tsv	2313	診所	診所	ㄓㄣˇ ㄙㄨㄛˇ	existing				診所				
+phrase.taiwan.tsv	2314	轉診	轉診	ㄓㄨㄢˇ ㄓㄣˇ	existing				轉診				
+phrase.taiwan.tsv	2316	急診	急診	ㄐㄧˊ ㄓㄣˇ	existing				急診				
+phrase.taiwan.tsv	2317	門診	門診	ㄇㄣˊ ㄓㄣˇ	existing				門診				
+phrase.taiwan.tsv	2323	健康檢查	健康檢查	ㄐㄧㄢˋ ㄎㄤ ㄐㄧㄢˇ ㄔㄚˊ	existing				健康檢查				
+phrase.taiwan.tsv	2325	衛福部	衛福部	ㄨㄟˋ ㄈㄨˊ ㄅㄨˋ	existing				衛福部				
+phrase.taiwan.tsv	2329	勞保	勞保	ㄌㄠˊ ㄅㄠˇ	existing				勞保				
+phrase.taiwan.tsv	2330	勞退	勞退	ㄌㄠˊ ㄊㄨㄟˋ	existing				勞退				
+phrase.taiwan.tsv	2332	勞保局	勞保局	ㄌㄠˊ ㄅㄠˇ ㄐㄩˊ	existing				勞保局				
+phrase.taiwan.tsv	2333	勞退新制	勞退新制	ㄌㄠˊ ㄊㄨㄟˋ ㄒㄧㄣ ㄓˋ	existing				勞退新制				
+phrase.taiwan.tsv	2337	低收入戶	低收入戶	ㄉㄧ ㄕㄡ ㄖㄨˋ ㄏㄨˋ	existing				低收入戶				
+phrase.taiwan.tsv	2338	中低收入戶	中低收入戶	ㄓㄨㄥ ㄉㄧ ㄕㄡ ㄖㄨˋ ㄏㄨˋ	existing				中低收入戶				
+phrase.taiwan.tsv	2339	房屋稅	房屋稅	ㄈㄤˊ ㄨ ㄕㄨㄟˋ	existing				房屋稅				
+phrase.taiwan.tsv	2340	地價稅	地價稅	ㄉㄧˋ ㄐㄧㄚˋ ㄕㄨㄟˋ	existing				地價稅				
+phrase.taiwan.tsv	2341	牌照稅	牌照稅	ㄆㄞˊ ㄓㄠˋ ㄕㄨㄟˋ	existing				牌照稅				
+phrase.taiwan.tsv	2342	燃料稅	燃料稅	ㄖㄢˊ ㄌㄧㄠˋ ㄕㄨㄟˋ	existing				燃料稅				
+phrase.taiwan.tsv	2345	停班停課	停班停課	ㄊㄧㄥˊ ㄅㄢ ㄊㄧㄥˊ ㄎㄜˋ	existing				停班停課				
+phrase.taiwan.tsv	2346	停水	停水	ㄊㄧㄥˊ ㄕㄨㄟˇ	existing				停水				
+phrase.taiwan.tsv	2347	停電	停電	ㄊㄧㄥˊ ㄉㄧㄢˋ	existing				停電				
+phrase.taiwan.tsv	2348	跳電	跳電	ㄊㄧㄠˋ ㄉㄧㄢˋ	existing				跳電				
+phrase.taiwan.tsv	2349	西北雨	西北雨	ㄒㄧ ㄅㄟˇ ㄩˇ	existing				西北雨				
+phrase.taiwan.tsv	2353	寒流	寒流	ㄏㄢˊ ㄌㄧㄡˊ	existing				寒流				
+phrase.taiwan.tsv	2355	梅雨季	梅雨季	ㄇㄟˊ ㄩˇ ㄐㄧˋ	existing				梅雨季				
+phrase.taiwan.tsv	2362	補班	補班	ㄅㄨˇ ㄅㄢ	duplicate				補班				
+phrase.taiwan.tsv	2366	國定假日	國定假日	ㄍㄨㄛˊ ㄉㄧㄥˋ ㄐㄧㄚˋ ㄖˋ	existing				國定假日				
+phrase.taiwan.tsv	2368	傳統市場	傳統市場	ㄔㄨㄢˊ ㄊㄨㄥˇ ㄕˋ ㄔㄤˇ	existing				傳統市場				
+phrase.taiwan.tsv	2370	菜市場	菜市場	ㄘㄞˋ ㄕˋ ㄔㄤˇ	existing				菜市場				
+phrase.taiwan.tsv	2371	菜籃族	菜籃族	ㄘㄞˋ ㄌㄢˊ ㄗㄨˊ	existing				菜籃族				
+phrase.taiwan.tsv	2372	喊價	喊價	ㄏㄢˇ ㄐㄧㄚˋ	existing				喊價				
+phrase.taiwan.tsv	2373	殺價	殺價	ㄕㄚ ㄐㄧㄚˋ	existing				殺價				
+phrase.taiwan.tsv	2374	不二價	不二價	ㄅㄨˊ ㄦˋ ㄐㄧㄚˋ	existing				不二價				
+phrase.taiwan.tsv	2379	號碼牌	號碼牌	ㄏㄠˋ ㄇㄚˇ ㄆㄞˊ	existing				號碼牌				
+phrase.taiwan.tsv	2381	學測	學測	ㄒㄩㄝˊ ㄘㄜˋ	existing				學測				
+phrase.taiwan.tsv	2382	分科	分科	ㄈㄣ ㄎㄜ	existing				分科				
+phrase.taiwan.tsv	2383	分科測驗	分科測驗	ㄈㄣ ㄎㄜ ㄘㄜˋ ㄧㄢˋ	existing				分科測驗				
+phrase.taiwan.tsv	2384	會考	會考	ㄏㄨㄟˋ ㄎㄠˇ	existing				會考				
+phrase.taiwan.tsv	2385	國中會考	國中會考	ㄍㄨㄛˊ ㄓㄨㄥ ㄏㄨㄟˋ ㄎㄠˇ	duplicate				國中會考				
+phrase.taiwan.tsv	2386	學測成績	學測成績	ㄒㄩㄝˊ ㄘㄜˋ ㄔㄥˊ ㄐㄧ	existing				學測成績				
+phrase.taiwan.tsv	2388	個人申請	個人申請	ㄍㄜˋ ㄖㄣˊ ㄕㄣ ㄑㄧㄥˇ	duplicate				個人申請				
+phrase.taiwan.tsv	2389	繁星	繁星	ㄈㄢˊ ㄒㄧㄥ	existing				繁星				
+phrase.taiwan.tsv	2390	繁星推薦	繁星推薦	ㄈㄢˊ ㄒㄧㄥ ㄊㄨㄟ ㄐㄧㄢˋ	existing				繁星推薦				
+phrase.taiwan.tsv	2392	學習歷程	學習歷程	ㄒㄩㄝˊ ㄒㄧˊ ㄌㄧˋ ㄔㄥˊ	existing				學習歷程				
+phrase.taiwan.tsv	2394	落點分析	落點分析	ㄌㄨㄛˋ ㄉㄧㄢˇ ㄈㄣ ㄒㄧ	existing				落點分析				
+phrase.taiwan.tsv	2395	志願序	志願序	ㄓˋ ㄩㄢˋ ㄒㄩˋ	existing				志願序				
+phrase.taiwan.tsv	2399	模考	模考	ㄇㄛˊ ㄎㄠˇ	duplicate				模考				
+phrase.taiwan.tsv	2400	段考	段考	ㄉㄨㄢˋ ㄎㄠˇ	existing				段考				
+phrase.taiwan.tsv	2401	期中考	期中考	ㄑㄧ ㄓㄨㄥ ㄎㄠˇ	existing				期中考				
+phrase.taiwan.tsv	2402	期末考	期末考	ㄑㄧ ㄇㄛˋ ㄎㄠˇ	existing				期末考				
+phrase.taiwan.tsv	2404	小考	小考	ㄒㄧㄠˇ ㄎㄠˇ	existing				小考				
+phrase.taiwan.tsv	2406	補考	補考	ㄅㄨˇ ㄎㄠˇ	existing				補考				
+phrase.taiwan.tsv	2408	重考	重考	ㄔㄨㄥˊ ㄎㄠˇ	existing				重考				
+phrase.taiwan.tsv	2410	重考生	重考生	ㄔㄨㄥˊ ㄎㄠˇ ㄕㄥ	existing				重考生				
+phrase.taiwan.tsv	2415	探究與實作	探究與實作	ㄊㄢˋ ㄐㄧㄡ ㄩˇ ㄕˊ ㄗㄨㄛˋ	duplicate				探究與實作				
+phrase.taiwan.tsv	2416	多元選修	多元選修	ㄉㄨㄛ ㄩㄢˊ ㄒㄩㄢˇ ㄒㄧㄡ	duplicate				多元選修				
+phrase.taiwan.tsv	2418	必修	必修	ㄅㄧˋ ㄒㄧㄡ	existing				必修				
+phrase.taiwan.tsv	2419	選修	選修	ㄒㄩㄢˇ ㄒㄧㄡ	existing				選修				
+phrase.taiwan.tsv	2425	晚自習	晚自習	ㄨㄢˇ ㄗˋ ㄒㄧˊ	existing				晚自習				
+phrase.taiwan.tsv	2426	導師	導師	ㄉㄠˇ ㄕ	existing				導師				
+phrase.taiwan.tsv	2428	班長	班長	ㄅㄢ ㄓㄤˇ	existing				班長				
+phrase.taiwan.tsv	2429	副班長	副班長	ㄈㄨˋ ㄅㄢ ㄓㄤˇ	existing				副班長				
+phrase.taiwan.tsv	2430	風紀股長	風紀股長	ㄈㄥ ㄐㄧˋ ㄍㄨˇ ㄓㄤˇ	existing				風紀股長				
+phrase.taiwan.tsv	2432	小老師	小老師	ㄒㄧㄠˇ ㄌㄠˇ ㄕ	existing				小老師				
+phrase.taiwan.tsv	2433	補習班	補習班	ㄅㄨˇ ㄒㄧˊ ㄅㄢ	existing				補習班				
+phrase.taiwan.tsv	2434	安親班	安親班	ㄢ ㄑㄧㄣ ㄅㄢ	existing				安親班				
+phrase.taiwan.tsv	2436	家教	家教	ㄐㄧㄚ ㄐㄧㄠˋ	existing				家教				
+phrase.taiwan.tsv	2437	資優班	資優班	ㄗ ㄧㄡ ㄅㄢ	existing				資優班				
+phrase.taiwan.tsv	2445	級分	級分	ㄐㄧˊ ㄈㄣ	existing				級分				
+phrase.taiwan.tsv	2449	均標	均標	ㄐㄩㄣ ㄅㄧㄠ	existing				均標				
+phrase.taiwan.tsv	2452	備取	備取	ㄅㄟˋ ㄑㄩˇ	existing				備取				
+phrase.taiwan.tsv	2453	正取	正取	ㄓㄥˋ ㄑㄩˇ	existing				正取				
+phrase.taiwan.tsv	2455	甄試	甄試	ㄓㄣ ㄕˋ	existing				甄試				
+phrase.taiwan.tsv	2459	公立學校	公立學校	ㄍㄨㄥ ㄌㄧˋ ㄒㄩㄝˊ ㄒㄧㄠˋ	existing				公立學校				
+phrase.taiwan.tsv	2460	私校	私校	ㄙ ㄒㄧㄠˋ	existing				私校				
+phrase.taiwan.tsv	2461	社團	社團	ㄕㄜˋ ㄊㄨㄢˊ	existing				社團				
+phrase.taiwan.tsv	2462	校慶	校慶	ㄒㄧㄠˋ ㄑㄧㄥˋ	existing				校慶				
+phrase.taiwan.tsv	2464	畢業旅行	畢業旅行	ㄅㄧˋ ㄧㄝˋ ㄌㄩˇ ㄒㄧㄥˊ	existing				畢業旅行				
+phrase.taiwan.tsv	2466	校外教學	校外教學	ㄒㄧㄠˋ ㄨㄞˋ ㄐㄧㄠˋ ㄒㄩㄝˊ	existing				校外教學				
+phrase.taiwan.tsv	2467	營養午餐	營養午餐	ㄧㄥˊ ㄧㄤˇ ㄨˇ ㄘㄢ	existing				營養午餐				
+phrase.taiwan.tsv	2469	二一	二一	ㄦˋ ㄧ	existing				二一				
+phrase.taiwan.tsv	2471	退學	退學	ㄊㄨㄟˋ ㄒㄩㄝˊ	existing				退學				
+phrase.taiwan.tsv	2472	休學	休學	ㄒㄧㄡ ㄒㄩㄝˊ	existing				休學				
+phrase.taiwan.tsv	2473	延畢	延畢	ㄧㄢˊ ㄅㄧˋ	existing				延畢				
+phrase.taiwan.tsv	2474	通識	通識	ㄊㄨㄥ ㄕˊ	existing				通識				
+phrase.taiwan.tsv	2475	通識課	通識課	ㄊㄨㄥ ㄕˊ ㄎㄜˋ	existing				通識課				
+phrase.taiwan.tsv	2476	營隊	營隊	ㄧㄥˊ ㄉㄨㄟˋ	existing				營隊				
+phrase.taiwan.tsv	2477	迎新	迎新	ㄧㄥˊ ㄒㄧㄣ	existing				迎新				
+phrase.taiwan.tsv	2478	系學會	系學會	ㄒㄧˋ ㄒㄩㄝˊ ㄏㄨㄟˋ	existing				系學會				
+phrase.taiwan.tsv	2482	學弟妹	學弟妹	ㄒㄩㄝˊ ㄉㄧˋ ㄇㄟˋ	existing				學弟妹				
+phrase.taiwan.tsv	2483	選課	選課	ㄒㄩㄢˇ ㄎㄜˋ	existing				選課				
+phrase.taiwan.tsv	2489	推甄	推甄	ㄊㄨㄟ ㄓㄣ	existing				推甄				
+phrase.taiwan.tsv	2490	學分	學分	ㄒㄩㄝˊ ㄈㄣ	existing				學分				
+phrase.taiwan.tsv	2492	朝會	朝會	ㄓㄠ ㄏㄨㄟˋ	existing				朝會				
+phrase.taiwan.tsv	2493	週會	週會	ㄓㄡ ㄏㄨㄟˋ	existing				週會				
+phrase.taiwan.tsv	2494	聯考	聯考	ㄌㄧㄢˊ ㄎㄠˇ	existing				聯考				
+phrase.taiwan.tsv	2495	基測	基測	ㄐㄧ ㄘㄜˋ	existing				基測				
+phrase.taiwan.tsv	2496	拜拜	拜拜	ㄅㄞˋ ㄅㄞˋ	existing				拜拜				
+phrase.taiwan.tsv	2498	金紙	金紙	ㄐㄧㄣ ㄓˇ	existing				金紙				
+phrase.taiwan.tsv	2501	過火	過火	ㄍㄨㄛˋ ㄏㄨㄛˇ	existing				過火				
+phrase.taiwan.tsv	2502	遶境	遶境	ㄖㄠˋ ㄐㄧㄥˋ	existing				遶境				
+phrase.taiwan.tsv	2503	進香	進香	ㄐㄧㄣˋ ㄒㄧㄤ	existing				進香				
+phrase.taiwan.tsv	2504	陣頭	陣頭	ㄓㄣˋ ㄊㄡˊ	existing				陣頭				
+phrase.taiwan.tsv	2505	媽祖	媽祖	ㄇㄚ ㄗㄨˇ	existing				媽祖				
+phrase.taiwan.tsv	2506	土地公	土地公	ㄊㄨˇ ㄉㄧˋ ㄍㄨㄥ	existing				土地公				
+phrase.taiwan.tsv	2507	城隍爺	城隍爺	ㄔㄥˊ ㄏㄨㄤˊ ㄧㄝˊ	existing				城隍爺				
+phrase.taiwan.tsv	2508	月老	月老	ㄩㄝˋ ㄌㄠˇ	existing				月老				
+phrase.taiwan.tsv	2509	王爺	王爺	ㄨㄤˊ ㄧㄝˊ	existing				王爺				
+phrase.taiwan.tsv	2510	保生大帝	保生大帝	ㄅㄠˇ ㄕㄥ ㄉㄚˋ ㄉㄧˋ	existing				保生大帝				
+phrase.taiwan.tsv	2511	註生娘娘	註生娘娘	ㄓㄨˋ ㄕㄥ ㄋㄧㄤˊ ㄋㄧㄤˊ	existing				註生娘娘				
+phrase.taiwan.tsv	2512	關聖帝君	關聖帝君	ㄍㄨㄢ ㄕㄥˋ ㄉㄧˋ ㄐㄩㄣ	existing				關聖帝君				
+phrase.taiwan.tsv	2517	天公	天公	ㄊㄧㄢ ㄍㄨㄥ	existing				天公				
+phrase.taiwan.tsv	2521	尾牙	尾牙	ㄨㄟˇ ㄧㄚˊ	existing				尾牙				
+phrase.taiwan.tsv	2522	春酒	春酒	ㄔㄨㄣ ㄐㄧㄡˇ	existing				春酒				
+phrase.taiwan.tsv	2523	普渡	普渡	ㄆㄨˇ ㄉㄨˋ	existing				普渡				
+phrase.taiwan.tsv	2524	中元普渡	中元普渡	ㄓㄨㄥ ㄩㄢˊ ㄆㄨˇ ㄉㄨˋ	existing				中元普渡				
+phrase.taiwan.tsv	2525	中元節	中元節	ㄓㄨㄥ ㄩㄢˊ ㄐㄧㄝˊ	existing				中元節				
+phrase.taiwan.tsv	2526	清明節	清明節	ㄑㄧㄥ ㄇㄧㄥˊ ㄐㄧㄝˊ	existing				清明節				
+phrase.taiwan.tsv	2528	掃墓	掃墓	ㄙㄠˇ ㄇㄨˋ	existing				掃墓				
+phrase.taiwan.tsv	2529	重陽節	重陽節	ㄔㄨㄥˊ ㄧㄤˊ ㄐㄧㄝˊ	existing				重陽節				
+phrase.taiwan.tsv	2530	端午節	端午節	ㄉㄨㄢ ㄨˇ ㄐㄧㄝˊ	existing				端午節				
+phrase.taiwan.tsv	2531	中秋節	中秋節	ㄓㄨㄥ ㄑㄧㄡ ㄐㄧㄝˊ	existing				中秋節				
+phrase.taiwan.tsv	2532	冬至	冬至	ㄉㄨㄥ ㄓˋ	existing				冬至				
+phrase.taiwan.tsv	2533	湯圓	湯圓	ㄊㄤ ㄩㄢˊ	existing				湯圓				
+phrase.taiwan.tsv	2534	元宵	元宵	ㄩㄢˊ ㄒㄧㄠ	existing				元宵				
+phrase.taiwan.tsv	2535	元宵節	元宵節	ㄩㄢˊ ㄒㄧㄠ ㄐㄧㄝˊ	existing				元宵節				
+phrase.taiwan.tsv	2537	花燈	花燈	ㄏㄨㄚ ㄉㄥ	existing				花燈				
+phrase.taiwan.tsv	2540	鹽水蜂炮	鹽水蜂炮	ㄧㄢˊ ㄕㄨㄟˇ ㄈㄥ ㄆㄠˋ	existing				鹽水蜂炮				
+phrase.taiwan.tsv	2541	搶孤	搶孤	ㄑㄧㄤˇ ㄍㄨ	existing				搶孤				
+phrase.taiwan.tsv	2544	王船祭	王船祭	ㄨㄤˊ ㄔㄨㄢˊ ㄐㄧˋ	existing				王船祭				
+phrase.taiwan.tsv	2549	廟會	廟會	ㄇㄧㄠˋ ㄏㄨㄟˋ	existing				廟會				
+phrase.taiwan.tsv	2550	乩童	乩童	ㄐㄧ ㄊㄨㄥˊ	existing				乩童				
+phrase.taiwan.tsv	2551	收驚	收驚	ㄕㄡ ㄐㄧㄥ	existing				收驚				
+phrase.taiwan.tsv	2552	安太歲	安太歲	ㄢ ㄊㄞˋ ㄙㄨㄟˋ	existing				安太歲				
+phrase.taiwan.tsv	2556	結緣	結緣	ㄐㄧㄝˊ ㄩㄢˊ	existing				結緣				
+phrase.taiwan.tsv	2561	求籤	求籤	ㄑㄧㄡˊ ㄑㄧㄢ	existing				求籤				
+phrase.taiwan.tsv	2562	擲筊	擲筊	ㄓˋ ㄐㄧㄠˇ	existing				擲筊				
+phrase.taiwan.tsv	2569	金身	金身	ㄐㄧㄣ ㄕㄣ	existing				金身				
+phrase.taiwan.tsv	2570	香客	香客	ㄒㄧㄤ ㄎㄜˋ	existing				香客				
+phrase.taiwan.tsv	2571	香油錢	香油錢	ㄒㄧㄤ ㄧㄡˊ ㄑㄧㄢˊ	existing				香油錢				
+phrase.taiwan.tsv	2575	過年	過年	ㄍㄨㄛˋ ㄋㄧㄢˊ	existing				過年				
+phrase.taiwan.tsv	2576	拜年	拜年	ㄅㄞˋ ㄋㄧㄢˊ	existing				拜年				
+phrase.taiwan.tsv	2577	紅包	紅包	ㄏㄨㄥˊ ㄅㄠ	existing				紅包				
+phrase.taiwan.tsv	2578	壓歲錢	壓歲錢	ㄧㄚ ㄙㄨㄟˋ ㄑㄧㄢˊ	existing				壓歲錢				
+phrase.taiwan.tsv	2581	供品	供品	ㄍㄨㄥ ㄆㄧㄣˇ	existing				供品				
+phrase.taiwan.tsv	2582	三牲	三牲	ㄙㄢ ㄕㄥ	existing				三牲				
+phrase.taiwan.tsv	2584	紙錢	紙錢	ㄓˇ ㄑㄧㄢˊ	existing				紙錢				
+phrase.taiwan.tsv	2585	春聯	春聯	ㄔㄨㄣ ㄌㄧㄢˊ	existing				春聯				
+phrase.taiwan.tsv	2587	打卡	打卡	ㄉㄚˇ ㄎㄚˇ	existing				打卡				
+phrase.taiwan.tsv	2588	下班	下班	ㄒㄧㄚˋ ㄅㄢ	existing				下班				
+phrase.taiwan.tsv	2589	打卡鐘	打卡鐘	ㄉㄚˇ ㄎㄚˇ ㄓㄨㄥ	existing				打卡鐘				
+phrase.taiwan.tsv	2592	補休	補休	ㄅㄨˇ ㄒㄧㄡ	existing				補休				
+phrase.taiwan.tsv	2593	加班	加班	ㄐㄧㄚ ㄅㄢ	existing				加班				
+phrase.taiwan.tsv	2594	加班費	加班費	ㄐㄧㄚ ㄅㄢ ㄈㄟˋ	existing				加班費				
+phrase.taiwan.tsv	2595	責任制	責任制	ㄗㄜˊ ㄖㄣˋ ㄓˋ	existing				責任制				
+phrase.taiwan.tsv	2596	勞基法	勞基法	ㄌㄠˊ ㄐㄧ ㄈㄚˇ	existing				勞基法				
+phrase.taiwan.tsv	2597	勞健保	勞健保	ㄌㄠˊ ㄐㄧㄢˋ ㄅㄠˇ	existing				勞健保				
+phrase.taiwan.tsv	2598	年終	年終	ㄋㄧㄢˊ ㄓㄨㄥ	existing				年終				
+phrase.taiwan.tsv	2599	年終獎金	年終獎金	ㄋㄧㄢˊ ㄓㄨㄥ ㄐㄧㄤˇ ㄐㄧㄣ	existing				年終獎金				
+phrase.taiwan.tsv	2602	聚餐	聚餐	ㄐㄩˋ ㄘㄢ	existing				聚餐				
+phrase.taiwan.tsv	2603	下午茶	下午茶	ㄒㄧㄚˋ ㄨˇ ㄔㄚˊ	existing				下午茶				
+phrase.taiwan.tsv	2609	年資	年資	ㄋㄧㄢˊ ㄗ	existing				年資				
+phrase.taiwan.tsv	2610	考績	考績	ㄎㄠˇ ㄐㄧ	existing				考績				
+phrase.taiwan.tsv	2611	績效	績效	ㄐㄧ ㄒㄧㄠˋ	existing				績效				
+phrase.taiwan.tsv	2613	派遣	派遣	ㄆㄞˋ ㄑㄧㄢˇ	existing				派遣				
+phrase.taiwan.tsv	2615	試用期	試用期	ㄕˋ ㄩㄥˋ ㄑㄧ	existing				試用期				
+phrase.taiwan.tsv	2616	打工	打工	ㄉㄚˇ ㄍㄨㄥ	existing				打工				
+phrase.taiwan.tsv	2617	工讀生	工讀生	ㄍㄨㄥ ㄉㄨˊ ㄕㄥ	existing				工讀生				
+phrase.taiwan.tsv	2618	兼差	兼差	ㄐㄧㄢ ㄔㄞ	existing				兼差				
+phrase.taiwan.tsv	2619	接案	接案	ㄐㄧㄝ ㄢˋ	duplicate				接案				
+phrase.taiwan.tsv	2621	計時	計時	ㄐㄧˋ ㄕˊ	existing				計時				
+phrase.taiwan.tsv	2622	排班	排班	ㄆㄞˊ ㄅㄢ	existing				排班				
+phrase.taiwan.tsv	2623	輪班	輪班	ㄌㄨㄣˊ ㄅㄢ	existing				輪班				
+phrase.taiwan.tsv	2624	輪值	輪值	ㄌㄨㄣˊ ㄓˊ	existing				輪值				
+phrase.taiwan.tsv	2625	值班	值班	ㄓˊ ㄅㄢ	existing				值班				
+phrase.taiwan.tsv	2629	事假	事假	ㄕˋ ㄐㄧㄚˋ	existing				事假				
+phrase.taiwan.tsv	2630	病假	病假	ㄅㄧㄥˋ ㄐㄧㄚˋ	existing				病假				
+phrase.taiwan.tsv	2631	婚假	婚假	ㄏㄨㄣ ㄐㄧㄚˋ	existing				婚假				
+phrase.taiwan.tsv	2637	啦啦隊	啦啦隊	ㄌㄚ ㄌㄚ ㄉㄨㄟˋ	existing				啦啦隊				
+phrase.taiwan.tsv	2638	職棒	職棒	ㄓˊ ㄅㄤˋ	existing				職棒				
+phrase.taiwan.tsv	2639	中職	中職	ㄓㄨㄥ ㄓˊ	existing				中職				
+phrase.taiwan.tsv	2640	棒球迷	棒球迷	ㄅㄤˋ ㄑㄧㄡˊ ㄇㄧˊ	existing				棒球迷				
+phrase.taiwan.tsv	2641	球迷	球迷	ㄑㄧㄡˊ ㄇㄧˊ	existing				球迷				
+phrase.taiwan.tsv	2643	應援	應援	ㄧㄥˋ ㄩㄢˊ	existing				應援				
+phrase.taiwan.tsv	2646	啦啦隊長	啦啦隊長	ㄌㄚ ㄌㄚ ㄉㄨㄟˋ ㄓㄤˇ	existing				啦啦隊長				
+phrase.taiwan.tsv	2647	全壘打	全壘打	ㄑㄩㄢˊ ㄌㄟˇ ㄉㄚˇ	existing				全壘打				
+phrase.taiwan.tsv	2648	三振	三振	ㄙㄢ ㄓㄣˋ	existing				三振				
+phrase.taiwan.tsv	2651	園遊會	園遊會	ㄩㄢˊ ㄧㄡˊ ㄏㄨㄟˋ	existing				園遊會				
+phrase.taiwan.tsv	2652	夜市	夜市	ㄧㄝˋ ㄕˋ	existing				夜市				
+phrase.taiwan.tsv	2654	環島	環島	ㄏㄨㄢˊ ㄉㄠˇ	existing				環島				
+phrase.taiwan.tsv	2657	賞花	賞花	ㄕㄤˇ ㄏㄨㄚ	existing				賞花				
+phrase.taiwan.tsv	2660	登山	登山	ㄉㄥ ㄕㄢ	existing				登山				
+phrase.taiwan.tsv	2661	爬百岳	爬百岳	ㄆㄚˊ ㄅㄞˇ ㄩㄝˋ	existing				爬百岳				
+phrase.taiwan.tsv	2664	山友	山友	ㄕㄢ ㄧㄡˇ	existing				山友				
+phrase.taiwan.tsv	2665	步道	步道	ㄅㄨˋ ㄉㄠˋ	existing				步道				
+phrase.taiwan.tsv	2667	看海	看海	ㄎㄢˋ ㄏㄞˇ	existing				看海				
+phrase.taiwan.tsv	2668	浮潛	浮潛	ㄈㄨˊ ㄑㄧㄢˊ	existing				浮潛				
+phrase.taiwan.tsv	2669	漁港	漁港	ㄩˊ ㄍㄤˇ	existing				漁港				
+phrase.taiwan.tsv	2670	海邊	海邊	ㄏㄞˇ ㄅㄧㄢ	existing				海邊				
+phrase.taiwan.tsv	2671	露營	露營	ㄌㄨˋ ㄧㄥˊ	existing				露營				
+phrase.taiwan.tsv	2672	營地	營地	ㄧㄥˊ ㄉㄧˋ	existing				營地				
+phrase.taiwan.tsv	2673	露營車	露營車	ㄌㄨˋ ㄧㄥˊ ㄔㄜ	existing				露營車				
+phrase.taiwan.tsv	2674	釣魚	釣魚	ㄉㄧㄠˋ ㄩˊ	existing				釣魚				
+phrase.taiwan.tsv	2675	釣蝦	釣蝦	ㄉㄧㄠˋ ㄒㄧㄚ	existing				釣蝦				
+phrase.taiwan.tsv	2676	釣蝦場	釣蝦場	ㄉㄧㄠˋ ㄒㄧㄚ ㄔㄤˇ	existing				釣蝦場				
+phrase.taiwan.tsv	2677	路跑	路跑	ㄌㄨˋ ㄆㄠˇ	existing				路跑				
+phrase.taiwan.tsv	2678	馬拉松	馬拉松	ㄇㄚˇ ㄌㄚ ㄙㄨㄥ	existing				馬拉松				
+phrase.taiwan.tsv	2679	建中	建中	ㄐㄧㄢˋ ㄓㄨㄥ	existing				建中				
+phrase.taiwan.tsv	2680	北一女	北一女	ㄅㄟˇ ㄧ ㄋㄩˇ	existing				北一女				
+phrase.taiwan.tsv	2681	附中	附中	ㄈㄨˋ ㄓㄨㄥ	existing				附中				
+phrase.taiwan.tsv	2682	師大附中	師大附中	ㄕ ㄉㄚˋ ㄈㄨˋ ㄓㄨㄥ	existing				師大附中				
+phrase.taiwan.tsv	2684	中山女高	中山女高	ㄓㄨㄥ ㄕㄢ ㄋㄩˇ ㄍㄠ	existing				中山女高				
+phrase.taiwan.tsv	2685	景美女中	景美女中	ㄐㄧㄥˇ ㄇㄟˇ ㄋㄩˇ ㄓㄨㄥ	existing				景美女中				
+phrase.taiwan.tsv	2687	板橋高中	板橋高中	ㄅㄢˇ ㄑㄧㄠˊ ㄍㄠ ㄓㄨㄥ	existing				板橋高中				
+phrase.taiwan.tsv	2692	麗山高中	麗山高中	ㄌㄧˋ ㄕㄢ ㄍㄠ ㄓㄨㄥ	existing				麗山高中				
+phrase.taiwan.tsv	2693	內湖高中	內湖高中	ㄋㄟˋ ㄏㄨˊ ㄍㄠ ㄓㄨㄥ	existing				內湖高中				
+phrase.taiwan.tsv	2699	延平中學	延平中學	ㄧㄢˊ ㄆㄧㄥˊ ㄓㄨㄥ ㄒㄩㄝˊ	existing				延平中學				
+phrase.taiwan.tsv	2700	竹中	竹中	ㄓㄨˊ ㄓㄨㄥ	existing				竹中				
+phrase.taiwan.tsv	2706	中一中	中一中	ㄓㄨㄥ ㄧ ㄓㄨㄥ	existing				中一中				
+phrase.taiwan.tsv	2710	台中一中	台中一中	ㄊㄞˊ ㄓㄨㄥ ㄧ ㄓㄨㄥ	existing				台中一中				
+phrase.taiwan.tsv	2714	彰女	彰女	ㄓㄤ ㄋㄩˇ	existing				彰女				
+phrase.taiwan.tsv	2717	南一中	南一中	ㄋㄢˊ ㄧ ㄓㄨㄥ	existing				南一中				
+phrase.taiwan.tsv	2720	雄女	雄女	ㄒㄩㄥˊ ㄋㄩˇ	existing				雄女				
+phrase.taiwan.tsv	2721	鳳中	鳳中	ㄈㄥˋ ㄓㄨㄥ	existing				鳳中				
+phrase.taiwan.tsv	2722	屏中	屏中	ㄆㄧㄥˊ ㄓㄨㄥ	existing				屏中				
+phrase.taiwan.tsv	2723	屏女	屏女	ㄆㄧㄥˊ ㄋㄩˇ	existing				屏女				
+phrase.taiwan.tsv	2724	花中	花中	ㄏㄨㄚ ㄓㄨㄥ	existing				花中				
+phrase.taiwan.tsv	2725	花女	花女	ㄏㄨㄚ ㄋㄩˇ	existing				花女				
 phrase.transport-logistics.tsv	2	中心	中心	ㄓㄨㄥ ㄒㄧㄣ	existing				中心				
 phrase.transport-logistics.tsv	3	交通	交通	ㄐㄧㄠ ㄊㄨㄥ	existing				交通				
 phrase.transport-logistics.tsv	14	倉庫	倉庫	ㄘㄤ ㄎㄨˋ	existing				倉庫				
@@ -2402,6 +3525,7 @@ phrase.transport-logistics.tsv	90	規則	規則	ㄍㄨㄟ ㄗㄜˊ	existing				�
 phrase.transport-logistics.tsv	91	評估	評估	ㄆㄧㄥˊ ㄍㄨ	existing				評估				
 phrase.transport-logistics.tsv	92	識別	識別	ㄕˋ ㄅㄧㄝˊ	existing				識別				
 phrase.transport-logistics.tsv	93	路口	路口	ㄌㄨˋ ㄎㄡˇ	existing				路口				
+phrase.transport-logistics.tsv	94	路線規劃	路線規劃	ㄌㄨˋ ㄒㄧㄢˋ ㄍㄨㄟ ㄏㄨㄚˋ	duplicate				路線規劃				
 phrase.transport-logistics.tsv	95	轉運站	轉運站	ㄓㄨㄢˇ ㄩㄣˋ ㄓㄢˋ	existing				轉運站				
 phrase.transport-logistics.tsv	96	運輸	運輸	ㄩㄣˋ ㄕㄨ	existing				運輸				
 phrase.transport-logistics.tsv	97	運輸系統	運輸系統	ㄩㄣˋ ㄕㄨ ㄒㄧˋ ㄊㄨㄥˇ	existing				運輸系統				
