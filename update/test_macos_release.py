@@ -59,6 +59,10 @@ class MacReleaseTests(unittest.TestCase):
         path = self.root / "out/metadata.json"
         metadata.verify(path, path.with_suffix(".json.sig").read_text().strip(), self.public, OPENSSL)
         xml = ET.parse(self.root / "out/macos-arm64.xml")
+        description = xml.findtext("./channel/item/description")
+        self.assertIn("更新完成後可繼續工作", description)
+        self.assertIn("稍後登出並重新登入，或重新開機", description)
+        self.assertNotIn("安裝後請登出再登入。", description)
         self.assertEqual(xml.findtext(f"./channel/item/{{{metadata.SPARKLE}}}hardwareRequirements"), "arm64")
         self.assertEqual(xml.findtext(f"./channel/item/{{{metadata.SPARKLE}}}minimumSystemVersion"), "15.0.0")
         self.assertEqual(xml.find("./channel/item/enclosure").get(f"{{{metadata.SPARKLE}}}installationType"), "package")

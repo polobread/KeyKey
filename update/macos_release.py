@@ -9,6 +9,10 @@ import metadata
 import prepare
 import channels
 
+POST_INSTALL_NOTES = (
+    "更新完成後可繼續工作。使用新版琦琦輸入法前，請儲存工作，"
+    "稍後登出並重新登入，或重新開機。")
+
 REPOSITORY = Path(__file__).resolve().parent.parent
 PLISTS = ("Source/Loaders/OSX-IMK/Takao-Info.plist", "Source/PreferenceApplications/OSX/Info.plist",
           "Source/Utilities/PhraseEditor/OSX/Info.plist", "Source/Distributions/Takao/Installer-OSX-Help/Info.plist")
@@ -37,7 +41,8 @@ def prepare_candidate(package, version, tag, source_sha, tag_sha, key, base_url,
         raise ValueError("configure and review the macOS feed before preparing a production updater candidate")
     manifest = dict(schema_version=1, channel=channel, releases=[dict(target="macos-arm64", version=update_version,
         release_tag=tag, source_sha=source_sha, tag_sha=tag_sha, file=str(package), minimum_system_version="15.0.0",
-        notes="macOS 琦琦輸入法更新。安裝需要管理員確認；完成後請儲存工作、登出 macOS 再登入，再選回琦琦試打。升級請保留原有輸入法項目。")])
+        notes="macOS 琦琦輸入法更新。安裝需要管理員確認。",
+        post_install_notes=POST_INSTALL_NOTES)])
     return metadata.build(manifest, key, base_url, destination, config["public_ed25519_key"], openssl)
 
 

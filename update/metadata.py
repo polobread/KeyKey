@@ -107,8 +107,9 @@ def validate_manifest(manifest):
                 raise ValueError("Windows update requires a signed setup.exe unless unsigned-transition is explicit")
         if not re.fullmatch(r"\d+\.\d+(?:\.\d+)?", entry["minimum_system_version"]):
             raise ValueError("minimum system version is required")
-        if not isinstance(entry.get("notes", ""), str):
-            raise ValueError("release notes must be plain text")
+        for field in ("notes", "post_install_notes"):
+            if not isinstance(entry.get(field, ""), str):
+                raise ValueError(f"{field} must be plain text")
     return entries
 
 
@@ -156,7 +157,8 @@ def appcast(entry):
     description = "<p>" + html.escape(entry.get("notes", "")) + "</p>"
     if entry.get("windows_signing") == "unsigned-transition":
         description += "<p>此版本尚無 Windows 發行者簽章，安裝時可能顯示未知的發行者或 SmartScreen 警告。更新下載仍須通過 Ed25519 簽章驗證。</p>"
-    ET.SubElement(item, "description").text = description + "<p>安裝後請登出再登入。</p>"
+    post_install_notes = entry.get("post_install_notes", "安裝後請登出再登入。")
+    ET.SubElement(item, "description").text = description + "<p>" + html.escape(post_install_notes) + "</p>"
     attributes = {"url": entry["url"], "length": str(entry["size"]),
         "type": "application/octet-stream", f"{{{SPARKLE}}}edSignature": entry["ed25519_signature"]}
     if entry["target"] == "macos-arm64":

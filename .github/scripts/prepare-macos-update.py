@@ -23,6 +23,7 @@ ASSET_PATH = 'keykey/releases/download'
 GITHUB_ASSET_BASE = f'https://github.com/{REPOSITORY}/releases/download'
 sys.path.insert(0, str(ROOT / 'update'))
 import channels
+import macos_release
 import metadata
 
 spec = importlib.util.spec_from_file_location('sync_macos_feeds', Path(__file__).with_name('sync-update-feeds.py'))
@@ -251,7 +252,8 @@ def sign_candidate(directory, key, openssl):
     entry = dict(target='macos-arm64', version=plan['version'], release_tag=plan['release_tag'],
                  source_sha=plan['source_sha'], tag_sha=plan['source_sha'], file=str(package),
                  minimum_system_version=minimum,
-                 notes=f"macOS 琦琦輸入法 {plan['version']} 正式更新。安裝需要管理員確認；完成後請選取琦琦並試打。")
+                 notes=f"macOS 琦琦輸入法 {plan['version']} 正式更新。安裝需要管理員確認。",
+                 post_install_notes=macos_release.POST_INSTALL_NOTES)
     manifest = dict(schema_version=1, channel='stable', releases=[entry])
     generated = directory / 'signed'
     # This performs Gatekeeper installer assessment, stapled notarization and package-version verification.
