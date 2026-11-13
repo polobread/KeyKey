@@ -1,12 +1,12 @@
 {
-  "base_database_sha256": "ad4ca476d326dc0534e5e7b928e9a3295acbc1dd6b5fa81b1668baa47a8e1acc",
+  "base_database_sha256": "a97538daca655111eee4d6d3dbc380b77925dc48a55ad817119681d857b676de",
   "bigram_rows": 870633,
-  "canonical_database_sha256": "16af45d4da0043d3e074523f130a0322aa1c9e7eb043b65bcaf7d819ac7841dd",
+  "canonical_database_sha256": "5cff8cb09773501783d56c826a48ec4caaf05f1421403483f38b7e379afca35e",
   "description": "McBopomofo with deduplicated custom Unigrams; source-cooked document-frequency Bigram; personal names, anime and homophone additions inserted after training",
   "format": 1,
   "rebuild": {
     "cooker_report_file": "custom-unigram-cooker-report.json",
-    "cooker_report_sha256": "97da46521ac2eed5dae1244f8486e6851d9ce82c8a86fcdea0b993aa520474c8",
+    "cooker_report_sha256": "fdd58c07f427680bb26c96637a26852933787f817559af65242087e8ada3ce5b",
     "downranked_file": "custom-unigram-downranked.tsv",
     "downranked_sha256": "ea7952510c6fb562593b225df14b6b3db8fc9801f17d3524fa5e916d3e089df8",
     "excluded_file": "custom-unigram-excluded.tsv",
@@ -173,14 +173,14 @@
       "overrides_sha256": "e904d8db9d8f6f71e336fca9ee5daa3a7f990bd97e01d897d246e336c3b37550",
       "rejected": 0,
       "report_file": "collection-unigram-import.json",
-      "report_sha256": "b6bca3a19fdd091151641858c1e8eab806cfd0c83cb4f29a0f6fc1bef944e438",
+      "report_sha256": "53ca99ffa08920b883081b82f0303e98b87894a52fb858dfbe61306dbd9862db",
       "search_presence_file": "search-trend-unigram-presence.tsv",
       "search_presence_sha256": "0e398aa45a4bb4f1b5d5ce09d99c80e84f8337ed5a60e9ed4e21b4819ec5a88a",
       "skipped_file": "collection-unigram-skipped.tsv",
       "skipped_sha256": "2364a6d85b3cb211bbd7b9ea5229f4810e5fbc17b23912db0c7e95bb13f09d3c",
       "source_rows": 8763,
       "validation_file": "collection-unigram-validation.json",
-      "validation_sha256": "f7a04e2077a3bcc5ff0a440f087f7cbb3831387ebf6f5bb8a33eec1a7ec4e444"
+      "validation_sha256": "ce3dd39d4b7c2ba1367c26de1e6b7bc37a8db1ea490194795bd201778e7af6a1"
     },
     "phrase_unigram_supplement": {
       "entries": 13,

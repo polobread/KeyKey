@@ -2,7 +2,7 @@
   "baseline": "before",
   "comparisons": {
     "rebuilt": {
-      "added_actions": 6,
+      "added_actions": 0,
       "after": 318425,
       "articles": [
         {
@@ -46,7 +46,7 @@
           "id": "tw-corpus-0010"
         },
         {
-          "delta": -2,
+          "delta": 0,
           "id": "tw-corpus-0011"
         },
         {
@@ -122,7 +122,7 @@
           "id": "tw-corpus-0029"
         },
         {
-          "delta": -2,
+          "delta": 0,
           "id": "tw-corpus-0030"
         },
         {
@@ -190,11 +190,11 @@
           "id": "tw-corpus-0046"
         },
         {
-          "delta": 2,
+          "delta": 0,
           "id": "tw-corpus-0047"
         },
         {
-          "delta": 2,
+          "delta": 0,
           "id": "tw-corpus-0048"
         },
         {
@@ -514,7 +514,7 @@
           "id": "tw-corpus-0127"
         },
         {
-          "delta": 2,
+          "delta": 0,
           "id": "tw-corpus-0128"
         },
         {
@@ -530,70 +530,43 @@
           "id": "tw-corpus-0131"
         }
       ],
-      "before": 318423,
+      "before": 318425,
       "character_corrections_after": 4047,
       "character_corrections_before": 4047,
       "corrections_after": 3625,
-      "corrections_before": 3624,
-      "delta": 2,
-      "improved_articles": 2,
+      "corrections_before": 3625,
+      "delta": 0,
+      "improved_articles": 0,
       "maximum_regression_actions": 30,
       "passes": true,
       "passes_strict_diagnostic": false,
-      "reduction_percent": -0.0006280953323095379,
-      "regressed_articles": 3,
-      "saved_actions": 4,
+      "reduction_percent": 0.0,
+      "regressed_articles": 0,
+      "saved_actions": 0,
       "syllables": 93630,
       "tiers": {
         "basic100": {
           "after": 655,
-          "before": 656,
-          "character_changes": [
-            {
-              "after": 8,
-              "before": 9,
-              "character": "和",
-              "delta": -1
-            }
-          ],
-          "delta": -1
+          "before": 655,
+          "character_changes": [],
+          "delta": 0
         },
         "core83": {
           "after": 534,
-          "before": 535,
-          "character_changes": [
-            {
-              "after": 8,
-              "before": 9,
-              "character": "和",
-              "delta": -1
-            }
-          ],
-          "delta": -1
+          "before": 534,
+          "character_changes": [],
+          "delta": 0
         },
         "general101_1000": {
           "after": 2284,
-          "before": 2281,
-          "character_changes": [
-            {
-              "after": 26,
-              "before": 25,
-              "character": "記",
-              "delta": 1
-            },
-            {
-              "after": 3,
-              "before": 1,
-              "character": "碼",
-              "delta": 2
-            }
-          ],
-          "delta": 3
+          "before": 2284,
+          "character_changes": [],
+          "delta": 0
         }
       },
-      "unchanged_articles": 126,
+      "unchanged_articles": 131,
       "unfiltered": {
-        "added_actions": 6,
+        "added_actions": 0,
         "after": 334560,
         "articles": [
           {
@@ -601,7 +574,7 @@
             "id": "tw-corpus-0001"
           },
           {
-            "delta": -8,
+            "delta": 0,
             "id": "tw-corpus-0002"
           },
           {
@@ -633,11 +606,11 @@
             "id": "tw-corpus-0009"
           },
           {
-            "delta": -24,
+            "delta": 0,
             "id": "tw-corpus-0010"
           },
           {
-            "delta": -10,
+            "delta": 0,
             "id": "tw-corpus-0011"
           },
           {
@@ -645,7 +618,7 @@
             "id": "tw-corpus-0012"
           },
           {
-            "delta": -6,
+            "delta": 0,
             "id": "tw-corpus-0013"
           },
           {
@@ -677,7 +650,7 @@
             "id": "tw-corpus-0020"
           },
           {
-            "delta": -20,
+            "delta": 0,
             "id": "tw-corpus-0021"
           },
           {
@@ -713,7 +686,7 @@
             "id": "tw-corpus-0029"
           },
           {
-            "delta": -2,
+            "delta": 0,
             "id": "tw-corpus-0030"
           },
           {
@@ -733,7 +706,7 @@
             "id": "tw-corpus-0034"
           },
           {
-            "delta": -10,
+            "delta": 0,
             "id": "tw-corpus-0035"
           },
           {
@@ -765,7 +738,7 @@
             "id": "tw-corpus-0042"
           },
           {
-            "delta": -10,
+            "delta": 0,
             "id": "tw-corpus-0043"
           },
           {
@@ -781,11 +754,11 @@
             "id": "tw-corpus-0046"
           },
           {
-            "delta": 2,
+            "delta": 0,
             "id": "tw-corpus-0047"
           },
           {
-            "delta": 2,
+            "delta": 0,
             "id": "tw-corpus-0048"
           },
           {
@@ -837,7 +810,7 @@
             "id": "tw-corpus-0060"
           },
           {
-            "delta": -22,
+            "delta": 0,
             "id": "tw-corpus-0061"
           },
           {
@@ -865,7 +838,7 @@
             "id": "tw-corpus-0067"
           },
           {
-            "delta": -10,
+            "delta": 0,
             "id": "tw-corpus-0068"
           },
           {
@@ -933,7 +906,7 @@
             "id": "tw-corpus-0084"
           },
           {
-            "delta": -2,
+            "delta": 0,
             "id": "tw-corpus-0085"
           },
           {
@@ -1001,7 +974,7 @@
             "id": "tw-corpus-0101"
           },
           {
-            "delta": -6,
+            "delta": 0,
             "id": "tw-corpus-0102"
           },
           {
@@ -1041,7 +1014,7 @@
             "id": "tw-corpus-0111"
           },
           {
-            "delta": -20,
+            "delta": 0,
             "id": "tw-corpus-0112"
           },
           {
@@ -1073,7 +1046,7 @@
             "id": "tw-corpus-0119"
           },
           {
-            "delta": -22,
+            "delta": 0,
             "id": "tw-corpus-0120"
           },
           {
@@ -1085,11 +1058,11 @@
             "id": "tw-corpus-0122"
           },
           {
-            "delta": -14,
+            "delta": 0,
             "id": "tw-corpus-0123"
           },
           {
-            "delta": -16,
+            "delta": 0,
             "id": "tw-corpus-0124"
           },
           {
@@ -1105,11 +1078,11 @@
             "id": "tw-corpus-0127"
           },
           {
-            "delta": 2,
+            "delta": 0,
             "id": "tw-corpus-0128"
           },
           {
-            "delta": -16,
+            "delta": 0,
             "id": "tw-corpus-0129"
           },
           {
@@ -1121,26 +1094,26 @@
             "id": "tw-corpus-0131"
           }
         ],
-        "before": 334772,
+        "before": 334560,
         "character_corrections_after": 6044,
-        "character_corrections_before": 6046,
-        "correction_action_delta": -212,
+        "character_corrections_before": 6044,
+        "correction_action_delta": 0,
         "corrections_after": 5485,
-        "corrections_before": 5581,
-        "delta": -212,
-        "improved_articles": 17,
+        "corrections_before": 5485,
+        "delta": 0,
+        "improved_articles": 0,
         "passes": false,
-        "reduction_percent": 0.06332668204031401,
-        "regressed_articles": 3,
-        "saved_actions": 218,
+        "reduction_percent": 0.0,
+        "regressed_articles": 0,
+        "saved_actions": 0,
         "syllables": 93630,
-        "unchanged_articles": 111,
-        "worst_regression": 2
+        "unchanged_articles": 131,
+        "worst_regression": 0
       },
-      "worst_regression": 2
+      "worst_regression": 0
     }
   },
-  "database_sha256": "16af45d4da0043d3e074523f130a0322aa1c9e7eb043b65bcaf7d819ac7841dd",
+  "database_sha256": "5cff8cb09773501783d56c826a48ec4caaf05f1421403483f38b7e379afca35e",
   "identity": {
     "articles": [
       {
@@ -1682,7 +1655,7 @@
       "mixed_event": "keep full cost when any corrected target remains in scope",
       "retained": "literal keys and commits"
     },
-    "engine_sha256": "cb9adefec4d4d76b20094389076a1695c7266dd5a7880baf1f8aeff75f50b0d9",
+    "engine_sha256": "156ef483b525a59d92a59a1ca325664c926d6c4317912c4cc6fbd37ab57d82a0",
     "evaluator_sha256": "14ec1f109faf63b6ea054fff21c547ef3578ffc411e848edc1c82d488b44fcb4",
     "frozen_inputs_sha256": "64d0221d7d43f97fe8aead57631b7f2c78ecd52f8113af882f6cd73dc124f1a3",
     "marker_parser_sha256": "feb3b5ea9fab694e96d8ae96b0b76d1cbb6f70974c73e8479dcbab3f6555032d",
@@ -1707,7 +1680,7 @@
     "reference_sha256": "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252"
   },
   "role": "fixed rebuild regression against the checked-in DB",
-  "source_database_sha256": "69975755bc8c9ce2d7bb27f6daa478b22c836f7b3bacf910515724b7d85e51b0",
+  "source_database_sha256": "16af45d4da0043d3e074523f130a0322aa1c9e7eb043b65bcaf7d819ac7841dd",
   "summaries": {
     "before": {
       "character_corrections": [
@@ -2028,6 +2001,26 @@
           ]
         },
         {
+          "articles": 22,
+          "changes": 26,
+          "character": "記",
+          "events": 26,
+          "sources": [
+            {
+              "changes": 14,
+              "from": "紀"
+            },
+            {
+              "changes": 10,
+              "from": "計"
+            },
+            {
+              "changes": 2,
+              "from": "寄"
+            }
+          ]
+        },
+        {
           "articles": 23,
           "changes": 25,
           "character": "句",
@@ -2060,26 +2053,6 @@
             {
               "changes": 1,
               "from": "作"
-            }
-          ]
-        },
-        {
-          "articles": 22,
-          "changes": 25,
-          "character": "記",
-          "events": 25,
-          "sources": [
-            {
-              "changes": 13,
-              "from": "紀"
-            },
-            {
-              "changes": 10,
-              "from": "計"
-            },
-            {
-              "changes": 2,
-              "from": "寄"
             }
           ]
         },
@@ -3384,18 +3357,6 @@
           ]
         },
         {
-          "articles": 4,
-          "changes": 9,
-          "character": "和",
-          "events": 9,
-          "sources": [
-            {
-              "changes": 9,
-              "from": "何"
-            }
-          ]
-        },
-        {
           "articles": 7,
           "changes": 9,
           "character": "型",
@@ -3428,18 +3389,6 @@
             {
               "changes": 9,
               "from": "何"
-            }
-          ]
-        },
-        {
-          "articles": 4,
-          "changes": 9,
-          "character": "瓶",
-          "events": 9,
-          "sources": [
-            {
-              "changes": 9,
-              "from": "平"
             }
           ]
         },
@@ -3544,6 +3493,18 @@
             {
               "changes": 1,
               "from": "址"
+            }
+          ]
+        },
+        {
+          "articles": 4,
+          "changes": 8,
+          "character": "和",
+          "events": 8,
+          "sources": [
+            {
+              "changes": 8,
+              "from": "何"
             }
           ]
         },
@@ -3952,6 +3913,18 @@
             {
               "changes": 7,
               "from": "完"
+            }
+          ]
+        },
+        {
+          "articles": 3,
+          "changes": 7,
+          "character": "瓶",
+          "events": 7,
+          "sources": [
+            {
+              "changes": 7,
+              "from": "平"
             }
           ]
         },
@@ -6228,6 +6201,18 @@
             {
               "changes": 3,
               "from": "歲"
+            }
+          ]
+        },
+        {
+          "articles": 3,
+          "changes": 3,
+          "character": "碼",
+          "events": 3,
+          "sources": [
+            {
+              "changes": 3,
+              "from": "馬"
             }
           ]
         },
@@ -9982,18 +9967,6 @@
         {
           "articles": 1,
           "changes": 1,
-          "character": "碼",
-          "events": 1,
-          "sources": [
-            {
-              "changes": 1,
-              "from": "馬"
-            }
-          ]
-        },
-        {
-          "articles": 1,
-          "changes": 1,
           "character": "磷",
           "events": 1,
           "sources": [
@@ -11300,7 +11273,7 @@
           ]
         }
       ],
-      "correction_actions": 7327,
+      "correction_actions": 7329,
       "excluded_syllables": 4233,
       "tiers": {
         "basic100": {
@@ -11339,7 +11312,7 @@
             "可": 0,
             "向": 18,
             "吧": 0,
-            "和": 9,
+            "和": 8,
             "啊": 0,
             "嗎": 39,
             "噹": 0,
@@ -11406,9 +11379,9 @@
             "都": 0,
             "齣": 0
           },
-          "corrected_characters": 656,
-          "selection_actions": 1302,
-          "selection_events": 650
+          "corrected_characters": 655,
+          "selection_actions": 1300,
+          "selection_events": 649
         },
         "core83": {
           "by_character": {
@@ -11439,7 +11412,7 @@
             "各": 19,
             "吧": 0,
             "呢": 0,
-            "和": 9,
+            "和": 8,
             "哪": 41,
             "啊": 0,
             "問": 0,
@@ -11496,9 +11469,9 @@
             "開": 0,
             "關": 0
           },
-          "corrected_characters": 535,
-          "selection_actions": 1066,
-          "selection_events": 532
+          "corrected_characters": 534,
+          "selection_actions": 1064,
+          "selection_events": 531
         },
         "general101_1000": {
           "by_character": {
@@ -12066,7 +12039,7 @@
             "硬": 9,
             "碰": 0,
             "確": 1,
-            "碼": 1,
+            "碼": 3,
             "社": 0,
             "祝": 0,
             "神": 0,
@@ -12213,7 +12186,7 @@
             "計": 2,
             "訊": 0,
             "託": 0,
-            "記": 25,
+            "記": 26,
             "設": 4,
             "許": 0,
             "詞": 0,
@@ -12403,12 +12376,12 @@
             "黨": 0,
             "龍": 0
           },
-          "corrected_characters": 2281,
-          "selection_actions": 4320,
-          "selection_events": 2140
+          "corrected_characters": 2284,
+          "selection_actions": 4326,
+          "selection_events": 2143
         }
       },
-      "total_actions": 318423,
+      "total_actions": 318425,
       "unfiltered": {
         "character_corrections": [
           {
@@ -12441,12 +12414,12 @@
           },
           {
             "articles": 68,
-            "changes": 159,
+            "changes": 157,
             "character": "他",
-            "events": 159,
+            "events": 157,
             "sources": [
               {
-                "changes": 154,
+                "changes": 152,
                 "from": "她"
               },
               {
@@ -13028,6 +13001,26 @@
             ]
           },
           {
+            "articles": 22,
+            "changes": 26,
+            "character": "記",
+            "events": 26,
+            "sources": [
+              {
+                "changes": 14,
+                "from": "紀"
+              },
+              {
+                "changes": 10,
+                "from": "計"
+              },
+              {
+                "changes": 2,
+                "from": "寄"
+              }
+            ]
+          },
+          {
             "articles": 23,
             "changes": 25,
             "character": "句",
@@ -13072,26 +13065,6 @@
               {
                 "changes": 1,
                 "from": "作"
-              }
-            ]
-          },
-          {
-            "articles": 22,
-            "changes": 25,
-            "character": "記",
-            "events": 25,
-            "sources": [
-              {
-                "changes": 13,
-                "from": "紀"
-              },
-              {
-                "changes": 10,
-                "from": "計"
-              },
-              {
-                "changes": 2,
-                "from": "寄"
               }
             ]
           },
@@ -14708,18 +14681,6 @@
             ]
           },
           {
-            "articles": 4,
-            "changes": 9,
-            "character": "和",
-            "events": 9,
-            "sources": [
-              {
-                "changes": 9,
-                "from": "何"
-              }
-            ]
-          },
-          {
             "articles": 7,
             "changes": 9,
             "character": "型",
@@ -14780,18 +14741,6 @@
               {
                 "changes": 4,
                 "from": "含"
-              }
-            ]
-          },
-          {
-            "articles": 4,
-            "changes": 9,
-            "character": "瓶",
-            "events": 9,
-            "sources": [
-              {
-                "changes": 9,
-                "from": "平"
               }
             ]
           },
@@ -14932,6 +14881,18 @@
               {
                 "changes": 1,
                 "from": "址"
+              }
+            ]
+          },
+          {
+            "articles": 4,
+            "changes": 8,
+            "character": "和",
+            "events": 8,
+            "sources": [
+              {
+                "changes": 8,
+                "from": "何"
               }
             ]
           },
@@ -15524,6 +15485,18 @@
               {
                 "changes": 7,
                 "from": "委"
+              }
+            ]
+          },
+          {
+            "articles": 3,
+            "changes": 7,
+            "character": "瓶",
+            "events": 7,
+            "sources": [
+              {
+                "changes": 7,
+                "from": "平"
               }
             ]
           },
@@ -18040,6 +18013,18 @@
               {
                 "changes": 3,
                 "from": "歲"
+              }
+            ]
+          },
+          {
+            "articles": 3,
+            "changes": 3,
+            "character": "碼",
+            "events": 3,
+            "sources": [
+              {
+                "changes": 3,
+                "from": "馬"
               }
             ]
           },
@@ -21862,18 +21847,6 @@
           {
             "articles": 1,
             "changes": 1,
-            "character": "碼",
-            "events": 1,
-            "sources": [
-              {
-                "changes": 1,
-                "from": "馬"
-              }
-            ]
-          },
-          {
-            "articles": 1,
-            "changes": 1,
             "character": "磷",
             "events": 1,
             "sources": [
@@ -23216,7 +23189,7 @@
             ]
           }
         ],
-        "correction_actions": 11383,
+        "correction_actions": 11171,
         "tiers": {
           "basic100": {
             "by_character": {
@@ -23231,7 +23204,7 @@
               "也": 0,
               "了": 0,
               "人": 8,
-              "他": 159,
+              "他": 157,
               "以": 0,
               "但": 0,
               "你": 4,
@@ -23254,7 +23227,7 @@
               "可": 0,
               "向": 18,
               "吧": 0,
-              "和": 9,
+              "和": 8,
               "啊": 0,
               "嗎": 39,
               "噹": 0,
@@ -23321,9 +23294,9 @@
               "都": 0,
               "齣": 0
             },
-            "corrected_characters": 1384,
-            "selection_actions": 2750,
-            "selection_events": 1374
+            "corrected_characters": 1381,
+            "selection_actions": 2746,
+            "selection_events": 1372
           },
           "core83": {
             "by_character": {
@@ -23334,7 +23307,7 @@
               "也": 0,
               "了": 0,
               "些": 0,
-              "他": 159,
+              "他": 157,
               "但": 0,
               "你": 4,
               "來": 0,
@@ -23354,7 +23327,7 @@
               "各": 19,
               "吧": 0,
               "呢": 0,
-              "和": 9,
+              "和": 8,
               "哪": 41,
               "啊": 0,
               "問": 0,
@@ -23411,9 +23384,9 @@
               "開": 0,
               "關": 0
             },
-            "corrected_characters": 1139,
-            "selection_actions": 2272,
-            "selection_events": 1135
+            "corrected_characters": 1136,
+            "selection_actions": 2266,
+            "selection_events": 1132
           },
           "general101_1000": {
             "by_character": {
@@ -23981,7 +23954,7 @@
               "硬": 9,
               "碰": 0,
               "確": 1,
-              "碼": 1,
+              "碼": 3,
               "社": 0,
               "祝": 0,
               "神": 0,
@@ -24128,7 +24101,7 @@
               "計": 2,
               "訊": 0,
               "託": 0,
-              "記": 25,
+              "記": 26,
               "設": 4,
               "許": 0,
               "詞": 0,
@@ -24318,12 +24291,12 @@
               "黨": 0,
               "龍": 0
             },
-            "corrected_characters": 2393,
-            "selection_actions": 4542,
-            "selection_events": 2251
+            "corrected_characters": 2396,
+            "selection_actions": 4548,
+            "selection_events": 2254
           }
         },
-        "total_actions": 334772
+        "total_actions": 334560
       }
     },
     "rebuilt": {

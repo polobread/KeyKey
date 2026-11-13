@@ -41675,7 +41675,7 @@
     "bigram_rows": 870514,
     "cin_reading_frequencies": {
       "entries": 3863,
-      "file": "/Users/paulcp/.codex/worktrees/mobile-hanyu-pinyin/KeyKey/DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv",
+      "file": "/home/runner/work/KeyKey/KeyKey/DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv",
       "sha256": "2c9b9bb3d99516b401188311a87dc5b41e14b4f25b13978afccef7e2a25426fb"
     },
     "sentences": 325113,
@@ -44639,9 +44639,9 @@
   "people_words": 62,
   "policy": "mcp-homophones-retained-low-ranked-long-partial-diagnostic-v3",
   "refinement": {
-    "base_database_sha256": "ad4ca476d326dc0534e5e7b928e9a3295acbc1dd6b5fa81b1668baa47a8e1acc",
+    "base_database_sha256": "a97538daca655111eee4d6d3dbc380b77925dc48a55ad817119681d857b676de",
     "collection_supplement": null,
-    "database_sha256": "53e216e5abd5a61f8d74e98be5e6e5e731f17e51c70734591043d6e766d4ccbc",
+    "database_sha256": "7e810ff4d12b663fe178b8f7804b377765402c4084fb6c95744b4d5f56e643d8",
     "document_frequency_bands": {
       "five_plus": 44966,
       "one": 380301,
