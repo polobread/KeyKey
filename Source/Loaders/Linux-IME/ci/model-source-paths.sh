@@ -7,6 +7,7 @@ model_paths=(
   Source/Distributions/Takao/DatabaseCooker/collection_unigram_supplement.py
   Source/Distributions/Takao/DatabaseCooker/phrase_unigram_supplement.py
   Source/Distributions/Takao/DatabaseCooker/cin_reading_frequencies.py
+  Source/Distributions/Takao/DatabaseCooker/standalone_composition_weights.py
   DataSource/CINReadingFrequency
   Source/Distributions/Takao/DatabaseCooker/unigram_collisions.py
   DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json

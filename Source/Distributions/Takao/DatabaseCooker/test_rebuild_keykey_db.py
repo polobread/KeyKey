@@ -4,6 +4,7 @@ from pathlib import Path
 import sqlite3
 import unittest
 import tempfile
+from unittest.mock import patch
 
 from phrase_unigram_supplement import query_for_reading
 
@@ -166,6 +167,29 @@ class RebuildTests(unittest.TestCase):
             self.assertEqual((root / "reason.json").read_text(), "over 30 actions")
             for name in ("KeyKey.db", "manifest.json", "cache.java"):
                 self.assertEqual((root / name).read_bytes(), b"previous")
+
+    def test_rebuild_uses_filtered_score_and_keeps_full_score_diagnostic(self):
+        for filtered, full, expected in ((30, 31, "adopted"), (31, 0, "rejected")):
+            with self.subTest(filtered=filtered, full=full), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory)
+                evidence = {"comparisons": {"rebuilt": {
+                    "delta": filtered, "passes": False, "unfiltered": {"delta": full},
+                }}}
+                (output / "comparison.json").write_text(json.dumps(evidence))
+                with patch.object(rebuild.subprocess, "run") as run:
+                    comparison, delta, decision = rebuild.evaluate_rebuild(
+                        Path("checked-in.db"), Path("candidate.db"), Path("reference.db"), output, 8, 30)
+                command = run.call_args.args[0]
+                self.assertTrue(run.call_args.kwargs["check"])
+                self.assertIn("before=checked-in.db", command)
+                self.assertIn("rebuilt=candidate.db", command)
+                self.assertIn("--exclude-person-names", command)
+                self.assertEqual(command[command.index("--exclude-characters") + 1], "她他時十")
+                self.assertEqual(decision["decision"], expected)
+                self.assertEqual(decision["delta_actions"], filtered)
+                self.assertEqual(delta["passes"], expected == "adopted")
+                self.assertEqual(delta["unfiltered"], {"delta": full})
+                self.assertIs(delta, comparison["comparisons"]["rebuilt"])
 
     def test_total_threshold_includes_thirty_and_rejects_thirty_one(self):
         for change in (-50, 0, 4, 30):

@@ -86,8 +86,12 @@ assert_installed_tree() {
   test -s "$data_root/smart-mandarin.db"
   test -f "$data_root/associated-phrases/McBopomofo.occ"
   test -f "$data_root/associated-phrases/display-names.tsv"
+  test -f "$data_root/associated-phrases/phrase.china.tsv"
+  test -f "$data_root/associated-phrases/phrase.given-names.tsv"
+  test -f "$data_root/associated-phrases/phrase.hongkong-macao.tsv"
+  test -f "$data_root/associated-phrases/phrase.taiwan.tsv"
   test "$(find "$data_root/associated-phrases" -maxdepth 1 \
-    -type f -name 'phrase.*.tsv' | wc -l)" -eq 29
+    -type f -name 'phrase.*.tsv' | wc -l)" -eq 33
   test -s "$root/$datadir/doc/chichi77-keykey/Guanyinma-NOTICES.txt"
   test -f "$root/$datadir/doc/chichi77-keykey/LICENSE-linux-frontend.txt"
   test -f "$root/$datadir/doc/chichi77-keykey/LICENSE-MIT.txt"

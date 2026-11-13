@@ -101,6 +101,10 @@ def verify_source_hashes(manifest: dict[str, object], manifest_path: Path) -> di
     frequencies = sources.get("cin_reading_frequencies")
     if frequencies:
         checks.append((bigram / frequencies["file"], frequencies["sha256"]))
+    weights = sources.get("standalone_composition_weights")
+    if weights:
+        checks.append((bigram.parent.parent / weights["file"], weights["sha256"]))
+        checks.append((bigram.parent.parent / weights["selection_file"], weights["selection_sha256"]))
     phrase = sources.get("phrase_unigram_supplement")
     if phrase:
         checks.append((bigram / phrase["file"], phrase["sha256"]))
@@ -149,13 +153,43 @@ def verify_manifest(path: Path, manifest_path: Path) -> dict[str, object]:
     pending_inputs = verify_source_hashes(manifest, manifest_path)
     with connect_readonly(path) as database:
         validate_schema(database)
+        weights_source = manifest["sources"].get("standalone_composition_weights")
+        weights = None
+        cin_overrides = set()
+        if weights_source:
+            from standalone_composition_weights import load, verify
+            weights_path = manifest_path.parent.parent.parent / weights_source["file"]
+            cin_overrides = {tuple(key) for key in weights_source["cin_overrides"]}
+            # A rejected rebuild can leave a newer editable source beside the verified DB.
+            # In that case the canonical DB hash still verifies the previously accepted rows.
+            if file_sha256(weights_path) == weights_source["sha256"]:
+                weights = load(weights_path, manifest["unigram_total_count"])
+                if (weights["selection_sha256"] != weights_source["selection_sha256"]
+                        or len(weights["unigrams"]) != weights_source["unigram_upserts"]
+                        or len(weights["bigrams"]) != weights_source["bigram_upserts"]):
+                    raise ValueError("reviewed composition weight metadata differs from its source")
+                verify(database, weights)
+        phrase_source = manifest["sources"].get("phrase_unigram_supplement")
+        if phrase_source and phrase_source.get("post_training_entries"):
+            from phrase_unigram_supplement import verify_post_training
+            phrase_path = manifest_path.parent / phrase_source["file"]
+            if file_sha256(phrase_path) == phrase_source["sha256"]:
+                verify_post_training(database, phrase_path, manifest["unigram_total_count"],
+                                     phrase_source["post_training_entries"])
         frequencies = manifest["sources"].get("cin_reading_frequencies")
         if frequencies:
             from cin_reading_frequencies import load, verify_unigrams
             entries = load(manifest_path.parent / frequencies["file"])
             if len(entries) != frequencies["entries"]:
                 raise ValueError("CIN frequency source entry count changed")
-            verify_unigrams(database, entries, manifest["unigram_total_count"])
+            cin_keys = {(row["qstring"], row["character"]) for row in entries}
+            if weights is not None:
+                expected = cin_keys.intersection(tuple(row["key"]) for row in weights["unigrams"])
+                if cin_overrides != expected:
+                    raise ValueError("reviewed CIN frequency overrides differ from the weight source")
+            verify_unigrams(database, [row for row in entries
+                            if (row["qstring"], row["character"]) not in cin_overrides],
+                            manifest["unigram_total_count"])
         missing_phonetic = database.execute('''
             SELECT qstring,current FROM (
                 SELECT qstring,current,ROW_NUMBER() OVER (

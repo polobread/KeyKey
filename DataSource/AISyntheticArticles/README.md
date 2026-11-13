@@ -188,3 +188,12 @@ to `typing-articles-v4.jsonl`. Validate the complete set with
 article uses its 15 required terms in context and meets its prompt's character
 range. The v2, v3, and v4 exports feed the versioned Smart Mandarin bigram
 corpus built by `../AISyntheticBigram/build-versioned-article-corpus.py`.
+
+The v2–v4 Markdown article bodies contain inline `〖姓名〗` annotations.
+The JSONL exports carry those marks into the Bigram cooker, which skips each
+span and stops word pairs from crossing it. Update the marks in the Markdown
+when revising an article, then regenerate its version's JSONL export.
+
+The 131 v5 validation articles store the same markers in their Markdown bodies.
+The typing benchmark replays the full text and can exclude the marked positions
+from scoring.

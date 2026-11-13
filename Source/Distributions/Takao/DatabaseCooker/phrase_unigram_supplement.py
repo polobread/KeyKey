@@ -5,6 +5,10 @@ import csv
 import math
 
 
+PRE_TRAINING = "pre-training"
+POST_TRAINING = "post-training"
+
+
 def query_for_reading(reading):
     groups = ((" ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙ", 1),
               (" ㄧㄨㄩ", 22), (" ㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦ", 88), (" ˊˇˋ˙", 1232))
@@ -42,44 +46,83 @@ def strongest_competitor(database, query, word):
     return best[-1]
 
 
-def apply(database, path, total_count):
+def load(path, total_count, stage):
     if not isinstance(total_count, (int, float)) or not math.isfinite(total_count) or total_count <= 0:
         raise ValueError("total count must be a positive integer")
+    if stage not in (PRE_TRAINING, POST_TRAINING):
+        raise ValueError(f"unknown phrase supplement stage: {stage}")
     with path.open(encoding="utf-8", newline="") as source:
         reader = csv.DictReader(source, delimiter="\t")
         expected = ("word", "target_count", "reading", "training_occurrences", "training_documents", "reason")
-        if tuple(reader.fieldnames or ()) != expected:
+        if tuple(reader.fieldnames or ()) not in (expected, (*expected, "stage")):
             raise ValueError(f"{path}: unexpected columns")
         entries = list(reader)
     if not entries:
         raise ValueError("empty phrase supplement")
-    seen, prepared = set(), []
-    # Validate the complete overlay against the original vocabulary before
-    # inserting anything. File order must not change its score floors.
+    seen, selected = set(), []
     for entry in entries:
         word = entry["word"]
         syllables = entry["reading"].split()
         count = int(entry["target_count"])
         occurrences, documents = int(entry["training_occurrences"]), int(entry["training_documents"])
+        entry_stage = entry.get("stage", PRE_TRAINING)
         if not 2 <= len(word) <= 7 or len(syllables) != len(word) or word in seen:
             raise ValueError(f"invalid or duplicate phrase: {word}")
         if not 0 < count <= total_count or not 0 < documents <= occurrences or not entry["reason"]:
             raise ValueError(f"invalid count or missing evidence: {word}")
+        if entry_stage not in (PRE_TRAINING, POST_TRAINING):
+            raise ValueError(f"{word}: invalid phrase supplement stage {entry_stage!r}")
         seen.add(word)
         query = "".join(query_for_reading(value) for value in syllables)
-        score = math.log10(count / total_count)
-        minimum = math.floor(10 ** strongest_competitor(database, query, word) * total_count) + 1
-        existing = list(database.execute("SELECT probability FROM unigrams WHERE qstring=? AND current=?", (query, word)))
-        if existing:
-            if len(existing) != 1 or not math.isclose(existing[0][0], score, abs_tol=1e-12, rel_tol=0):
-                raise ValueError(f"existing phrase changed; review the overlay: {word}")
-            if count < minimum:
+        if entry_stage == stage:
+            selected.append((entry, count, query, math.log10(count / total_count)))
+    return selected
+
+
+def apply(database, path, total_count, *, stage=PRE_TRAINING):
+    prepared = []
+    # Check all score floors against the original vocabulary before inserting.
+    for entry, count, query, score in load(path, total_count, stage):
+        word = entry["word"]
+        existing = database.execute(
+            "SELECT probability,backoff FROM unigrams WHERE qstring=? AND current=?", (query, word)
+        ).fetchall()
+        if existing and (len(existing) != 1 or not math.isclose(existing[0][0], score, abs_tol=1e-12, rel_tol=0)):
+            raise ValueError(f"existing phrase changed; review the overlay: {word}")
+        if stage == PRE_TRAINING:
+            minimum = math.floor(10 ** strongest_competitor(database, query, word) * total_count) + 1
+            if existing and count < minimum:
                 raise ValueError(f"existing phrase no longer outranks its competitor: {word}")
-        elif count != minimum:
-            raise ValueError(f"{word}: expected minimum count {minimum}, got {count}; review the source model")
+            if not existing and count != minimum:
+                raise ValueError(f"{word}: expected minimum count {minimum}, got {count}; review the source model")
+        elif existing and existing[0][1] != 0.0:
+            raise ValueError(f"post-training phrase has existing Bigram backoff: {word}")
         prepared.append((query, word, score, bool(existing), entry))
     for query, word, score, existing, _ in prepared:
         if not existing:
             database.execute("INSERT INTO unigrams VALUES(?,?,?,0.0)", (query, word, score))
     return [{**entry, "status": "retained" if existing else "inserted", "probability": score}
             for _, _, score, existing, entry in prepared]
+
+
+def verify_post_training(database, path, total_count, expected_entries):
+    entries = load(path, total_count, POST_TRAINING)
+    if len(entries) != expected_entries:
+        raise ValueError("post-training phrase count differs from the manifest")
+    words = []
+    for entry, _, query, score in entries:
+        word = entry["word"]
+        matches = database.execute(
+            "SELECT probability,backoff FROM unigrams WHERE qstring=? AND current=?", (query, word)
+        ).fetchall()
+        if len(matches) != 1 or not math.isclose(matches[0][0], score, abs_tol=1e-12, rel_tol=0) or matches[0][1] != 0.0:
+            raise ValueError(f"post-training phrase differs from DB: {word}")
+        words.append(word)
+    if words:
+        placeholders = ",".join("?" for _ in words)
+        trained = database.execute(
+            f"SELECT previous,current FROM bigrams WHERE previous IN ({placeholders}) OR current IN ({placeholders}) LIMIT 1",
+            words + words,
+        ).fetchone()
+        if trained:
+            raise ValueError(f"post-training phrase has a Bigram edge: {trained}")

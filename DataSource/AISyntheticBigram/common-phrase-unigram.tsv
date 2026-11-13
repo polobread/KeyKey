@@ -1,3 +1,14 @@
-word	target_count	reading	training_occurrences	training_documents	reason
-舊的	2029	ㄐㄧㄡˋ ㄉㄜ˙	40	34	使用者指定完整詞補償；剛好超過同音拆詞「就／的」的 Unigram 路徑，不修改「舊／就」單字或 Bigram
-新的	1761	ㄒㄧㄣ ㄉㄜ˙	220	195	既有完整詞已勝過同音拆詞，保留原始詞頻，不重複新增或加分
+word	target_count	reading	training_occurrences	training_documents	reason	stage
+舊的	2029	ㄐㄧㄡˋ ㄉㄜ˙	40	34	使用者指定完整詞補償；剛好超過同音拆詞「就／的」的 Unigram 路徑，不修改「舊／就」單字或 Bigram	pre-training
+新的	1761	ㄒㄧㄣ ㄉㄜ˙	220	195	既有完整詞已勝過同音拆詞，保留原始詞頻，不重複新增或加分	pre-training
+另一位	306	ㄌㄧㄥˋ ㄧ ㄨㄟˋ	191	160	沿用固定 131 篇回歸採用的詞頻	post-training
+另一個	8	ㄌㄧㄥˋ ㄧ ㄍㄜ˙	206	191	沿用固定 131 篇回歸採用的詞頻	post-training
+攤商	22	ㄊㄢ ㄕㄤ	62	16	沿用固定 131 篇回歸採用的詞頻	post-training
+管理室	624	ㄍㄨㄢˇ ㄌㄧˇ ㄕˋ	144	55	沿用固定 131 篇回歸採用的詞頻	post-training
+截圖	23	ㄐㄧㄝˊ ㄊㄨˊ	567	257	沿用固定 131 篇回歸採用的詞頻	post-training
+濾網	20	ㄌㄩˋ ㄨㄤˇ	21	10	沿用固定 131 篇回歸採用的詞頻	post-training
+站務	57	ㄓㄢˋ ㄨˋ	246	65	沿用固定 131 篇回歸採用的詞頻	post-training
+預覽	3	ㄩˋ ㄌㄢˇ	54	23	沿用固定 131 篇回歸採用的詞頻	post-training
+錯題	207	ㄘㄨㄛˋ ㄊㄧˊ	24	13	沿用固定 131 篇回歸採用的詞頻	post-training
+圖面	305	ㄊㄨˊ ㄇㄧㄢˋ	91	43	沿用固定 131 篇回歸採用的詞頻	post-training
+站務員	1	ㄓㄢˋ ㄨˋ ㄩㄢˊ	25	7	沿用固定 131 篇回歸採用的詞頻	post-training

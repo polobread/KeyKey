@@ -601,16 +601,24 @@ void checkSettingsPresentationAndStorage() {
                                     "MatchOneChar", "MatchZeroOrMoreChar"});
     requireOrder(userPhrasesType, {"UseUserPhrases", "UserPhrases"});
     const auto associated = description.get(associatedType);
-    require(associated && associated->subItems().size() == 30 &&
+    require(associated && associated->subItems().size() == 34 &&
                 associated->subItems().front() == "McBopomofo" &&
-                associated->subItems().back() == "electronics",
-            "Collection settings lost their Windows presentation order");
+                associated->subItems().at(29) == "electronics" &&
+                associated->subItems().at(30) == "given-names" &&
+                associated->subItems().at(31) == "hongkong-macao" &&
+                associated->subItems().at(32) == "taiwan" &&
+                associated->subItems().back() == "china",
+            "Collection settings lost their presentation order");
     require(descriptionValue(smartType + "/ComposingTextBufferSize/DefaultValue") == "10" &&
                 descriptionValue(smartType + "/ComposingTextBufferSize/IntMin") == "10" &&
                 descriptionValue(smartType + "/ComposingTextBufferSize/IntMax") == "20" &&
                 descriptionValue(smartType + "/CandidateSelectionKeys/DefaultValue") == "123456789" &&
                 descriptionValue(associatedType + "/McBopomofo/DefaultValue") == "True" &&
                 descriptionValue(associatedType + "/general/DefaultValue") == "False" &&
+                descriptionValue(associatedType + "/given-names/DefaultValue") == "False" &&
+                descriptionValue(associatedType + "/hongkong-macao/DefaultValue") == "False" &&
+                descriptionValue(associatedType + "/taiwan/DefaultValue") == "False" &&
+                descriptionValue(associatedType + "/china/DefaultValue") == "False" &&
                 descriptionValue(userPhrasesType + "/UserPhrases/External") == "keykey-user-phrases",
             "Grouping changed defaults, constraints or the user-phrase editor launch target");
 }

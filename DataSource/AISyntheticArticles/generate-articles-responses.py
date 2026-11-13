@@ -13,6 +13,10 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "Source/Distributions/Takao/DatabaseCooker"))
+from training_name_markers import name_marker_parts
 
 
 ROOT = Path(__file__).resolve().parent
@@ -157,7 +161,8 @@ def generate_one(
     if target.exists():
         raw = target.read_text(encoding="utf-8").strip()
         first, separator, body = raw.partition("\n")
-        if separator and first == f"# {prompt['title']}" and not validate(prompt, body.strip()):
+        plain_body = "".join(name_marker_parts(body.strip(), str(target)))
+        if separator and first == f"# {prompt['title']}" and not validate(prompt, plain_body):
             return {"prompt_id": prompt_id, "model": model, "status": "skipped-valid", "han_chars": han_chars(body)}
 
     prior_reasons = []

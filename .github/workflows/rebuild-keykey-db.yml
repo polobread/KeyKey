@@ -23,6 +23,8 @@ on:
       - 'DataSource/AssociatedPhraseCollectionNames.tsv'
       - 'DataSource/AISyntheticBigram/common-unigram-supplement.tsv'
       - 'DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv'
+      - 'DataSource/CINReadingFrequency/standalone-composition-review.tsv'
+      - 'DataSource/CINReadingFrequency/standalone-composition-weights.json'
       - 'DataSource/CINReadingFrequency/build-cin-character-reading-frequencies.py'
       - 'DataSource/AISyntheticBigram/common-phrase-unigram.tsv'
       - 'DataSource/AISyntheticBigram/search-trend-unigram-source.txt'
@@ -38,6 +40,7 @@ on:
       - 'DataSource/AISyntheticArticles/verify-typing-articles-v5.py'
       - 'DataSource/AISyntheticBigram/benchmark-bigram-structure.py'
       - 'DataSource/AISyntheticBigram/typing_cost.py'
+      - 'DataSource/AISyntheticBigram/typing_cost_filter.py'
       - 'Source/Guanyinma/src/**'
       - 'Source/Guanyinma/examples/typing-cost.rs'
       - 'Source/Guanyinma/Cargo.toml'
@@ -91,7 +94,7 @@ jobs:
         run: |
           python3 -B -m unittest discover -s .github/scripts -p 'test_prepare_keykey_rebuild_pr.py' -v
           python3 -B -m unittest discover -s Source/Distributions/Takao/DatabaseCooker -p 'test_*.py' -v
-          python3 -B -m unittest discover -s DataSource/AISyntheticBigram -p 'test_typing_cost.py' -v
+          python3 -B -m unittest discover -s DataSource/AISyntheticBigram -p 'test_typing_cost*.py' -v
           python3 -B Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py Source/Distributions/Takao/CookedDatabase/KeyKey.db
           python3 -B Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.py
 
@@ -138,7 +141,7 @@ jobs:
         run: |
           python3 -B -m unittest discover -s .github/scripts -p 'test_prepare_keykey_rebuild_pr.py' -v
           python3 -B -m unittest discover -s Source/Distributions/Takao/DatabaseCooker -p 'test_*.py' -v
-          python3 -B -m unittest discover -s DataSource/AISyntheticBigram -p 'test_typing_cost.py' -v
+          python3 -B -m unittest discover -s DataSource/AISyntheticBigram -p 'test_typing_cost*.py' -v
           python3 -B Source/Distributions/Takao/DatabaseCooker/rebuild-keykey-db.py \
             --output "$RUNNER_TEMP/keykey-rebuild" --jobs 2 --max-regression-actions 30 --apply
           python3 -B Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \

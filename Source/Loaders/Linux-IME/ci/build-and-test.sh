@@ -57,8 +57,12 @@ test -s "$stage_dir/usr/share/chichi77-keykey/data/smart-mandarin.db"
 test -f "$stage_dir/usr/share/chichi77-keykey/data/associated-phrases/McBopomofo.occ"
 test -f "$stage_dir/usr/share/chichi77-keykey/data/associated-phrases/display-names.tsv"
 test -f "$stage_dir/usr/share/chichi77-keykey/data/associated-phrases/phrase.general.tsv"
+test -f "$stage_dir/usr/share/chichi77-keykey/data/associated-phrases/phrase.china.tsv"
+test -f "$stage_dir/usr/share/chichi77-keykey/data/associated-phrases/phrase.given-names.tsv"
+test -f "$stage_dir/usr/share/chichi77-keykey/data/associated-phrases/phrase.hongkong-macao.tsv"
+test -f "$stage_dir/usr/share/chichi77-keykey/data/associated-phrases/phrase.taiwan.tsv"
 test "$(find "$stage_dir/usr/share/chichi77-keykey/data/associated-phrases" \
-  -maxdepth 1 -type f -name 'phrase.*.tsv' | wc -l)" -eq 29
+  -maxdepth 1 -type f -name 'phrase.*.tsv' | wc -l)" -eq 33
 test -f "$stage_dir/usr/share/doc/chichi77-keykey/LICENSE-linux-frontend.txt"
 test -f "$stage_dir/usr/share/doc/chichi77-keykey/LICENSE-MIT.txt"
 test -f "$stage_dir/usr/share/doc/chichi77-keykey/LICENSE-yahoo-bsd.txt"

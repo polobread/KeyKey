@@ -6,10 +6,14 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT.parents[1] / "Source/Distributions/Takao/DatabaseCooker"))
+from training_name_markers import name_marker_parts
+
 ARTICLE_ROOT = ROOT.parent / "AISyntheticArticles"
 SOURCES = ((2, 1650), (3, 350), (4, 300))
 OUTPUT = ROOT / "article-corpus-2300-exact-dedup.txt"
@@ -17,16 +21,17 @@ REPORT = ROOT / "article-corpus-2300-build-report.json"
 HAN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 
 
-def corpus_lines(text: str) -> list[str]:
+def corpus_lines(text: str, location: str) -> list[str]:
     lines = []
-    for raw in text.splitlines():
+    for number, raw in enumerate(text.splitlines(), 1):
+        name_marker_parts(raw, f"{location}:{number}")
         line = re.sub(r"^(?:#{1,6}|>|[-*+])\s*", "", raw.strip())
         if HAN.search(line):
             lines.append(line)
     return lines
 
 
-def main() -> None:
+def main(training_paths: tuple[Path, ...] | None = None) -> None:
     output = [
         "# Article corpus for Smart Mandarin bigrams.",
         "# Sources: v2 1-1650, v3 1-350, v4 1-300; identical lines kept once.",
@@ -34,8 +39,12 @@ def main() -> None:
     seen_lines: set[str] = set()
     source_stats = []
 
-    for version, count in SOURCES:
-        path = ARTICLE_ROOT / f"typing-articles-v{version}.jsonl"
+    if training_paths is None:
+        training_paths = tuple(ARTICLE_ROOT / f"typing-articles-v{version}.jsonl" for version, _ in SOURCES)
+    if len(training_paths) != len(SOURCES):
+        raise ValueError("exactly the v2, v3 and v4 article files are required")
+
+    for (version, count), path in zip(SOURCES, training_paths):
         data = path.read_bytes()
         articles = [json.loads(line) for line in data.decode("utf-8").splitlines() if line.strip()]
         prefix = "tw-typing-" if version == 2 else f"tw-typing-v{version}-"
@@ -47,7 +56,7 @@ def main() -> None:
         raw_lines = kept_lines = 0
         for article in articles:
             kept_for_article = []
-            for line in corpus_lines(article["text"]):
+            for line in corpus_lines(article["text"], article["prompt_id"]):
                 raw_lines += 1
                 if line in seen_lines:
                     continue

@@ -234,6 +234,21 @@ class TypingCostTests(unittest.TestCase):
         for value in ("ㄧˇ", "ㄓ", "ㄨㄛˇ", "ㄩㄢˊ", "ㄉㄜ˙"):
             self.assertEqual(t.reading(t.query_for_reading(value)), value)
 
+    def test_inline_markers_preserve_typing_blocks_and_readings(self):
+        path = self.work / "input.md"
+        lexicon = t.Lexicon(self.db)
+        path.write_text("乙丙，乙丙乙丙", encoding="utf-8")
+        plain = t.load_document(path, lexicon)
+        path.write_text("乙丙，乙〖丙乙〗丙", encoding="utf-8")
+        marked, positions = t.load_document_with_name_positions(path, lexicon)
+        self.assertEqual(marked, plain)
+        self.assertEqual(t.load_document(path, lexicon), plain)
+        self.assertEqual(positions, {(2, 1), (2, 2)})
+        for text in ("乙〖丙", "乙〖A〗"):
+            path.write_text(text, encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "personal-name marker|marked Chinese name"):
+                t.load_document(path, lexicon)
+
     def test_no_candidate_is_an_error_instead_of_free_success(self):
         document = self.document("乙")
         with t.writable_db(self.db) as db:

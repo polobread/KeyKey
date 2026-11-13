@@ -4,7 +4,7 @@ import sqlite3
 import tempfile
 import unittest
 
-from phrase_unigram_supplement import apply, query_for_reading, strongest_competitor
+from phrase_unigram_supplement import POST_TRAINING, apply, query_for_reading, strongest_competitor, verify_post_training
 
 
 class WholePhraseTests(unittest.TestCase):
@@ -49,6 +49,31 @@ class WholePhraseTests(unittest.TestCase):
         self.db.execute("INSERT INTO unigrams VALUES(?,?,?,0)", (self.q1 + self.q2, "舊的", -3))
         with self.assertRaisesRegex(ValueError, "existing phrase changed"):
             apply(self.db, self.path, 1000)
+
+    def test_post_training_entries_preserve_reviewed_counts_without_bigrams(self):
+        header, pre_training = self.path.read_text(encoding="utf-8").splitlines()
+        self.path.write_text(f"{header}\tstage\n{pre_training}\tpre-training\n"
+                             "舊了\t306\tㄐㄧㄡˋ ㄌㄜ˙\t4\t3\treviewed phrase\tpost-training\n",
+                             encoding="utf-8")
+        bigrams = self.db.execute("SELECT * FROM bigrams").fetchall()
+        self.assertEqual([row["word"] for row in apply(self.db, self.path, 1000)], ["舊的"])
+        self.assertIsNone(self.db.execute("SELECT 1 FROM unigrams WHERE current='舊了'").fetchone())
+        result = apply(self.db, self.path, 1000, stage=POST_TRAINING)
+        self.assertEqual([row["word"] for row in result], ["舊了"])
+        self.assertEqual(self.db.execute("SELECT probability,backoff FROM unigrams WHERE current='舊了'").fetchone(),
+                         (math.log10(306 / 1000), 0.0))
+        self.assertEqual(self.db.execute("SELECT * FROM bigrams").fetchall(), bigrams)
+        verify_post_training(self.db, self.path, 1000, 1)
+        self.db.execute("INSERT INTO bigrams VALUES('! test','','舊了',-.1)")
+        with self.assertRaisesRegex(ValueError, "has a Bigram edge"):
+            verify_post_training(self.db, self.path, 1000, 1)
+
+    def test_invalid_stage_rejected_before_applying_any_entry(self):
+        header, phrase = self.path.read_text(encoding="utf-8").splitlines()
+        self.path.write_text(f"{header}\tstage\n{phrase}\ttraining\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "invalid phrase supplement stage"):
+            apply(self.db, self.path, 1000)
+        self.assertIsNone(self.db.execute("SELECT 1 FROM unigrams WHERE current='舊的'").fetchone())
 
     def test_invalid_reading_rejected(self):
         for reading in ("", "ˋ", "ㄐㄐ", "invalid"):

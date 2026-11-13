@@ -122,6 +122,26 @@ python3 -B DataSource/AISyntheticBigram/benchmark-bigram-structure.py \
 它會核對每個模型、引擎、讀音、evaluator、文章與凍結輸入的雜湊；不符合時中止。
 輸出須使用另一個目錄，不覆寫原紀錄。因引擎操作完全相同，此模式不用重新播放引擎。
 
+## 排除人名的成本
+
+固定 131 篇可加上 `--exclude-person-names`，直接讀取
+[驗證文章](../AISyntheticArticles/typing-articles-v5-seed/)正文中的 `〖姓名〗`。
+例如 `請〖陳怡君〗回覆` 會以「請陳怡君回覆」執行完整的注音、組字及選字，
+計分只排除這次出現的姓名。同一串字在其他位置作一般用字時照常計分。
+已標記位置的注音鍵及只修正已標記位置的選字動作不計分；同一次選字若也修正其他位置，整次動作仍計分。
+
+```sh
+python3 -B DataSource/AISyntheticBigram/benchmark-bigram-structure.py \
+  before=/path/before.db after=/path/after.db \
+  --reference-db /path/reference.db \
+  --exclude-person-names --rescore-from /path/unfiltered-benchmark \
+  --output /tmp/keykey-person-name-comparison
+```
+
+省略 `--rescore-from` 可重新執行引擎。驗證文章的標記及原文一起納入來源雜湊。
+重疊的排除位置只扣一次。獨立 benchmark 的預設仍量完整成本。
+正式詞庫重建使用 `--exclude-person-names --exclude-characters 她他時十`，以排除後的總動作差套用 +30 次門檻。報告的 `unfiltered` 保留完整動作。
+
 ## 批次診斷
 
 隨機 50 篇比較可用：

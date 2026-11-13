@@ -86,8 +86,12 @@ public final class AssociatedPhraseDictionaryTest {
         File[] files = directory.listFiles(file ->
                 file.getName().equals("McBopomofo.occ")
                         || file.getName().matches("phrase\\..+\\.tsv"));
-        assertEquals(30, files == null ? 0 : files.length);
+        assertEquals(34, files == null ? 0 : files.length);
         assertTrue(new File(directory, "phrase.software.tsv").isFile());
+        assertTrue(new File(directory, "phrase.china.tsv").isFile());
+        assertTrue(new File(directory, "phrase.given-names.tsv").isFile());
+        assertTrue(new File(directory, "phrase.hongkong-macao.tsv").isFile());
+        assertTrue(new File(directory, "phrase.taiwan.tsv").isFile());
 
         Map<String, List<String>> parsed;
         try (FileInputStream stream = new FileInputStream(base)) {
@@ -101,7 +105,7 @@ public final class AssociatedPhraseDictionaryTest {
         File sourceDirectory = new File(System.getProperty("keykey.associated.collections"));
         File indexDirectory = new File(System.getProperty("keykey.associated.indexes"));
         File[] files = indexDirectory.listFiles(file -> file.getName().endsWith(".kki"));
-        assertEquals(30, files == null ? 0 : files.length);
+        assertEquals(34, files == null ? 0 : files.length);
 
         Set<String> baseExclusions = peopleCollectionWords(sourceDirectory);
         assertIndexMatchesSource(
@@ -111,7 +115,7 @@ public final class AssociatedPhraseDictionaryTest {
 
         File[] collections = sourceDirectory.listFiles(file ->
                 file.getName().startsWith("phrase.") && file.getName().endsWith(".tsv"));
-        assertEquals(29, collections == null ? 0 : collections.length);
+        assertEquals(33, collections == null ? 0 : collections.length);
         for (File collection : collections) {
             assertIndexMatchesSource(collection,
                     new File(indexDirectory, collection.getName() + ".kki"), Set.of());

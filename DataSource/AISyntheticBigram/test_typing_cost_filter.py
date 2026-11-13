@@ -5,10 +5,12 @@ import tempfile
 import unittest
 
 import typing_cost as t
-from typing_cost_filter import exclude_zero_count_actions, load_zero_count_characters
+from typing_cost_filter import (character_positions, exclude_position_actions, exclude_zero_count_actions,
+                                load_zero_count_characters,
+                                unfiltered_metrics, zero_count_positions)
 
 
-class ZeroFrequencyCostTests(unittest.TestCase):
+class TargetCostTests(unittest.TestCase):
     def setUp(self):
         self.jia, self.yi = map(t.query_for_reading, ("ㄐㄧㄚˇ", "ㄧˇ"))
         self.document = [{"han": True, "text": "甲乙", "queries": [self.jia, self.yi]}]
@@ -87,6 +89,57 @@ class ZeroFrequencyCostTests(unittest.TestCase):
                 path.write_text("甲 " + value + "\n", encoding="utf-8")
                 with self.assertRaises(ValueError):
                     load_zero_count_characters(path)
+
+
+    def test_name_and_zero_frequency_exclusions_count_a_position_once(self):
+        raw = self.report(mixed=True)
+        name_mask = {(0, 1)}
+        mask = name_mask | zero_count_positions(self.document, {"乙"})
+        result = exclude_position_actions(raw, self.document, mask, "zero_frequency_and_person_name")
+        self.assertEqual(result["total_actions"], raw["total_actions"] - t.key_count(self.yi))
+        self.assertEqual(result["correction_actions"], 3)
+        self.assertEqual(result["errors"][0]["changes"], [{"index": 0, "from": "假", "to": "甲"}])
+        self.assertEqual(result["counted_syllables"], 1)
+
+
+    def test_name_and_explicit_characters_keep_raw_diagnostics(self):
+        readings = [self.jia, self.yi, self.jia, self.yi]
+        document = [
+            {"han": False, "text": "【", "queries": []},
+            {"han": True, "text": "她甲他乙", "queries": readings},
+        ]
+        raw = self.report(mixed=True)
+        raw["actions"]["phonetic_keys"] *= 2
+        raw["actions"]["literal_keys"] = 1
+        event = raw["errors"][0]
+        event.update(block=1, changes=[
+            {"index": 0, "from": "他", "to": "她"},
+            {"index": 1, "from": "假", "to": "甲"},
+            {"index": 2, "from": "她", "to": "他"},
+            {"index": 3, "from": "以", "to": "乙"},
+        ])
+        raw["errors"].append({
+            **event, "changes": [{"index": 2, "from": "她", "to": "他"}],
+        })
+        for key, value in event["actions"].items():
+            raw["actions"][key] += value
+        raw.update(total_actions=sum(raw["actions"].values()), syllables=4, corrections=2)
+        raw["correction_actions"], raw["correction_summary"], raw["character_correction_summary"] = (
+            t.summarize_corrections(raw["errors"]))
+
+        masks = {(1, 0), (1, 1)} | character_positions(document, set("她他時十"))
+        result = exclude_position_actions(raw, document, masks, "person_name_and_character")
+        self.assertEqual(result["counted_syllables"], 1)
+        self.assertEqual(result["errors"][0]["changes"], [{"index": 3, "from": "以", "to": "乙"}])
+        self.assertEqual(result["correction_actions"], 3)
+        self.assertEqual(result["actions"]["literal_keys"], 1)
+        self.assertEqual(result["actions"]["commit_keys"], 1)
+        self.assertEqual(result["total_actions"], t.key_count(self.yi) + 5)
+
+        recovered = unfiltered_metrics(result, "person_name_and_character")
+        self.assertEqual(recovered["total_actions"], raw["total_actions"])
+        self.assertEqual(recovered["correction_actions"], raw["correction_actions"])
+        self.assertEqual(recovered["character_correction_summary"], raw["character_correction_summary"])
 
 
 if __name__ == "__main__":

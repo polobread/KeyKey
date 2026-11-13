@@ -173,14 +173,32 @@ public final class SettingsGroupsInstrumentedTest {
             Activity page = collections;
             instrumentation.runOnMainSync(() -> {
                 View root = page.findViewById(android.R.id.content);
-                assertEquals(30, countCollectionChecks(root));
+                assertEquals(34, countCollectionChecks(root));
                 CheckBox base = root.findViewWithTag("McBopomofo");
                 assertNotNull(base);
                 assertTrue(base.isChecked());
-                assertTrue(containsText(root, "已啟用 1／30 個詞庫"));
+                assertTrue(containsText(root, "已啟用 1／34 個詞庫"));
+                CheckBox taiwan = root.findViewWithTag("taiwan");
+                assertNotNull(taiwan);
+                assertEquals(page.getString(R.string.phrase_collection_item, "台灣用語", "taiwan"),
+                        taiwan.getText().toString());
+                CheckBox givenNames = root.findViewWithTag("given-names");
+                assertNotNull(givenNames);
+                assertEquals(page.getString(R.string.phrase_collection_item, "常見名字", "given-names"),
+                        givenNames.getText().toString());
+                CheckBox hongKongMacao = root.findViewWithTag("hongkong-macao");
+                assertNotNull(hongKongMacao);
+                assertFalse(hongKongMacao.isChecked());
+                assertEquals(page.getString(R.string.phrase_collection_item, "港澳用語", "hongkong-macao"),
+                        hongKongMacao.getText().toString());
+                CheckBox china = root.findViewWithTag("china");
+                assertNotNull(china);
+                assertFalse(china.isChecked());
+                assertEquals(page.getString(R.string.phrase_collection_item, "中國用語", "china"),
+                        china.getText().toString());
 
                 clickButton(root, R.string.phrase_select_all);
-                assertEquals(30, PhraseSettings.enabledCollections(context).size());
+                assertEquals(34, PhraseSettings.enabledCollections(context).size());
                 clickButton(root, R.string.phrase_select_none);
                 assertTrue(PhraseSettings.enabledCollections(context).isEmpty());
                 clickButton(root, R.string.phrase_base_only);

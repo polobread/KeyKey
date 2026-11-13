@@ -580,6 +580,7 @@ associated_phrase_sources=(
   anime
   biotech-pharma
   business
+  china
   chinese
   civil-engineering
   education
@@ -587,8 +588,10 @@ associated_phrase_sources=(
   energy-environment
   finance
   general
+  given-names
   government
   history
+  hongkong-macao
   industrial-engineering
   law
   manufacturing
@@ -603,6 +606,7 @@ associated_phrase_sources=(
   science
   semiconductor
   software
+  taiwan
   transport-logistics
 )
 
