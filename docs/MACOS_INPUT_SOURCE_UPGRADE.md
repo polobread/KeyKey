@@ -9,7 +9,7 @@
 - Distribution 宣告 `hostArchitectures="arm64,x86_64"`，Apple Silicon 不需 Rosetta；Intel 能看到明確阻擋提示。payload／helper 仍只有 arm64。
 - `preinstall` 在執行 helper 前重複硬體檢查，涵蓋 component package 直接安裝。
 - 保留固定安裝位置 `/Library/Input Methods/chichi77 KeyKey.app`、簽章與公證流程。
-- Distribution 的 `onConclusion="RequireLogout"` 明確要求重新登入；完成頁及更新器訊息採相同指引。
+- 安裝完成後可按「關閉」離開安裝程式。完成頁會提醒使用者在開始使用新版前登出再登入，或重新開機。
 
 ## 覆蓋前：只保留安全準備
 

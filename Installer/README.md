@@ -82,7 +82,8 @@ payload somewhere else, so confirm the bundle actually landed before going any
 further.
 
 The package includes a signed `KeyKeyInputSourceTool` for replacement safety only.
-All installations require logout/login through Distribution's `RequireLogout`.
+Click Close when installation finishes. Before using the new version, save your
+work, then log out and back in or restart your Mac.
 First installations add KeyKey after signing back in; upgrades keep the existing
 entry and select it again. The installer never registers, enables, disables or
 restores an input source.
