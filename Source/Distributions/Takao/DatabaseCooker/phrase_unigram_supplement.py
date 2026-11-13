@@ -54,7 +54,7 @@ def load(path, total_count, stage):
     with path.open(encoding="utf-8", newline="") as source:
         reader = csv.DictReader(source, delimiter="\t")
         expected = ("word", "target_count", "reading", "training_occurrences", "training_documents", "reason")
-        if tuple(reader.fieldnames or ()) not in (expected, (*expected, "stage")):
+        if tuple(reader.fieldnames or ()) not in (expected, (*expected, "stage"), (*expected, "stage", "action")):
             raise ValueError(f"{path}: unexpected columns")
         entries = list(reader)
     if not entries:
@@ -66,14 +66,23 @@ def load(path, total_count, stage):
         count = int(entry["target_count"])
         occurrences, documents = int(entry["training_occurrences"]), int(entry["training_documents"])
         entry_stage = entry.get("stage", PRE_TRAINING)
-        if not 2 <= len(word) <= 7 or len(syllables) != len(word) or word in seen:
-            raise ValueError(f"invalid or duplicate phrase: {word}")
-        if not 0 < count <= total_count or not 0 < documents <= occurrences or not entry["reason"]:
-            raise ValueError(f"invalid count or missing evidence: {word}")
+        action = entry.pop("action", "") or "add"
+        if not 2 <= len(word) <= 7 or len(syllables) != len(word):
+            raise ValueError(f"invalid phrase: {word}")
         if entry_stage not in (PRE_TRAINING, POST_TRAINING):
             raise ValueError(f"{word}: invalid phrase supplement stage {entry_stage!r}")
-        seen.add(word)
+        has_training_evidence = 0 < documents <= occurrences
+        explicit_addition = entry_stage == POST_TRAINING and documents == occurrences == 0
+        if not 0 < count <= total_count or not (has_training_evidence or explicit_addition) or not entry["reason"]:
+            raise ValueError(f"invalid count or missing evidence: {word}")
         query = "".join(query_for_reading(value) for value in syllables)
+        if (query, word) in seen:
+            raise ValueError(f"duplicate phrase reading: {word}")
+        seen.add((query, word))
+        if action == "reweight" and entry_stage == POST_TRAINING:
+            entry["action"] = action
+        elif action != "add":
+            raise ValueError(f"{word}: invalid action for {entry_stage}: {action}")
         if entry_stage == stage:
             selected.append((entry, count, query, math.log10(count / total_count)))
     return selected
@@ -87,6 +96,11 @@ def apply(database, path, total_count, *, stage=PRE_TRAINING):
         existing = database.execute(
             "SELECT probability,backoff FROM unigrams WHERE qstring=? AND current=?", (query, word)
         ).fetchall()
+        if entry.get("action") == "reweight":
+            if len(existing) != 1:
+                raise ValueError(f"expected an existing phrase to reweight: {word}")
+            prepared.append((query, word, score, "reweighted", entry))
+            continue
         if existing and (len(existing) != 1 or not math.isclose(existing[0][0], score, abs_tol=1e-12, rel_tol=0)):
             raise ValueError(f"existing phrase changed; review the overlay: {word}")
         if stage == PRE_TRAINING:
@@ -97,32 +111,40 @@ def apply(database, path, total_count, *, stage=PRE_TRAINING):
                 raise ValueError(f"{word}: expected minimum count {minimum}, got {count}; review the source model")
         elif existing and existing[0][1] != 0.0:
             raise ValueError(f"post-training phrase has existing Bigram backoff: {word}")
-        prepared.append((query, word, score, bool(existing), entry))
-    for query, word, score, existing, _ in prepared:
-        if not existing:
+        prepared.append((query, word, score, "retained" if existing else "inserted", entry))
+    for query, word, score, status, _ in prepared:
+        if status == "inserted":
             database.execute("INSERT INTO unigrams VALUES(?,?,?,0.0)", (query, word, score))
-    return [{**entry, "status": "retained" if existing else "inserted", "probability": score}
-            for _, _, score, existing, entry in prepared]
+        elif status == "reweighted":
+            database.execute("UPDATE unigrams SET probability=? WHERE qstring=? AND current=?", (score, query, word))
+    return [{**entry, "status": status, "probability": score}
+            for _, _, score, status, entry in prepared]
 
 
 def verify_post_training(database, path, total_count, expected_entries):
     entries = load(path, total_count, POST_TRAINING)
     if len(entries) != expected_entries:
         raise ValueError("post-training phrase count differs from the manifest")
-    words = []
+    added_readings = set()
     for entry, _, query, score in entries:
         word = entry["word"]
         matches = database.execute(
             "SELECT probability,backoff FROM unigrams WHERE qstring=? AND current=?", (query, word)
         ).fetchall()
-        if len(matches) != 1 or not math.isclose(matches[0][0], score, abs_tol=1e-12, rel_tol=0) or matches[0][1] != 0.0:
+        if len(matches) != 1 or not math.isclose(matches[0][0], score, abs_tol=1e-12, rel_tol=0):
             raise ValueError(f"post-training phrase differs from DB: {word}")
-        words.append(word)
-    if words:
+        if entry.get("action") != "reweight":
+            if matches[0][1] != 0.0:
+                raise ValueError(f"post-training phrase has existing Bigram backoff: {word}")
+            added_readings.add((query, word))
+    if added_readings:
+        words = sorted({word for _, word in added_readings})
         placeholders = ",".join("?" for _ in words)
-        trained = database.execute(
-            f"SELECT previous,current FROM bigrams WHERE previous IN ({placeholders}) OR current IN ({placeholders}) LIMIT 1",
+        edges = database.execute(
+            f"SELECT qstring,previous,current FROM bigrams WHERE previous IN ({placeholders}) OR current IN ({placeholders})",
             words + words,
-        ).fetchone()
-        if trained:
-            raise ValueError(f"post-training phrase has a Bigram edge: {trained}")
+        )
+        for query, previous, current in edges:
+            left, _, right = query.partition(" ")
+            if (left, previous) in added_readings or (right, current) in added_readings:
+                raise ValueError(f"post-training phrase has a Bigram edge: {(query, previous, current)}")

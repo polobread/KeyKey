@@ -1,24 +1,25 @@
 {
-  "base_database_sha256": "a97538daca655111eee4d6d3dbc380b77925dc48a55ad817119681d857b676de",
-  "bigram_rows": 870633,
-  "canonical_database_sha256": "5cff8cb09773501783d56c826a48ec4caaf05f1421403483f38b7e379afca35e",
+  "base_database_sha256": "088e715bbed84d844dea116c252a7caa911e40390a15944a565d1300a09d34b1",
+  "bigram_rows": 871022,
+  "canonical_database_sha256": "e8e1376cf3a141550191608242bd348448d4b8ce76d24b29a2e52e1a76c9a2ef",
   "description": "McBopomofo with deduplicated custom Unigrams; source-cooked document-frequency Bigram; personal names, anime and homophone additions inserted after training",
   "format": 1,
   "rebuild": {
     "cooker_report_file": "custom-unigram-cooker-report.json",
-    "cooker_report_sha256": "fdd58c07f427680bb26c96637a26852933787f817559af65242087e8ada3ce5b",
+    "cooker_report_sha256": "6517232728cbcc236670b003387407daffe2af2366cf7b7d5a7d2655f3e7bf10",
     "downranked_file": "custom-unigram-downranked.tsv",
-    "downranked_sha256": "ea7952510c6fb562593b225df14b6b3db8fc9801f17d3524fa5e916d3e089df8",
+    "downranked_sha256": "e395ef35dd253cc5a396701184f30cab431a50b8fddd3eee9f4b62b9be2bb038",
     "excluded_file": "custom-unigram-excluded.tsv",
-    "excluded_sha256": "bfef9384236e706f0a3283ff11481a0e9a541ce52e220981189d5180a43d8302",
+    "excluded_sha256": "ffbb3932b8be62e02159e66a47b4c403a121a0eb91c57b94029f41b15193e968",
     "partial_overlaps_file": "custom-unigram-partial-overlaps.tsv",
-    "partial_overlaps_sha256": "a08438bfa9a09b2b4d3f705391f7f036465e826180d46ef0babd0eece3475d31",
+    "partial_overlaps_sha256": "d722f0bf0db36161b97c38a7ab33f482058f1f0a7dddae69c08bf08a76ac7fec",
     "policy": "mcp-homophones-retained-low-ranked-long-partial-diagnostic-v3",
     "seed_commit": "63a5a33beb5a24a23c91cd74d5ff021c65affde2",
     "seed_database_sha256": "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252",
     "validation": "collection-unigram-validation.json"
   },
-  "semantic_sha256": "b7be907eb2b98baf7d9258d5ae89e96ae5738100e8ef62864df5e2db9a5ecc1a",
+  "semantic_sha256": "e5988d3b62fb316bc0a4486f15045ff852a6c4837e3f2b647109b039a9f6e5a8",
+  "single_syllable_readings": 1347,
   "sources": {
     "cin_reading_frequencies": {
       "entries": 3863,
@@ -26,11 +27,11 @@
       "sha256": "2c9b9bb3d99516b401188311a87dc5b41e14b4f25b13978afccef7e2a25426fb"
     },
     "collection_unigram_supplement": {
-      "collision_rows_downranked": 245,
+      "collision_rows_downranked": 463,
       "collision_rows_excluded": 0,
       "cooked": true,
-      "duplicate_rows_skipped": 54,
-      "existing_rows_skipped": 2356,
+      "duplicate_rows_skipped": 113,
+      "existing_rows_skipped": 3407,
       "files": [
         {
           "file": "phrase.agriculture-food.tsv",
@@ -54,7 +55,7 @@
         },
         {
           "file": "phrase.china.tsv",
-          "sha256": "f2ebf252214bfd8e0f6b5cc46b9c91128e2c0de25fb1e91167b5ed5dfdba2980"
+          "sha256": "9c0f2cb6d3ad0f30e44fd0f93ed2e02138bfce9a0eed10fbeb5d37eb07bb0382"
         },
         {
           "file": "phrase.chinese.tsv",
@@ -98,7 +99,7 @@
         },
         {
           "file": "phrase.hongkong-macao.tsv",
-          "sha256": "e2a3b247d747ac024791a239bca79ccd43aab01ec35ae7b305caf145fac40f4b"
+          "sha256": "0e05ba401da87ec01f45413e4bac7b667b1f5d55578e0146a0f9dcbca11293f8"
         },
         {
           "file": "phrase.industrial-engineering.tsv",
@@ -158,7 +159,7 @@
         },
         {
           "file": "phrase.taiwan.tsv",
-          "sha256": "7e6f31c2db0fc9ff252f60cf944dd0f42902a5e807469b7e220468bd89d27b6f"
+          "sha256": "8c78ee2b784bf5b3f3611921dfbf726345908eb98fa6b27d44627944f9a24b62"
         },
         {
           "file": "phrase.transport-logistics.tsv",
@@ -166,31 +167,32 @@
         }
       ],
       "frequency_policy": "minimum",
-      "inserted": 6353,
+      "inserted": 10463,
       "list_file": "collection-unigram.tsv",
-      "list_sha256": "2b3748a0ea53db94023c156923efea0d1e8ba57bb359941c149d78a3b98d0908",
+      "list_sha256": "6f113b5b99f65c7ef1a7e13f34b2406aef2366a0b32e9232cae5ea99b551dcdb",
       "overrides_file": "collection-unigram-overrides.tsv",
       "overrides_sha256": "e904d8db9d8f6f71e336fca9ee5daa3a7f990bd97e01d897d246e336c3b37550",
       "rejected": 0,
       "report_file": "collection-unigram-import.json",
-      "report_sha256": "53ca99ffa08920b883081b82f0303e98b87894a52fb858dfbe61306dbd9862db",
+      "report_sha256": "39c8b5b62148700453c246e7a82d142d8d28144fcf5290f427f6b4d11e66bd4e",
       "search_presence_file": "search-trend-unigram-presence.tsv",
       "search_presence_sha256": "0e398aa45a4bb4f1b5d5ce09d99c80e84f8337ed5a60e9ed4e21b4819ec5a88a",
       "skipped_file": "collection-unigram-skipped.tsv",
-      "skipped_sha256": "2364a6d85b3cb211bbd7b9ea5229f4810e5fbc17b23912db0c7e95bb13f09d3c",
-      "source_rows": 8763,
+      "skipped_sha256": "0324a060267908c3bf969ea1a7db7e2a47ad27f1f2f9e0a79b1cc420ee7872d1",
+      "source_rows": 13997,
       "validation_file": "collection-unigram-validation.json",
-      "validation_sha256": "ce3dd39d4b7c2ba1367c26de1e6b7bc37a8db1ea490194795bd201778e7af6a1"
+      "validation_sha256": "23704ccc455535220ebdde5dd06a2d3b31093281f73d934815ca408cc29b10ed"
     },
     "phrase_unigram_supplement": {
-      "entries": 13,
+      "entries": 70,
       "file": "common-phrase-unigram.tsv",
-      "inserted": 12,
-      "policy": "Pre-training reviewed phrases use the minimum score above same-reading tokenizations and retain existing probabilities. Post-training reviewed phrases use their explicit counts and add no Bigram edges.",
-      "post_training_entries": 11,
+      "inserted": 62,
+      "policy": "Pre-training reviewed phrases use the minimum score above same-reading tokenizations and retain existing probabilities. Post-training reviewed phrases use explicit counts and preserve existing backoffs and Bigram edges without adding new edges.",
+      "post_training_entries": 68,
       "pre_training_entries": 2,
       "retained": 1,
-      "sha256": "043a13e853716a1f9f6ecb60019093776f77a1633505c11c44616a657439b03c",
+      "reweighted": 7,
+      "sha256": "800c07d505a4bab0eff8a664d40cab074d1acf8c6189cad59ff88953346327fc",
       "validation_file": "whole-phrase-unigram-validation.json",
       "validation_sha256": "8ce428d08f9fc9fa626eff1d0c40ff10df812672bb2b4bfdbf6a16ede431151e"
     },
@@ -208,13 +210,13 @@
       "reading_overrides_sha256": "1a2f9b2ab4b73aadb3ac12dbdce3da56495ac64fb576682359071a76f89afc8f",
       "review_file": "search-trend-unigram-review.tsv",
       "review_sha256": "0b7b0dc636c2000f072c013d1cafa366b1fdc62f8a6524c2c5e1f2cac9864433",
-      "sha256": "e276a35a760f849e449c2309ca3b41d6b27a71c5f74d1ab697bb8cbe7b8cd445",
+      "sha256": "3db6fa8739a44a57aae0274547d14fe06a3ca3c8ed6e34a3b12a96c662d1089b",
       "source_file": "search-trend-unigram-source.txt",
       "source_sha256": "01e48faf3da36e5b1ccac713153b4656113e777b8d8043d1026ee1f93037e9c1",
       "source_terms": 550
     },
     "standalone_composition_weights": {
-      "bigram_upserts": 180,
+      "bigram_upserts": 179,
       "cin_overrides": [
         [
           "0i",
@@ -371,9 +373,9 @@
       ],
       "file": "DataSource/CINReadingFrequency/standalone-composition-weights.json",
       "selection_file": "DataSource/CINReadingFrequency/standalone-composition-review.tsv",
-      "selection_sha256": "cf9b8ef7ef244144d0f791d2572421e5be7905b4ce162e296dd1984adc975ce5",
-      "sha256": "db6c71442fe7b3625aeba9a2b501328b039a95a9f03681783122008804342166",
-      "unigram_upserts": 157
+      "selection_sha256": "1461f27c4798e0dd45129f37d6e10035c5416a98d5013bb0ff8c631d3556e493",
+      "sha256": "d762a91a697a32c23b1e0b92c9e823d5ce9c71cedad21adaeec721698983ac7d",
+      "unigram_upserts": 156
     },
     "training_articles": [
       {
@@ -399,7 +401,7 @@
     }
   },
   "training_articles": 2300,
-  "unigram_rows": 120781,
-  "unigram_total_count": 22611029.0,
+  "unigram_rows": 124944,
+  "unigram_total_count": 22614922.0,
   "validation_articles": 131
 }

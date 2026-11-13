@@ -173,6 +173,21 @@ class CinSourceValidationTests(unittest.TestCase):
 
 class CinPipelineTests(unittest.TestCase):
 
+    def test_rebuild_adds_new_cin_readings_without_reordering_existing_candidates(self):
+        from rebuild_model import add_cin_readings
+
+        with tempfile.TemporaryDirectory() as directory, closing(sqlite3.connect(":memory:")) as db:
+            cin = Path(directory) / "test.cin"
+            cin.write_text("%chardef begin\nAA 甲\nAA 丙\nAA 丙\n%chardef end\n", encoding="utf-8")
+            db.execute('CREATE TABLE "Mandarin-bpmf-cin" (key, value)')
+            db.executemany('INSERT INTO "Mandarin-bpmf-cin" VALUES (?, ?)', [("AA", "甲"), ("AA", "乙")])
+
+            add_cin_readings(db, cin)
+            add_cin_readings(db, cin)
+
+            self.assertEqual(db.execute('SELECT * FROM "Mandarin-bpmf-cin" ORDER BY rowid').fetchall(),
+                             [("AA", "甲"), ("AA", "乙"), ("AA", "丙")])
+
     def test_verifier_keeps_old_first_choice_rule_only_when_source_is_disabled(self):
         import io
         from contextlib import redirect_stdout, redirect_stderr

@@ -313,6 +313,289 @@ phrase.china.tsv	408	浙大	浙大	ㄓㄜˋ ㄉㄚˋ	two_character_homophone	1	�
 phrase.china.tsv	409	深大	深大	ㄕㄣ ㄉㄚˋ	two_character_homophone	1	深大	ㄕㄣ ㄉㄚˋ	終身大事	ㄓㄨㄥ ㄕㄣ ㄉㄚˋ ㄕˋ	2	身大	11
 phrase.china.tsv	420	西電	西電	ㄒㄧ ㄉㄧㄢˋ	two_character_homophone	1	西電	ㄒㄧ ㄉㄧㄢˋ	三越南西店	ㄙㄢ ㄩㄝˋ ㄋㄢˊ ㄒㄧ ㄉㄧㄢˋ	4	西店	2
 phrase.china.tsv	420	西電	西電	ㄒㄧ ㄉㄧㄢˋ	two_character_homophone	1	西電	ㄒㄧ ㄉㄧㄢˋ	南西店	ㄋㄢˊ ㄒㄧ ㄉㄧㄢˋ	2	西店	3
+phrase.china.tsv	430	三明	三明	ㄙㄢ ㄇㄧㄥˊ	two_character_homophone	1	三明	ㄙㄢ ㄇㄧㄥˊ	前三名	ㄑㄧㄢˊ ㄙㄢ ㄇㄧㄥˊ	2	三名	24
+phrase.china.tsv	430	三明	三明	ㄙㄢ ㄇㄧㄥˊ	two_character_homophone	1	三明	ㄙㄢ ㄇㄧㄥˊ	第三名	ㄉㄧˋ ㄙㄢ ㄇㄧㄥˊ	2	三名	34
+phrase.china.tsv	440	亳州	亳州	ㄅㄛˊ ㄓㄡ	two_character_homophone	1	亳州	ㄅㄛˊ ㄓㄡ	藍博洲	ㄌㄢˊ ㄅㄛˊ ㄓㄡ	2	博洲	1
+phrase.china.tsv	448	保山	保山	ㄅㄠˇ ㄕㄢ	full_homophone	1	保山	ㄅㄠˇ ㄕㄢ	寶山	ㄅㄠˇ ㄕㄢ	1	寶山	45
+phrase.china.tsv	448	保山	保山	ㄅㄠˇ ㄕㄢ	two_character_homophone	1	保山	ㄅㄠˇ ㄕㄢ	寶山路	ㄅㄠˇ ㄕㄢ ㄌㄨˋ	1	寶山	4
+phrase.china.tsv	448	保山	保山	ㄅㄠˇ ㄕㄢ	two_character_homophone	1	保山	ㄅㄠˇ ㄕㄢ	寶山鄉	ㄅㄠˇ ㄕㄢ ㄒㄧㄤ	1	寶山	6
+phrase.china.tsv	448	保山	保山	ㄅㄠˇ ㄕㄢ	two_character_homophone	1	保山	ㄅㄠˇ ㄕㄢ	金寶山	ㄐㄧㄣ ㄅㄠˇ ㄕㄢ	2	寶山	4
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	full_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗	ㄕˊ ㄧㄢˋ	1	實驗	2171
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗劇場	ㄕˊ ㄧㄢˋ ㄐㄩˋ ㄔㄤˇ	1	實驗	9
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗品	ㄕˊ ㄧㄢˋ ㄆㄧㄣˇ	1	實驗	6
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗報告	ㄕˊ ㄧㄢˋ ㄅㄠˋ ㄍㄠˋ	1	實驗	2
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗場	ㄕˊ ㄧㄢˋ ㄔㄤˇ	1	實驗	4
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗學校	ㄕˊ ㄧㄢˋ ㄒㄩㄝˊ ㄒㄧㄠˋ	1	實驗	7
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗室	ㄕˊ ㄧㄢˋ ㄕˋ	1	實驗	575
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗小學	ㄕˊ ㄧㄢˋ ㄒㄧㄠˇ ㄒㄩㄝˊ	1	實驗	4
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗心理	ㄕˊ ㄧㄢˋ ㄒㄧㄣ ㄌㄧˇ	1	實驗	1
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗心理學	ㄕˊ ㄧㄢˋ ㄒㄧㄣ ㄌㄧˇ ㄒㄩㄝˊ	1	實驗	1
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗性	ㄕˊ ㄧㄢˋ ㄒㄧㄥˋ	1	實驗	45
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗所	ㄕˊ ㄧㄢˋ ㄙㄨㄛˇ	1	實驗	4
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗法	ㄕˊ ㄧㄢˋ ㄈㄚˇ	1	實驗	4
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗的	ㄕˊ ㄧㄢˋ ㄉㄜ˙	1	實驗	43
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗站	ㄕˊ ㄧㄢˋ ㄓㄢˋ	1	實驗	2
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗者	ㄕˊ ㄧㄢˋ ㄓㄜˇ	1	實驗	1
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	實驗衣	ㄕˊ ㄧㄢˋ ㄧ	1	實驗	3
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	新實驗	ㄒㄧㄣ ㄕˊ ㄧㄢˋ	2	實驗	7
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	科學實驗	ㄎㄜ ㄒㄩㄝˊ ㄕˊ ㄧㄢˋ	3	實驗	15
+phrase.china.tsv	460	十堰	十堰	ㄕˊ ㄧㄢˋ	two_character_homophone	1	十堰	ㄕˊ ㄧㄢˋ	臨床實驗	ㄌㄧㄣˊ ㄔㄨㄤˊ ㄕˊ ㄧㄢˋ	3	實驗	5
+phrase.china.tsv	462	南安	南安	ㄋㄢˊ ㄢ	two_character_homophone	1	南安	ㄋㄢˊ ㄢ	寢食難安	ㄑㄧㄣˇ ㄕˊ ㄋㄢˊ ㄢ	3	難安	3
+phrase.china.tsv	463	南平	南平	ㄋㄢˊ ㄆㄧㄥˊ	two_character_homophone	1	南平	ㄋㄢˊ ㄆㄧㄥˊ	女男平等	ㄋㄩˇ ㄋㄢˊ ㄆㄧㄥˊ ㄉㄥˇ	2	男平	1
+phrase.china.tsv	471	吉首	吉首	ㄐㄧˊ ㄕㄡˇ	full_homophone	1	吉首	ㄐㄧˊ ㄕㄡˇ	棘手	ㄐㄧˊ ㄕㄡˇ	1	棘手	63
+phrase.china.tsv	471	吉首	吉首	ㄐㄧˊ ㄕㄡˇ	two_character_homophone	1	吉首	ㄐㄧˊ ㄕㄡˇ	打擊手	ㄉㄚˇ ㄐㄧˊ ㄕㄡˇ	2	擊手	3
+phrase.china.tsv	471	吉首	吉首	ㄐㄧˊ ㄕㄡˇ	two_character_homophone	1	吉首	ㄐㄧˊ ㄕㄡˇ	拳擊手	ㄑㄩㄢˊ ㄐㄧˊ ㄕㄡˇ	2	擊手	3
+phrase.china.tsv	471	吉首	吉首	ㄐㄧˊ ㄕㄡˇ	two_character_homophone	1	吉首	ㄐㄧˊ ㄕㄡˇ	游擊手	ㄧㄡˊ ㄐㄧˊ ㄕㄡˇ	2	擊手	12
+phrase.china.tsv	471	吉首	吉首	ㄐㄧˊ ㄕㄡˇ	two_character_homophone	1	吉首	ㄐㄧˊ ㄕㄡˇ	狙擊手	ㄐㄩ ㄐㄧˊ ㄕㄡˇ	2	擊手	6
+phrase.china.tsv	471	吉首	吉首	ㄐㄧˊ ㄕㄡˇ	two_character_homophone	1	吉首	ㄐㄧˊ ㄕㄡˇ	痛心疾首	ㄊㄨㄥˋ ㄒㄧㄣ ㄐㄧˊ ㄕㄡˇ	3	疾首	5
+phrase.china.tsv	473	吳忠	吳忠	ㄨˊ ㄓㄨㄥ	full_homophone	1	吳忠	ㄨˊ ㄓㄨㄥ	無終	ㄨˊ ㄓㄨㄥ	1	無終	4
+phrase.china.tsv	473	吳忠	吳忠	ㄨˊ ㄓㄨㄥ	two_character_homophone	1	吳忠	ㄨˊ ㄓㄨㄥ	有始無終	ㄧㄡˇ ㄕˇ ㄨˊ ㄓㄨㄥ	3	無終	2
+phrase.china.tsv	473	吳忠	吳忠	ㄨˊ ㄓㄨㄥ	two_character_homophone	1	吳忠	ㄨˊ ㄓㄨㄥ	無中生有	ㄨˊ ㄓㄨㄥ ㄕㄥ ㄧㄡˇ	1	無中	25
+phrase.china.tsv	485	四平	四平	ㄙˋ ㄆㄧㄥˊ	full_homophone	1	四平	ㄙˋ ㄆㄧㄥˊ	四坪	ㄙˋ ㄆㄧㄥˊ	1	四坪	2
+phrase.china.tsv	485	四平	四平	ㄙˋ ㄆㄧㄥˊ	full_homophone	1	四平	ㄙˋ ㄆㄧㄥˊ	四瓶	ㄙˋ ㄆㄧㄥˊ	1	四瓶	3
+phrase.china.tsv	486	固原	固原	ㄍㄨˋ ㄩㄢˊ	full_homophone	1	固原	ㄍㄨˋ ㄩㄢˊ	僱員	ㄍㄨˋ ㄩㄢˊ	1	僱員	36
+phrase.china.tsv	486	固原	固原	ㄍㄨˋ ㄩㄢˊ	full_homophone	1	固原	ㄍㄨˋ ㄩㄢˊ	故園	ㄍㄨˋ ㄩㄢˊ	1	故園	2
+phrase.china.tsv	486	固原	固原	ㄍㄨˋ ㄩㄢˊ	full_homophone	1	固原	ㄍㄨˋ ㄩㄢˊ	雇員	ㄍㄨˋ ㄩㄢˊ	1	雇員	24
+phrase.china.tsv	486	固原	固原	ㄍㄨˋ ㄩㄢˊ	full_homophone	1	固原	ㄍㄨˋ ㄩㄢˊ	顧員	ㄍㄨˋ ㄩㄢˊ	1	顧員	2
+phrase.china.tsv	495	婁底	婁底	ㄌㄡˊ ㄉㄧˇ	two_character_homophone	1	婁底	ㄌㄡˊ ㄉㄧˇ	樓底下	ㄌㄡˊ ㄉㄧˇ ㄒㄧㄚˋ	1	樓底	1
+phrase.china.tsv	508	宿州	宿州	ㄙㄨˋ ㄓㄡ	two_character_homophone	1	宿州	ㄙㄨˋ ㄓㄡ	元素週期表	ㄩㄢˊ ㄙㄨˋ ㄓㄡ ㄑㄧˊ ㄅㄧㄠˇ	2	素週	1
+phrase.china.tsv	521	平涼	平涼	ㄆㄧㄥˊ ㄌㄧㄤˊ	full_homophone	1	平涼	ㄆㄧㄥˊ ㄌㄧㄤˊ	評量	ㄆㄧㄥˊ ㄌㄧㄤˊ	1	評量	110
+phrase.china.tsv	521	平涼	平涼	ㄆㄧㄥˊ ㄌㄧㄤˊ	two_character_homophone	1	平涼	ㄆㄧㄥˊ ㄌㄧㄤˊ	憑良心	ㄆㄧㄥˊ ㄌㄧㄤˊ ㄒㄧㄣ	1	憑良	11
+phrase.china.tsv	521	平涼	平涼	ㄆㄧㄥˊ ㄌㄧㄤˊ	two_character_homophone	1	平涼	ㄆㄧㄥˊ ㄌㄧㄤˊ	憑良心說	ㄆㄧㄥˊ ㄌㄧㄤˊ ㄒㄧㄣ ㄕㄨㄛ	1	憑良	3
+phrase.china.tsv	521	平涼	平涼	ㄆㄧㄥˊ ㄌㄧㄤˊ	two_character_homophone	1	平涼	ㄆㄧㄥˊ ㄌㄧㄤˊ	憑良心講	ㄆㄧㄥˊ ㄌㄧㄤˊ ㄒㄧㄣ ㄐㄧㄤˇ	1	憑良	5
+phrase.china.tsv	521	平涼	平涼	ㄆㄧㄥˊ ㄌㄧㄤˊ	two_character_homophone	1	平涼	ㄆㄧㄥˊ ㄌㄧㄤˊ	評量表	ㄆㄧㄥˊ ㄌㄧㄤˊ ㄅㄧㄠˇ	1	評量	5
+phrase.china.tsv	526	廉江	廉江	ㄌㄧㄢˊ ㄐㄧㄤ	two_character_homophone	1	廉江	ㄌㄧㄢˊ ㄐㄧㄤ	連江縣	ㄌㄧㄢˊ ㄐㄧㄤ ㄒㄧㄢˋ	1	連江	24
+phrase.china.tsv	539	忻州	忻州	ㄒㄧㄣ ㄓㄡ	two_character_homophone	1	忻州	ㄒㄧㄣ ㄓㄡ	威斯康辛州	ㄨㄟ ㄙ ㄎㄤ ㄒㄧㄣ ㄓㄡ	4	辛州	11
+phrase.china.tsv	541	恩施	恩施	ㄣ ㄕ	full_homophone	1	恩施	ㄣ ㄕ	恩師	ㄣ ㄕ	1	恩師	29
+phrase.china.tsv	543	慈溪	慈溪	ㄘˊ ㄒㄧ	two_character_homophone	1	慈溪	ㄘˊ ㄒㄧ	慈禧太后	ㄘˊ ㄒㄧ ㄊㄞˋ ㄏㄡˋ	1	慈禧	1
+phrase.china.tsv	556	新余	新余	ㄒㄧㄣ ㄩˊ	two_character_homophone	1	新余	ㄒㄧㄣ ㄩˊ	心餘力絀	ㄒㄧㄣ ㄩˊ ㄌㄧˋ ㄔㄨˋ	1	心餘	2
+phrase.china.tsv	556	新余	新余	ㄒㄧㄣ ㄩˊ	two_character_homophone	1	新余	ㄒㄧㄣ ㄩˊ	醉心於	ㄗㄨㄟˋ ㄒㄧㄣ ㄩˊ	2	心於	2
+phrase.china.tsv	557	新會	新會	ㄒㄧㄣ ㄏㄨㄟˋ	two_character_homophone	1	新會	ㄒㄧㄣ ㄏㄨㄟˋ	愛國同心會	ㄞˋ ㄍㄨㄛˊ ㄊㄨㄥˊ ㄒㄧㄣ ㄏㄨㄟˋ	4	心會	3
+phrase.china.tsv	558	新鄉	新鄉	ㄒㄧㄣ ㄒㄧㄤ	full_homophone	1	新鄉	ㄒㄧㄣ ㄒㄧㄤ	馨香	ㄒㄧㄣ ㄒㄧㄤ	1	馨香	6
+phrase.china.tsv	558	新鄉	新鄉	ㄒㄧㄣ ㄒㄧㄤ	two_character_homophone	1	新鄉	ㄒㄧㄣ ㄒㄧㄤ	埔心鄉	ㄅㄨˇ ㄒㄧㄣ ㄒㄧㄤ	2	心鄉	6
+phrase.china.tsv	558	新鄉	新鄉	ㄒㄧㄣ ㄒㄧㄤ	two_character_homophone	1	新鄉	ㄒㄧㄣ ㄒㄧㄤ	埔心鄉	ㄆㄨˇ ㄒㄧㄣ ㄒㄧㄤ	2	心鄉	6
+phrase.china.tsv	558	新鄉	新鄉	ㄒㄧㄣ ㄒㄧㄤ	two_character_homophone	1	新鄉	ㄒㄧㄣ ㄒㄧㄤ	心心相印	ㄒㄧㄣ ㄒㄧㄣ ㄒㄧㄤ ㄧㄣˋ	2	心相	2
+phrase.china.tsv	558	新鄉	新鄉	ㄒㄧㄣ ㄒㄧㄤ	two_character_homophone	1	新鄉	ㄒㄧㄣ ㄒㄧㄤ	降心相從	ㄐㄧㄤˋ ㄒㄧㄣ ㄒㄧㄤ ㄘㄨㄥˊ	2	心相	1
+phrase.china.tsv	565	晉中	晉中	ㄐㄧㄣˋ ㄓㄨㄥ	full_homophone	1	晉中	ㄐㄧㄣˋ ㄓㄨㄥ	盡忠	ㄐㄧㄣˋ ㄓㄨㄥ	1	盡忠	11
+phrase.china.tsv	565	晉中	晉中	ㄐㄧㄣˋ ㄓㄨㄥ	two_character_homophone	1	晉中	ㄐㄧㄣˋ ㄓㄨㄥ	盡忠報國	ㄐㄧㄣˋ ㄓㄨㄥ ㄅㄠˋ ㄍㄨㄛˊ	1	盡忠	2
+phrase.china.tsv	565	晉中	晉中	ㄐㄧㄣˋ ㄓㄨㄥ	two_character_homophone	1	晉中	ㄐㄧㄣˋ ㄓㄨㄥ	盡忠職守	ㄐㄧㄣˋ ㄓㄨㄥ ㄓˊ ㄕㄡˇ	1	盡忠	4
+phrase.china.tsv	566	晉城	晉城	ㄐㄧㄣˋ ㄔㄥˊ	full_homophone	1	晉城	ㄐㄧㄣˋ ㄔㄥˊ	禁城	ㄐㄧㄣˋ ㄔㄥˊ	1	禁城	13
+phrase.china.tsv	566	晉城	晉城	ㄐㄧㄣˋ ㄔㄥˊ	full_homophone	1	晉城	ㄐㄧㄣˋ ㄔㄥˊ	近程	ㄐㄧㄣˋ ㄔㄥˊ	1	近程	12
+phrase.china.tsv	566	晉城	晉城	ㄐㄧㄣˋ ㄔㄥˊ	full_homophone	1	晉城	ㄐㄧㄣˋ ㄔㄥˊ	進城	ㄐㄧㄣˋ ㄔㄥˊ	1	進城	46
+phrase.china.tsv	566	晉城	晉城	ㄐㄧㄣˋ ㄔㄥˊ	full_homophone	1	晉城	ㄐㄧㄣˋ ㄔㄥˊ	進程	ㄐㄧㄣˋ ㄔㄥˊ	1	進程	59
+phrase.china.tsv	569	普洱	普洱	ㄆㄨˇ ㄦˇ	full_homophone	1	普洱	ㄆㄨˇ ㄦˇ	普爾	ㄆㄨˇ ㄦˇ	1	普爾	8
+phrase.china.tsv	573	曲靖	曲靖	ㄑㄩ ㄐㄧㄥˋ	full_homophone	1	曲靖	ㄑㄩ ㄐㄧㄥˋ	曲徑	ㄑㄩ ㄐㄧㄥˋ	1	曲徑	5
+phrase.china.tsv	573	曲靖	曲靖	ㄑㄩ ㄐㄧㄥˋ	two_character_homophone	1	曲靖	ㄑㄩ ㄐㄧㄥˋ	曲徑通幽	ㄑㄩ ㄐㄧㄥˋ ㄊㄨㄥ ㄧㄡ	1	曲徑	1
+phrase.china.tsv	577	東營	東營	ㄉㄨㄥ ㄧㄥˊ	full_homophone	1	東營	ㄉㄨㄥ ㄧㄥˊ	東瀛	ㄉㄨㄥ ㄧㄥˊ	1	東瀛	8
+phrase.china.tsv	581	林芝	林芝	ㄌㄧㄣˊ ㄓ	full_homophone	1	林芝	ㄌㄧㄣˊ ㄓ	磷脂	ㄌㄧㄣˊ ㄓ	1	磷脂	3
+phrase.china.tsv	581	林芝	林芝	ㄌㄧㄣˊ ㄓ	two_character_homophone	1	林芝	ㄌㄧㄣˊ ㄓ	卵磷脂	ㄌㄨㄢˇ ㄌㄧㄣˊ ㄓ	2	磷脂	2
+phrase.china.tsv	586	桐鄉	桐鄉	ㄊㄨㄥˊ ㄒㄧㄤ	full_homophone	1	桐鄉	ㄊㄨㄥˊ ㄒㄧㄤ	同鄉	ㄊㄨㄥˊ ㄒㄧㄤ	1	同鄉	86
+phrase.china.tsv	586	桐鄉	桐鄉	ㄊㄨㄥˊ ㄒㄧㄤ	two_character_homophone	1	桐鄉	ㄊㄨㄥˊ ㄒㄧㄤ	同鄉會	ㄊㄨㄥˊ ㄒㄧㄤ ㄏㄨㄟˋ	1	同鄉	13
+phrase.china.tsv	587	梅州	梅州	ㄇㄟˊ ㄓㄡ	full_homophone	1	梅州	ㄇㄟˊ ㄓㄡ	湄州	ㄇㄟˊ ㄓㄡ	1	湄州	3
+phrase.china.tsv	587	梅州	梅州	ㄇㄟˊ ㄓㄡ	two_character_homophone	1	梅州	ㄇㄟˊ ㄓㄡ	湄洲島	ㄇㄟˊ ㄓㄡ ㄉㄠˇ	1	湄洲	16
+phrase.china.tsv	591	榆林	榆林	ㄩˊ ㄌㄧㄣˊ	full_homophone	1	榆林	ㄩˊ ㄌㄧㄣˊ	魚鱗	ㄩˊ ㄌㄧㄣˊ	1	魚鱗	24
+phrase.china.tsv	591	榆林	榆林	ㄩˊ ㄌㄧㄣˊ	two_character_homophone	1	榆林	ㄩˊ ㄌㄧㄣˊ	魚鱗形	ㄩˊ ㄌㄧㄣˊ ㄒㄧㄥˊ	1	魚鱗	1
+phrase.china.tsv	591	榆林	榆林	ㄩˊ ㄌㄧㄣˊ	two_character_homophone	1	榆林	ㄩˊ ㄌㄧㄣˊ	魚鱗狀	ㄩˊ ㄌㄧㄣˊ ㄓㄨㄤˋ	1	魚鱗	2
+phrase.china.tsv	591	榆林	榆林	ㄩˊ ㄌㄧㄣˊ	two_character_homophone	1	榆林	ㄩˊ ㄌㄧㄣˊ	魚鱗癬	ㄩˊ ㄌㄧㄣˊ ㄒㄧㄢˇ	1	魚鱗	17
+phrase.china.tsv	591	榆林	榆林	ㄩˊ ㄌㄧㄣˊ	two_character_homophone	1	榆林	ㄩˊ ㄌㄧㄣˊ	魚鱗石	ㄩˊ ㄌㄧㄣˊ ㄕˊ	1	魚鱗	1
+phrase.china.tsv	599	江油	江油	ㄐㄧㄤ ㄧㄡˊ	full_homophone	1	江油	ㄐㄧㄤ ㄧㄡˊ	將由	ㄐㄧㄤ ㄧㄡˊ	1	將由	101
+phrase.china.tsv	604	河源	河源	ㄏㄜˊ ㄩㄢˊ	two_character_homophone	1	河源	ㄏㄜˊ ㄩㄢˊ	頤和園	ㄧˊ ㄏㄜˊ ㄩㄢˊ	2	和園	28
+phrase.china.tsv	609	淄博	淄博	ㄗ ㄅㄛˊ	two_character_homophone	1	淄博	ㄗ ㄅㄛˊ	索爾茲伯	ㄙㄨㄛˇ ㄦˇ ㄗ ㄅㄛˊ	3	茲伯	2
+phrase.china.tsv	609	淄博	淄博	ㄗ ㄅㄛˊ	two_character_homophone	1	淄博	ㄗ ㄅㄛˊ	英姿勃發	ㄧㄥ ㄗ ㄅㄛˊ ㄈㄚ	2	姿勃	1
+phrase.china.tsv	614	渭南	渭南	ㄨㄟˋ ㄋㄢˊ	full_homophone	1	渭南	ㄨㄟˋ ㄋㄢˊ	畏難	ㄨㄟˋ ㄋㄢˊ	1	畏難	2
+phrase.china.tsv	618	溧陽	溧陽	ㄌㄧˋ ㄧㄤˊ	two_character_homophone	1	溧陽	ㄌㄧˋ ㄧㄤˊ	桃莉羊	ㄊㄠˊ ㄌㄧˋ ㄧㄤˊ	2	莉羊	4
+phrase.china.tsv	623	漠河	漠河	ㄇㄛˋ ㄏㄜˊ	full_homophone	1	漠河	ㄇㄛˋ ㄏㄜˊ	墨盒	ㄇㄛˋ ㄏㄜˊ	1	墨盒	1
+phrase.china.tsv	634	濱州	濱州	ㄅㄧㄣ ㄓㄡ	full_homophone	1	濱州	ㄅㄧㄣ ㄓㄡ	賓州	ㄅㄧㄣ ㄓㄡ	1	賓州	23
+phrase.china.tsv	639	煙臺	煙臺	ㄧㄢ ㄊㄞˊ	full_homophone	1	煙臺	ㄧㄢ ㄊㄞˊ	煙台	ㄧㄢ ㄊㄞˊ	1	煙台	4
+phrase.china.tsv	647	瑞麗	瑞麗	ㄖㄨㄟˋ ㄌㄧˋ	full_homophone	1	瑞麗	ㄖㄨㄟˋ ㄌㄧˋ	瑞利	ㄖㄨㄟˋ ㄌㄧˋ	1	瑞利	2
+phrase.china.tsv	647	瑞麗	瑞麗	ㄖㄨㄟˋ ㄌㄧˋ	full_homophone	1	瑞麗	ㄖㄨㄟˋ ㄌㄧˋ	銳利	ㄖㄨㄟˋ ㄌㄧˋ	1	銳利	37
+phrase.china.tsv	654	益陽	益陽	ㄧˋ ㄧㄤˊ	full_homophone	1	益陽	ㄧˋ ㄧㄤˊ	抑揚	ㄧˋ ㄧㄤˊ	1	抑揚	11
+phrase.china.tsv	654	益陽	益陽	ㄧˋ ㄧㄤˊ	two_character_homophone	1	益陽	ㄧˋ ㄧㄤˊ	得意揚揚	ㄉㄜˊ ㄧˋ ㄧㄤˊ ㄧㄤˊ	2	意揚	1
+phrase.china.tsv	654	益陽	益陽	ㄧˋ ㄧㄤˊ	two_character_homophone	1	益陽	ㄧˋ ㄧㄤˊ	得意洋洋	ㄉㄜˊ ㄧˋ ㄧㄤˊ ㄧㄤˊ	2	意洋	9
+phrase.china.tsv	654	益陽	益陽	ㄧˋ ㄧㄤˊ	two_character_homophone	1	益陽	ㄧˋ ㄧㄤˊ	抑揚頓挫	ㄧˋ ㄧㄤˊ ㄉㄨㄣˋ ㄘㄨㄛˋ	1	抑揚	4
+phrase.china.tsv	656	眉山	眉山	ㄇㄟˊ ㄕㄢ	full_homophone	1	眉山	ㄇㄟˊ ㄕㄢ	梅山	ㄇㄟˊ ㄕㄢ	1	梅山	5
+phrase.china.tsv	656	眉山	眉山	ㄇㄟˊ ㄕㄢ	two_character_homophone	1	眉山	ㄇㄟˊ ㄕㄢ	梅山茶	ㄇㄟˊ ㄕㄢ ㄔㄚˊ	1	梅山	1
+phrase.china.tsv	656	眉山	眉山	ㄇㄟˊ ㄕㄢ	two_character_homophone	1	眉山	ㄇㄟˊ ㄕㄢ	梅山鄉	ㄇㄟˊ ㄕㄢ ㄒㄧㄤ	1	梅山	1
+phrase.china.tsv	667	綿陽	綿陽	ㄇㄧㄢˊ ㄧㄤˊ	full_homophone	1	綿陽	ㄇㄧㄢˊ ㄧㄤˊ	綿羊	ㄇㄧㄢˊ ㄧㄤˊ	1	綿羊	38
+phrase.china.tsv	667	綿陽	綿陽	ㄇㄧㄢˊ ㄧㄤˊ	two_character_homophone	1	綿陽	ㄇㄧㄢˊ ㄧㄤˊ	綿羊奶	ㄇㄧㄢˊ ㄧㄤˊ ㄋㄞˇ	1	綿羊	1
+phrase.china.tsv	667	綿陽	綿陽	ㄇㄧㄢˊ ㄧㄤˊ	two_character_homophone	1	綿陽	ㄇㄧㄢˊ ㄧㄤˊ	綿羊油	ㄇㄧㄢˊ ㄧㄤˊ ㄧㄡˊ	1	綿羊	2
+phrase.china.tsv	669	聊城	聊城	ㄌㄧㄠˊ ㄔㄥˊ	full_homophone	1	聊城	ㄌㄧㄠˊ ㄔㄥˊ	療程	ㄌㄧㄠˊ ㄔㄥˊ	1	療程	16
+phrase.china.tsv	679	茂名	茂名	ㄇㄠˋ ㄇㄧㄥˊ	full_homophone	1	茂名	ㄇㄠˋ ㄇㄧㄥˊ	冒名	ㄇㄠˋ ㄇㄧㄥˊ	1	冒名	7
+phrase.china.tsv	679	茂名	茂名	ㄇㄠˋ ㄇㄧㄥˊ	two_character_homophone	1	茂名	ㄇㄠˋ ㄇㄧㄥˊ	冒名頂替	ㄇㄠˋ ㄇㄧㄥˊ ㄉㄧㄥˇ ㄊㄧˋ	1	冒名	2
+phrase.china.tsv	683	菏澤	菏澤	ㄏㄜˊ ㄗㄜˊ	two_character_homophone	1	菏澤	ㄏㄜˊ ㄗㄜˊ	合則兩利	ㄏㄜˊ ㄗㄜˊ ㄌㄧㄤˇ ㄌㄧˋ	1	合則	2
+phrase.china.tsv	703	辛集	辛集	ㄒㄧㄣ ㄐㄧˊ	full_homophone	1	辛集	ㄒㄧㄣ ㄐㄧˊ	心急	ㄒㄧㄣ ㄐㄧˊ	1	心急	29
+phrase.china.tsv	703	辛集	辛集	ㄒㄧㄣ ㄐㄧˊ	full_homophone	1	辛集	ㄒㄧㄣ ㄐㄧˊ	心疾	ㄒㄧㄣ ㄐㄧˊ	1	心疾	5
+phrase.china.tsv	703	辛集	辛集	ㄒㄧㄣ ㄐㄧˊ	two_character_homophone	1	辛集	ㄒㄧㄣ ㄐㄧˊ	季辛吉	ㄐㄧˋ ㄒㄧㄣ ㄐㄧˊ	2	辛吉	16
+phrase.china.tsv	703	辛集	辛集	ㄒㄧㄣ ㄐㄧˊ	two_character_homophone	1	辛集	ㄒㄧㄣ ㄐㄧˊ	心急如焚	ㄒㄧㄣ ㄐㄧˊ ㄖㄨˊ ㄈㄣˊ	1	心急	4
+phrase.china.tsv	703	辛集	辛集	ㄒㄧㄣ ㄐㄧˊ	two_character_homophone	1	辛集	ㄒㄧㄣ ㄐㄧˊ	痛心疾首	ㄊㄨㄥˋ ㄒㄧㄣ ㄐㄧˊ ㄕㄡˇ	2	心疾	5
+phrase.china.tsv	703	辛集	辛集	ㄒㄧㄣ ㄐㄧˊ	two_character_homophone	1	辛集	ㄒㄧㄣ ㄐㄧˊ	辛吉絲	ㄒㄧㄣ ㄐㄧˊ ㄙ	1	辛吉	3
+phrase.china.tsv	711	遼源	遼源	ㄌㄧㄠˊ ㄩㄢˊ	full_homophone	1	遼源	ㄌㄧㄠˊ ㄩㄢˊ	燎原	ㄌㄧㄠˊ ㄩㄢˊ	1	燎原	4
+phrase.china.tsv	711	遼源	遼源	ㄌㄧㄠˊ ㄩㄢˊ	full_homophone	1	遼源	ㄌㄧㄠˊ ㄩㄢˊ	遼原	ㄌㄧㄠˊ ㄩㄢˊ	1	遼原	1
+phrase.china.tsv	714	那曲	那曲	ㄋㄚˋ ㄑㄩ	full_homophone	1	那曲	ㄋㄚˋ ㄑㄩ	那區	ㄋㄚˋ ㄑㄩ	1	那區	3
+phrase.china.tsv	719	鄂州	鄂州	ㄜˋ ㄓㄡ	two_character_homophone	1	鄂州	ㄜˋ ㄓㄡ	俄亥俄州	ㄜˋ ㄏㄞˋ ㄜˋ ㄓㄡ	3	俄州	13
+phrase.china.tsv	724	銅仁	銅仁	ㄊㄨㄥˊ ㄖㄣˊ	full_homophone	1	銅仁	ㄊㄨㄥˊ ㄖㄣˊ	同人	ㄊㄨㄥˊ ㄖㄣˊ	1	同人	47
+phrase.china.tsv	724	銅仁	銅仁	ㄊㄨㄥˊ ㄖㄣˊ	full_homophone	1	銅仁	ㄊㄨㄥˊ ㄖㄣˊ	同仁	ㄊㄨㄥˊ ㄖㄣˊ	1	同仁	697
+phrase.china.tsv	724	銅仁	銅仁	ㄊㄨㄥˊ ㄖㄣˊ	full_homophone	1	銅仁	ㄊㄨㄥˊ ㄖㄣˊ	瞳仁	ㄊㄨㄥˊ ㄖㄣˊ	1	瞳仁	2
+phrase.china.tsv	724	銅仁	銅仁	ㄊㄨㄥˊ ㄖㄣˊ	two_character_homophone	1	銅仁	ㄊㄨㄥˊ ㄖㄣˊ	一視同仁	ㄧ ㄕˋ ㄊㄨㄥˊ ㄖㄣˊ	3	同仁	21
+phrase.china.tsv	724	銅仁	銅仁	ㄊㄨㄥˊ ㄖㄣˊ	two_character_homophone	1	銅仁	ㄊㄨㄥˊ ㄖㄣˊ	一視同仁	ㄧˊ ㄕˋ ㄊㄨㄥˊ ㄖㄣˊ	3	同仁	21
+phrase.china.tsv	724	銅仁	銅仁	ㄊㄨㄥˊ ㄖㄣˊ	two_character_homophone	1	銅仁	ㄊㄨㄥˊ ㄖㄣˊ	兒童人權	ㄦˊ ㄊㄨㄥˊ ㄖㄣˊ ㄑㄩㄢˊ	2	童人	28
+phrase.china.tsv	724	銅仁	銅仁	ㄊㄨㄥˊ ㄖㄣˊ	two_character_homophone	1	銅仁	ㄊㄨㄥˊ ㄖㄣˊ	全體同仁	ㄑㄩㄢˊ ㄊㄧˇ ㄊㄨㄥˊ ㄖㄣˊ	3	同仁	3
+phrase.china.tsv	726	銅陵	銅陵	ㄊㄨㄥˊ ㄌㄧㄥˊ	full_homophone	1	銅陵	ㄊㄨㄥˊ ㄌㄧㄥˊ	同齡	ㄊㄨㄥˊ ㄌㄧㄥˊ	1	同齡	13
+phrase.china.tsv	726	銅陵	銅陵	ㄊㄨㄥˊ ㄌㄧㄥˊ	full_homophone	1	銅陵	ㄊㄨㄥˊ ㄌㄧㄥˊ	銅鈴	ㄊㄨㄥˊ ㄌㄧㄥˊ	1	銅鈴	1
+phrase.china.tsv	735	阜新	阜新	ㄈㄨˋ ㄒㄧㄣ	full_homophone	1	阜新	ㄈㄨˋ ㄒㄧㄣ	復新	ㄈㄨˋ ㄒㄧㄣ	1	復新	7
+phrase.china.tsv	735	阜新	阜新	ㄈㄨˋ ㄒㄧㄣ	full_homophone	1	阜新	ㄈㄨˋ ㄒㄧㄣ	腹心	ㄈㄨˋ ㄒㄧㄣ	1	腹心	3
+phrase.china.tsv	735	阜新	阜新	ㄈㄨˋ ㄒㄧㄣ	full_homophone	1	阜新	ㄈㄨˋ ㄒㄧㄣ	負心	ㄈㄨˋ ㄒㄧㄣ	1	負心	7
+phrase.china.tsv	735	阜新	阜新	ㄈㄨˋ ㄒㄧㄣ	full_homophone	1	阜新	ㄈㄨˋ ㄒㄧㄣ	負薪	ㄈㄨˋ ㄒㄧㄣ	1	負薪	1
+phrase.china.tsv	735	阜新	阜新	ㄈㄨˋ ㄒㄧㄣ	two_character_homophone	1	阜新	ㄈㄨˋ ㄒㄧㄣ	負心漢	ㄈㄨˋ ㄒㄧㄣ ㄏㄢˋ	1	負心	3
+phrase.china.tsv	736	阜陽	阜陽	ㄈㄨˋ ㄧㄤˊ	full_homophone	1	阜陽	ㄈㄨˋ ㄧㄤˊ	富陽	ㄈㄨˋ ㄧㄤˊ	1	富陽	3
+phrase.china.tsv	760	高州	高州	ㄍㄠ ㄓㄡ	two_character_homophone	1	高州	ㄍㄠ ㄓㄡ	高周波	ㄍㄠ ㄓㄡ ㄅㄛ	1	高周	1
+phrase.china.tsv	760	高州	高州	ㄍㄠ ㄓㄡ	two_character_homophone	1	高州	ㄍㄠ ㄓㄡ	高周波	ㄍㄠ ㄓㄡ ㄆㄛ	1	高周	1
+phrase.china.tsv	768	黑河	黑河	ㄏㄟ ㄏㄜˊ	full_homophone	1	黑河	ㄏㄟ ㄏㄜˊ	黑盒	ㄏㄟ ㄏㄜˊ	1	黑盒	69
+phrase.china.tsv	768	黑河	黑河	ㄏㄟ ㄏㄜˊ	full_homophone	1	黑河	ㄏㄟ ㄏㄜˊ	黑褐	ㄏㄟ ㄏㄜˊ	1	黑褐	11
+phrase.china.tsv	768	黑河	黑河	ㄏㄟ ㄏㄜˊ	two_character_homophone	1	黑河	ㄏㄟ ㄏㄜˊ	黑盒子	ㄏㄟ ㄏㄜˊ ㄗ˙	1	黑盒	68
+phrase.china.tsv	768	黑河	黑河	ㄏㄟ ㄏㄜˊ	two_character_homophone	1	黑河	ㄏㄟ ㄏㄜˊ	黑褐色	ㄏㄟ ㄏㄜˊ ㄙㄜˋ	1	黑褐	11
+phrase.china.tsv	848	浦西	浦西	ㄆㄨˇ ㄒㄧ	two_character_homophone	1	浦西	ㄆㄨˇ ㄒㄧ	普希金	ㄆㄨˇ ㄒㄧ ㄐㄧㄣ	1	普希	12
+phrase.china.tsv	1018	石路	石路	ㄕˊ ㄌㄨˋ	full_homophone	1	石路	ㄕˊ ㄌㄨˋ	十路	ㄕˊ ㄌㄨˋ	1	十路	3
+phrase.china.tsv	1018	石路	石路	ㄕˊ ㄌㄨˋ	full_homophone	1	石路	ㄕˊ ㄌㄨˋ	實錄	ㄕˊ ㄌㄨˋ	1	實錄	63
+phrase.china.tsv	1216	石林	石林	ㄕˊ ㄌㄧㄣˊ	full_homophone	1	石林	ㄕˊ ㄌㄧㄣˊ	十鄰	ㄕˊ ㄌㄧㄣˊ	1	十鄰	2
+phrase.china.tsv	1226	秭歸	秭歸	ㄗˇ ㄍㄨㄟ	full_homophone	1	秭歸	ㄗˇ ㄍㄨㄟ	子規	ㄗˇ ㄍㄨㄟ	1	子規	6
+phrase.china.tsv	1226	秭歸	秭歸	ㄗˇ ㄍㄨㄟ	two_character_homophone	1	秭歸	ㄗˇ ㄍㄨㄟ	子規鳥	ㄗˇ ㄍㄨㄟ ㄋㄧㄠˇ	1	子規	1
+phrase.china.tsv	1383	嘮嘮	嘮嘮	ㄌㄠˊ ㄌㄠˊ	full_homophone	1	嘮嘮	ㄌㄠˊ ㄌㄠˊ	牢牢	ㄌㄠˊ ㄌㄠˊ	1	牢牢	37
+phrase.china.tsv	1417	懵了	懵了	ㄇㄥˇ ㄌㄜ˙	two_character_homophone	1	懵了	ㄇㄥˇ ㄌㄜ˙	太猛了	ㄊㄞˋ ㄇㄥˇ ㄌㄜ˙	2	猛了	15
+phrase.china.tsv	1441	沒戲	沒戲	ㄇㄟˊ ㄒㄧˋ	two_character_homophone	1	沒戲	ㄇㄟˊ ㄒㄧˋ	黃梅戲	ㄏㄨㄤˊ ㄇㄟˊ ㄒㄧˋ	2	梅戲	3
+phrase.china.tsv	1445	洋氣	洋氣	ㄧㄤˊ ㄑㄧˋ	full_homophone	1	洋氣	ㄧㄤˊ ㄑㄧˋ	揚棄	ㄧㄤˊ ㄑㄧˋ	1	揚棄	24
+phrase.china.tsv	1445	洋氣	洋氣	ㄧㄤˊ ㄑㄧˋ	full_homophone	1	洋氣	ㄧㄤˊ ㄑㄧˋ	陽氣	ㄧㄤˊ ㄑㄧˋ	1	陽氣	3
+phrase.china.tsv	1458	瞅瞅	瞅瞅	ㄔㄡˇ ㄔㄡˇ	full_homophone	1	瞅瞅	ㄔㄡˇ ㄔㄡˇ	醜醜	ㄔㄡˇ ㄔㄡˇ	1	醜醜	2
+phrase.china.tsv	1480	莫得	莫得	ㄇㄛˋ ㄉㄜˊ	two_character_homophone	1	莫得	ㄇㄛˋ ㄉㄜˊ	穆罕默德	ㄇㄨˋ ㄏㄢˇ ㄇㄛˋ ㄉㄜˊ	3	默德	7
+phrase.china.tsv	1499	面兒	面兒	ㄇㄧㄢˋ ㄦˊ	two_character_homophone	1	面兒	ㄇㄧㄢˋ ㄦˊ	迎面而來	ㄧㄥˊ ㄇㄧㄢˋ ㄦˊ ㄌㄞˊ	2	面而	8
+phrase.china.tsv	1510	人設	人設	ㄖㄣˊ ㄕㄜˋ	two_character_homophone	1	人設	ㄖㄣˊ ㄕㄜˋ	人社學院	ㄖㄣˊ ㄕㄜˋ ㄒㄩㄝˊ ㄩㄢˋ	1	人社	1
+phrase.china.tsv	1510	人設	人設	ㄖㄣˊ ㄕㄜˋ	two_character_homophone	1	人設	ㄖㄣˊ ㄕㄜˋ	人社院	ㄖㄣˊ ㄕㄜˋ ㄩㄢˋ	1	人社	29
+phrase.china.tsv	1510	人設	人設	ㄖㄣˊ ㄕㄜˋ	two_character_homophone	1	人設	ㄖㄣˊ ㄕㄜˋ	老人社會福利	ㄌㄠˇ ㄖㄣˊ ㄕㄜˋ ㄏㄨㄟˋ ㄈㄨˊ ㄌㄧˋ	2	人社	1
+phrase.china.tsv	1601	暴擊	暴擊	ㄅㄠˋ ㄐㄧ	two_character_homophone	1	暴擊	ㄅㄠˋ ㄐㄧ	發報機	ㄈㄚ ㄅㄠˋ ㄐㄧ	2	報機	6
+phrase.china.tsv	1645	社死	社死	ㄕㄜˋ ㄙˇ	full_homophone	1	社死	ㄕㄜˋ ㄙˇ	射死	ㄕㄜˋ ㄙˇ	1	射死	4
+phrase.china.tsv	1705	錘了	錘了	ㄔㄨㄟˊ ㄌㄜ˙	full_homophone	1	錘了	ㄔㄨㄟˊ ㄌㄜ˙	垂了	ㄔㄨㄟˊ ㄌㄜ˙	1	垂了	1
+phrase.china.tsv	1705	錘了	錘了	ㄔㄨㄟˊ ㄌㄜ˙	two_character_homophone	1	錘了	ㄔㄨㄟˊ ㄌㄜ˙	垂了下來	ㄔㄨㄟˊ ㄌㄜ˙ ㄒㄧㄚˋ ㄌㄞˊ	1	垂了	1
+phrase.china.tsv	1719	顏值	顏值	ㄧㄢˊ ㄓˊ	two_character_homophone	1	顏值	ㄧㄢˊ ㄓˊ	玄武岩質	ㄒㄩㄢˊ ㄨˇ ㄧㄢˊ ㄓˊ	3	岩質	2
+phrase.china.tsv	1719	顏值	顏值	ㄧㄢˊ ㄓˊ	two_character_homophone	1	顏值	ㄧㄢˊ ㄓˊ	花崗岩質	ㄏㄨㄚ ㄍㄤ ㄧㄢˊ ㄓˊ	3	岩質	1
+phrase.china.tsv	1761	充值	充值	ㄔㄨㄥ ㄓˊ	two_character_homophone	1	充值	ㄔㄨㄥ ㄓˊ	橫衝直撞	ㄏㄥˊ ㄔㄨㄥ ㄓˊ ㄓㄨㄤˋ	2	衝直	13
+phrase.china.tsv	1761	充值	充值	ㄔㄨㄥ ㄓˊ	two_character_homophone	1	充值	ㄔㄨㄥ ㄓˊ	橫衝直闖	ㄏㄥˊ ㄔㄨㄥ ㄓˊ ㄔㄨㄤˇ	2	衝直	2
+phrase.china.tsv	1775	冷庫	冷庫	ㄌㄥˇ ㄎㄨˋ	full_homophone	1	冷庫	ㄌㄥˇ ㄎㄨˋ	冷酷	ㄌㄥˇ ㄎㄨˋ	1	冷酷	45
+phrase.china.tsv	1775	冷庫	冷庫	ㄌㄥˇ ㄎㄨˋ	two_character_homophone	1	冷庫	ㄌㄥˇ ㄎㄨˋ	冷酷無情	ㄌㄥˇ ㄎㄨˋ ㄨˊ ㄑㄧㄥˊ	1	冷酷	2
+phrase.china.tsv	1777	到付	到付	ㄉㄠˋ ㄈㄨˋ	two_character_homophone	1	到付	ㄉㄠˋ ㄈㄨˋ	重蹈覆轍	ㄔㄨㄥˊ ㄉㄠˋ ㄈㄨˋ ㄔㄜˋ	2	蹈覆	20
+phrase.china.tsv	1820	寬帶	寬帶	ㄎㄨㄢ ㄉㄞˋ	full_homophone	1	寬帶	ㄎㄨㄢ ㄉㄞˋ	寬待	ㄎㄨㄢ ㄉㄞˋ	1	寬待	4
+phrase.china.tsv	1876	月供	月供	ㄩㄝˋ ㄍㄨㄥ	full_homophone	1	月供	ㄩㄝˋ ㄍㄨㄥ	月宮	ㄩㄝˋ ㄍㄨㄥ	1	月宮	7
+phrase.china.tsv	1876	月供	月供	ㄩㄝˋ ㄍㄨㄥ	full_homophone	1	月供	ㄩㄝˋ ㄍㄨㄥ	月工	ㄩㄝˋ ㄍㄨㄥ	1	月工	4
+phrase.china.tsv	1876	月供	月供	ㄩㄝˋ ㄍㄨㄥ	full_homophone	1	月供	ㄩㄝˋ ㄍㄨㄥ	樂工	ㄩㄝˋ ㄍㄨㄥ	1	樂工	34
+phrase.china.tsv	1880	查分	查分	ㄔㄚˊ ㄈㄣ	two_character_homophone	1	查分	ㄔㄚˊ ㄈㄣ	兒茶酚	ㄦˊ ㄔㄚˊ ㄈㄣ	2	茶酚	1
+phrase.china.tsv	1902	物業	物業	ㄨˋ ㄧㄝˋ	two_character_homophone	1	物業	ㄨˋ ㄧㄝˋ	服務業	ㄈㄨˊ ㄨˋ ㄧㄝˋ	2	務業	265
+phrase.china.tsv	1902	物業	物業	ㄨˋ ㄧㄝˋ	two_character_homophone	1	物業	ㄨˋ ㄧㄝˋ	網路服務業	ㄨㄤˇ ㄌㄨˋ ㄈㄨˊ ㄨˋ ㄧㄝˋ	4	務業	7
+phrase.china.tsv	1915	研一	研一	ㄧㄢˊ ㄧ	two_character_homophone	1	研一	ㄧㄢˊ ㄧ	一言一行	ㄧ ㄧㄢˊ ㄧ ㄒㄧㄥˊ	2	言一	6
+phrase.china.tsv	1915	研一	研一	ㄧㄢˊ ㄧ	two_character_homophone	1	研一	ㄧㄢˊ ㄧ	一言一行	ㄧˋ ㄧㄢˊ ㄧ ㄒㄧㄥˊ	2	言一	6
+phrase.china.tsv	1976	轉賬	轉賬	ㄓㄨㄢˇ ㄓㄤˋ	full_homophone	1	轉賬	ㄓㄨㄢˇ ㄓㄤˋ	轉帳	ㄓㄨㄢˇ ㄓㄤˋ	1	轉帳	50
+phrase.china.tsv	2011	首付	首付	ㄕㄡˇ ㄈㄨˋ	full_homophone	1	首付	ㄕㄡˇ ㄈㄨˋ	首富	ㄕㄡˇ ㄈㄨˋ	1	首富	6
+phrase.china.tsv	2027	代駕	代駕	ㄉㄞˋ ㄐㄧㄚˋ	full_homophone	1	代駕	ㄉㄞˋ ㄐㄧㄚˋ	代價	ㄉㄞˋ ㄐㄧㄚˋ	1	代價	321
+phrase.china.tsv	2027	代駕	代駕	ㄉㄞˋ ㄐㄧㄚˋ	full_homophone	1	代駕	ㄉㄞˋ ㄐㄧㄚˋ	待嫁	ㄉㄞˋ ㄐㄧㄚˋ	1	待嫁	1
+phrase.china.tsv	2027	代駕	代駕	ㄉㄞˋ ㄐㄧㄚˋ	two_character_homophone	1	代駕	ㄉㄞˋ ㄐㄧㄚˋ	待價而沽	ㄉㄞˋ ㄐㄧㄚˋ ㄦˊ ㄍㄨ	1	待價	2
+phrase.china.tsv	2044	合乘	合乘	ㄏㄜˊ ㄔㄥˊ	full_homophone	1	合乘	ㄏㄜˊ ㄔㄥˊ	合成	ㄏㄜˊ ㄔㄥˊ	1	合成	245
+phrase.china.tsv	2044	合乘	合乘	ㄏㄜˊ ㄔㄥˊ	two_character_homophone	1	合乘	ㄏㄜˊ ㄔㄥˊ	化學合成	ㄏㄨㄚˋ ㄒㄩㄝˊ ㄏㄜˊ ㄔㄥˊ	3	合成	3
+phrase.china.tsv	2044	合乘	合乘	ㄏㄜˊ ㄔㄥˊ	two_character_homophone	1	合乘	ㄏㄜˊ ㄔㄥˊ	合成橡膠	ㄏㄜˊ ㄔㄥˊ ㄒㄧㄤˋ ㄐㄧㄠ	1	合成	1
+phrase.china.tsv	2044	合乘	合乘	ㄏㄜˊ ㄔㄥˊ	two_character_homophone	1	合乘	ㄏㄜˊ ㄔㄥˊ	合成物	ㄏㄜˊ ㄔㄥˊ ㄨˋ	1	合成	2
+phrase.china.tsv	2044	合乘	合乘	ㄏㄜˊ ㄔㄥˊ	two_character_homophone	1	合乘	ㄏㄜˊ ㄔㄥˊ	合成體	ㄏㄜˊ ㄔㄥˊ ㄊㄧˇ	1	合成	1
+phrase.china.tsv	2044	合乘	合乘	ㄏㄜˊ ㄔㄥˊ	two_character_homophone	1	合乘	ㄏㄜˊ ㄔㄥˊ	有機合成	ㄧㄡˇ ㄐㄧ ㄏㄜˊ ㄔㄥˊ	3	合成	2
+phrase.china.tsv	2044	合乘	合乘	ㄏㄜˊ ㄔㄥˊ	two_character_homophone	1	合乘	ㄏㄜˊ ㄔㄥˊ	組合成	ㄗㄨˇ ㄏㄜˊ ㄔㄥˊ	2	合成	33
+phrase.china.tsv	2091	無座	無座	ㄨˊ ㄗㄨㄛˋ	two_character_homophone	1	無座	ㄨˊ ㄗㄨㄛˋ	吳作人	ㄨˊ ㄗㄨㄛˋ ㄖㄣˊ	1	吳作	3
+phrase.china.tsv	2091	無座	無座	ㄨˊ ㄗㄨㄛˋ	two_character_homophone	1	無座	ㄨˊ ㄗㄨㄛˋ	吳作棟	ㄨˊ ㄗㄨㄛˋ ㄉㄨㄥˋ	1	吳作	10
+phrase.china.tsv	2131	車檢	車檢	ㄔㄜ ㄐㄧㄢˇ	two_character_homophone	1	車檢	ㄔㄜ ㄐㄧㄢˇ	輕車簡從	ㄑㄧㄥ ㄔㄜ ㄐㄧㄢˇ ㄗㄨㄥˋ	2	車簡	2
+phrase.china.tsv	2146	違停	違停	ㄨㄟˊ ㄊㄧㄥˊ	two_character_homophone	1	違停	ㄨㄟˊ ㄊㄧㄥˊ	陳為廷	ㄔㄣˊ ㄨㄟˊ ㄊㄧㄥˊ	2	為廷	26
+phrase.china.tsv	2151	限行	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	full_homophone	1	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	現形	ㄒㄧㄢˋ ㄒㄧㄥˊ	1	現形	27
+phrase.china.tsv	2151	限行	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	full_homophone	1	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	現行	ㄒㄧㄢˋ ㄒㄧㄥˊ	1	現行	510
+phrase.china.tsv	2151	限行	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	full_homophone	1	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	線型	ㄒㄧㄢˋ ㄒㄧㄥˊ	1	線型	46
+phrase.china.tsv	2151	限行	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	full_homophone	1	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	線形	ㄒㄧㄢˋ ㄒㄧㄥˊ	1	線形	9
+phrase.china.tsv	2151	限行	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	two_character_homophone	1	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	流線型	ㄌㄧㄡˊ ㄒㄧㄢˋ ㄒㄧㄥˊ	2	線型	7
+phrase.china.tsv	2151	限行	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	two_character_homophone	1	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	現行法	ㄒㄧㄢˋ ㄒㄧㄥˊ ㄈㄚˇ	1	現行	35
+phrase.china.tsv	2151	限行	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	two_character_homophone	1	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	現行法令	ㄒㄧㄢˋ ㄒㄧㄥˊ ㄈㄚˇ ㄌㄧㄥˋ	1	現行	11
+phrase.china.tsv	2151	限行	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	two_character_homophone	1	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	現行犯	ㄒㄧㄢˋ ㄒㄧㄥˊ ㄈㄢˋ	1	現行	8
+phrase.china.tsv	2151	限行	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	two_character_homophone	1	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	表現型	ㄅㄧㄠˇ ㄒㄧㄢˋ ㄒㄧㄥˊ	2	現型	1
+phrase.china.tsv	2151	限行	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	two_character_homophone	1	限行	ㄒㄧㄢˋ ㄒㄧㄥˊ	表現形	ㄅㄧㄠˇ ㄒㄧㄢˋ ㄒㄧㄥˊ	2	現形	14
+phrase.china.tsv	2156	電耗	電耗	ㄉㄧㄢˋ ㄏㄠˋ	full_homophone	1	電耗	ㄉㄧㄢˋ ㄏㄠˋ	店號	ㄉㄧㄢˋ ㄏㄠˋ	1	店號	4
+phrase.china.tsv	2185	光遇	光遇	ㄍㄨㄤ ㄩˋ	two_character_homophone	1	光遇	ㄍㄨㄤ ㄩˋ	日光浴	ㄖˋ ㄍㄨㄤ ㄩˋ	2	光浴	15
+phrase.china.tsv	2221	微博	微博	ㄨㄟˊ ㄅㄛˊ	full_homophone	1	微博	ㄨㄟˊ ㄅㄛˊ	微薄	ㄨㄟˊ ㄅㄛˊ	1	微薄	42
+phrase.china.tsv	2221	微博	微博	ㄨㄟˊ ㄅㄛˊ	full_homophone	1	微博	ㄨㄟˊ ㄅㄛˊ	韋伯	ㄨㄟˊ ㄅㄛˊ	1	韋伯	26
+phrase.china.tsv	2221	微博	微博	ㄨㄟˊ ㄅㄛˊ	two_character_homophone	1	微博	ㄨㄟˊ ㄅㄛˊ	洛伊韋伯	ㄌㄨㄛˋ ㄧ ㄨㄟˊ ㄅㄛˊ	3	韋伯	2
+phrase.china.tsv	2243	易車	易車	ㄧˋ ㄔㄜ	full_homophone	1	易車	ㄧˋ ㄔㄜ	一車	ㄧˋ ㄔㄜ	1	一車	22
+phrase.china.tsv	2243	易車	易車	ㄧˋ ㄔㄜ	two_character_homophone	1	易車	ㄧˋ ㄔㄜ	一車子	ㄧˋ ㄔㄜ ㄗ˙	1	一車	1
+phrase.china.tsv	2277	盒馬	盒馬	ㄏㄜˊ ㄇㄚˇ	full_homophone	1	盒馬	ㄏㄜˊ ㄇㄚˇ	河馬	ㄏㄜˊ ㄇㄚˇ	1	河馬	13
+phrase.china.tsv	2277	盒馬	盒馬	ㄏㄜˊ ㄇㄚˇ	full_homophone	1	盒馬	ㄏㄜˊ ㄇㄚˇ	荷馬	ㄏㄜˊ ㄇㄚˇ	1	荷馬	24
+phrase.china.tsv	2277	盒馬	盒馬	ㄏㄜˊ ㄇㄚˇ	two_character_homophone	1	盒馬	ㄏㄜˊ ㄇㄚˇ	奧克拉荷馬	ㄠˋ ㄎㄜˋ ㄌㄚ ㄏㄜˊ ㄇㄚˇ	4	荷馬	17
+phrase.china.tsv	2277	盒馬	盒馬	ㄏㄜˊ ㄇㄚˇ	two_character_homophone	1	盒馬	ㄏㄜˊ ㄇㄚˇ	奧克拉荷馬州	ㄠˋ ㄎㄜˋ ㄌㄚ ㄏㄜˊ ㄇㄚˇ ㄓㄡ	4	荷馬	1
+phrase.china.tsv	2277	盒馬	盒馬	ㄏㄜˊ ㄇㄚˇ	two_character_homophone	1	盒馬	ㄏㄜˊ ㄇㄚˇ	奧克拉荷馬市	ㄠˋ ㄎㄜˋ ㄌㄚ ㄏㄜˊ ㄇㄚˇ ㄕˋ	4	荷馬	11
+phrase.china.tsv	2279	知乎	知乎	ㄓ ㄏㄨ	two_character_homophone	1	知乎	ㄓ ㄏㄨ	之乎者也	ㄓ ㄏㄨ ㄓㄜˇ ㄧㄝˇ	1	之乎	3
+phrase.china.tsv	2284	禁言	禁言	ㄐㄧㄣˋ ㄧㄢˊ	full_homophone	1	禁言	ㄐㄧㄣˋ ㄧㄢˊ	進言	ㄐㄧㄣˋ ㄧㄢˊ	1	進言	1
+phrase.china.tsv	2303	聯網	聯網	ㄌㄧㄢˊ ㄨㄤˇ	two_character_homophone	1	聯網	ㄌㄧㄢˊ ㄨㄤˇ	互連網	ㄏㄨˋ ㄌㄧㄢˊ ㄨㄤˇ	2	連網	1
+phrase.china.tsv	2333	閒魚	閒魚	ㄒㄧㄢˊ ㄩˊ	full_homophone	1	閒魚	ㄒㄧㄢˊ ㄩˊ	賢愚	ㄒㄧㄢˊ ㄩˊ	1	賢愚	2
+phrase.china.tsv	2333	閒魚	閒魚	ㄒㄧㄢˊ ㄩˊ	full_homophone	1	閒魚	ㄒㄧㄢˊ ㄩˊ	鹹魚	ㄒㄧㄢˊ ㄩˊ	1	鹹魚	17
+phrase.china.tsv	2333	閒魚	閒魚	ㄒㄧㄢˊ ㄩˊ	two_character_homophone	1	閒魚	ㄒㄧㄢˊ ㄩˊ	鹹魚翻生	ㄒㄧㄢˊ ㄩˊ ㄈㄢ ㄕㄥ	1	鹹魚	1
+phrase.china.tsv	2333	閒魚	閒魚	ㄒㄧㄢˊ ㄩˊ	two_character_homophone	1	閒魚	ㄒㄧㄢˊ ㄩˊ	鹹魚翻身	ㄒㄧㄢˊ ㄩˊ ㄈㄢ ㄕㄣ	1	鹹魚	4
+phrase.china.tsv	2363	乾鍋	乾鍋	ㄍㄢ ㄍㄨㄛ	full_homophone	1	乾鍋	ㄍㄢ ㄍㄨㄛ	坩堝	ㄍㄢ ㄍㄨㄛ	1	坩堝	1
+phrase.china.tsv	2397	奶黃包	奶黃包	ㄋㄞˇ ㄏㄨㄤˊ ㄅㄠ	full_homophone	1	奶黃包	ㄋㄞˇ ㄏㄨㄤˊ ㄅㄠ	奶皇包	ㄋㄞˇ ㄏㄨㄤˊ ㄅㄠ	1	奶皇包	1
+phrase.china.tsv	2405	小面	小面	ㄒㄧㄠˇ ㄇㄧㄢˋ	two_character_homophone	1	小面	ㄒㄧㄠˇ ㄇㄧㄢˋ	小麵包	ㄒㄧㄠˇ ㄇㄧㄢˋ ㄅㄠ	1	小麵	2
+phrase.china.tsv	2427	早茶	早茶	ㄗㄠˇ ㄔㄚˊ	two_character_homophone	1	早茶	ㄗㄠˇ ㄔㄚˊ	紅棗茶	ㄏㄨㄥˊ ㄗㄠˇ ㄔㄚˊ	2	棗茶	1
+phrase.china.tsv	2461	湘菜	湘菜	ㄒㄧㄤ ㄘㄞˋ	full_homophone	1	湘菜	ㄒㄧㄤ ㄘㄞˋ	香菜	ㄒㄧㄤ ㄘㄞˋ	1	香菜	6
+phrase.china.tsv	2486	焦圈	焦圈	ㄐㄧㄠ ㄑㄩㄢ	full_homophone	1	焦圈	ㄐㄧㄠ ㄑㄩㄢ	膠圈	ㄐㄧㄠ ㄑㄩㄢ	1	膠圈	1
+phrase.china.tsv	2486	焦圈	焦圈	ㄐㄧㄠ ㄑㄩㄢ	two_character_homophone	1	焦圈	ㄐㄧㄠ ㄑㄩㄢ	社交圈	ㄕㄜˋ ㄐㄧㄠ ㄑㄩㄢ	2	交圈	4
+phrase.china.tsv	2567	醬鴨	醬鴨	ㄐㄧㄤˋ ㄧㄚ	full_homophone	1	醬鴨	ㄐㄧㄤˋ ㄧㄚ	降壓	ㄐㄧㄤˋ ㄧㄚ	1	降壓	1
+phrase.china.tsv	2571	鏡糕	鏡糕	ㄐㄧㄥˋ ㄍㄠ	two_character_homophone	1	鏡糕	ㄐㄧㄥˋ ㄍㄠ	明鏡高懸	ㄇㄧㄥˊ ㄐㄧㄥˋ ㄍㄠ ㄒㄩㄢˊ	2	鏡高	1
+phrase.china.tsv	2593	魯菜	魯菜	ㄌㄨˇ ㄘㄞˋ	full_homophone	1	魯菜	ㄌㄨˇ ㄘㄞˋ	滷菜	ㄌㄨˇ ㄘㄞˋ	1	滷菜	1
+phrase.china.tsv	2598	鹵麵	鹵麵	ㄌㄨˇ ㄇㄧㄢˋ	two_character_homophone	1	鹵麵	ㄌㄨˇ ㄇㄧㄢˋ	大滷麵	ㄉㄚˋ ㄌㄨˇ ㄇㄧㄢˋ	2	滷麵	1
+phrase.china.tsv	2658	伊利	伊利	ㄧ ㄌㄧˋ	full_homophone	1	伊利	ㄧ ㄌㄧˋ	一例	ㄧ ㄌㄧˋ	1	一例	40
+phrase.china.tsv	2658	伊利	伊利	ㄧ ㄌㄧˋ	full_homophone	1	伊利	ㄧ ㄌㄧˋ	一粒	ㄧ ㄌㄧˋ	1	一粒	24
+phrase.china.tsv	2658	伊利	伊利	ㄧ ㄌㄧˋ	full_homophone	1	伊利	ㄧ ㄌㄧˋ	依例	ㄧ ㄌㄧˋ	1	依例	4
+phrase.china.tsv	2658	伊利	伊利	ㄧ ㄌㄧˋ	two_character_homophone	1	伊利	ㄧ ㄌㄧˋ	伊莉沙白二世	ㄧ ㄌㄧˋ ㄕㄚ ㄅㄞˊ ㄦˋ ㄕˋ	1	伊莉	2
+phrase.china.tsv	2658	伊利	伊利	ㄧ ㄌㄧˋ	two_character_homophone	1	伊利	ㄧ ㄌㄧˋ	伊莉莎白	ㄧ ㄌㄧˋ ㄕㄚ ㄅㄞˊ	1	伊莉	21
+phrase.china.tsv	2658	伊利	伊利	ㄧ ㄌㄧˋ	two_character_homophone	1	伊利	ㄧ ㄌㄧˋ	依利莎白港	ㄧ ㄌㄧˋ ㄕㄚ ㄅㄞˊ ㄍㄤˇ	1	依利	1
+phrase.china.tsv	2658	伊利	伊利	ㄧ ㄌㄧˋ	two_character_homophone	1	伊利	ㄧ ㄌㄧˋ	依利諾	ㄧ ㄌㄧˋ ㄋㄨㄛˋ	1	依利	1
+phrase.china.tsv	2670	古茗	古茗	ㄍㄨˇ ㄇㄧㄥˊ	full_homophone	1	古茗	ㄍㄨˇ ㄇㄧㄥˊ	古名	ㄍㄨˇ ㄇㄧㄥˊ	1	古名	7
+phrase.china.tsv	2670	古茗	古茗	ㄍㄨˇ ㄇㄧㄥˊ	two_character_homophone	1	古茗	ㄍㄨˇ ㄇㄧㄥˊ	刻骨銘心	ㄎㄜˋ ㄍㄨˇ ㄇㄧㄥˊ ㄒㄧㄣ	2	骨銘	10
+phrase.china.tsv	2670	古茗	古茗	ㄍㄨˇ ㄇㄧㄥˊ	two_character_homophone	1	古茗	ㄍㄨˇ ㄇㄧㄥˊ	鏤骨銘心	ㄌㄡˋ ㄍㄨˇ ㄇㄧㄥˊ ㄒㄧㄣ	2	骨銘	1
+phrase.china.tsv	2681	大疆	大疆	ㄉㄚˋ ㄐㄧㄤ	full_homophone	1	大疆	ㄉㄚˋ ㄐㄧㄤ	大江	ㄉㄚˋ ㄐㄧㄤ	1	大江	38
+phrase.china.tsv	2681	大疆	大疆	ㄉㄚˋ ㄐㄧㄤ	two_character_homophone	1	大疆	ㄉㄚˋ ㄐㄧㄤ	大將軍	ㄉㄚˋ ㄐㄧㄤ ㄐㄩㄣ	1	大將	2
+phrase.china.tsv	2681	大疆	大疆	ㄉㄚˋ ㄐㄧㄤ	two_character_homophone	1	大疆	ㄉㄚˋ ㄐㄧㄤ	大江南北	ㄉㄚˋ ㄐㄧㄤ ㄋㄢˊ ㄅㄟˇ	1	大江	4
+phrase.china.tsv	2681	大疆	大疆	ㄉㄚˋ ㄐㄧㄤ	two_character_homophone	1	大疆	ㄉㄚˋ ㄐㄧㄤ	大江大海	ㄉㄚˋ ㄐㄧㄤ ㄉㄚˋ ㄏㄞˇ	1	大江	3
+phrase.china.tsv	2681	大疆	大疆	ㄉㄚˋ ㄐㄧㄤ	two_character_homophone	1	大疆	ㄉㄚˋ ㄐㄧㄤ	大江東去	ㄉㄚˋ ㄐㄧㄤ ㄉㄨㄥ ㄑㄩˋ	1	大江	5
+phrase.china.tsv	2712	格力	格力	ㄍㄜˊ ㄌㄧˋ	full_homophone	1	格力	ㄍㄜˊ ㄌㄧˋ	蛤蜊	ㄍㄜˊ ㄌㄧˋ	1	蛤蜊	4
+phrase.china.tsv	2712	格力	格力	ㄍㄜˊ ㄌㄧˋ	full_homophone	1	格力	ㄍㄜˊ ㄌㄧˋ	蛤蠣	ㄍㄜˊ ㄌㄧˋ	1	蛤蠣	3
+phrase.china.tsv	2712	格力	格力	ㄍㄜˊ ㄌㄧˋ	two_character_homophone	1	格力	ㄍㄜˊ ㄌㄧˋ	瑪格麗特	ㄇㄚˇ ㄍㄜˊ ㄌㄧˋ ㄊㄜˋ	2	格麗	9
+phrase.china.tsv	2712	格力	格力	ㄍㄜˊ ㄌㄧˋ	two_character_homophone	1	格力	ㄍㄜˊ ㄌㄧˋ	英格麗褒曼	ㄧㄥ ㄍㄜˊ ㄌㄧˋ ㄅㄠ ㄇㄢˋ	2	格麗	2
+phrase.china.tsv	2769	蔚來	蔚來	ㄨㄟˋ ㄌㄞˊ	full_homophone	1	蔚來	ㄨㄟˋ ㄌㄞˊ	未來	ㄨㄟˋ ㄌㄞˊ	1	未來	5002
+phrase.china.tsv	2769	蔚來	蔚來	ㄨㄟˋ ㄌㄞˊ	two_character_homophone	1	蔚來	ㄨㄟˋ ㄌㄞˊ	展望未來	ㄓㄢˇ ㄨㄤˋ ㄨㄟˋ ㄌㄞˊ	3	未來	6
+phrase.china.tsv	2769	蔚來	蔚來	ㄨㄟˋ ㄌㄞˊ	two_character_homophone	1	蔚來	ㄨㄟˋ ㄌㄞˊ	未來式	ㄨㄟˋ ㄌㄞˊ ㄕˋ	1	未來	2
+phrase.china.tsv	2769	蔚來	蔚來	ㄨㄟˋ ㄌㄞˊ	two_character_homophone	1	蔚來	ㄨㄟˋ ㄌㄞˊ	未來派	ㄨㄟˋ ㄌㄞˊ ㄆㄞˋ	1	未來	1
+phrase.china.tsv	2769	蔚來	蔚來	ㄨㄟˋ ㄌㄞˊ	two_character_homophone	1	蔚來	ㄨㄟˋ ㄌㄞˊ	未來的	ㄨㄟˋ ㄌㄞˊ ㄉㄜ˙	1	未來	372
+phrase.china.tsv	2769	蔚來	蔚來	ㄨㄟˋ ㄌㄞˊ	two_character_homophone	1	蔚來	ㄨㄟˋ ㄌㄞˊ	未來的主人翁	ㄨㄟˋ ㄌㄞˊ ㄉㄜ˙ ㄓㄨˇ ㄖㄣˊ ㄨㄥ	1	未來	2
+phrase.china.tsv	2795	順豐	順豐	ㄕㄨㄣˋ ㄈㄥ	full_homophone	1	順豐	ㄕㄨㄣˋ ㄈㄥ	順風	ㄕㄨㄣˋ ㄈㄥ	1	順風	17
+phrase.china.tsv	2795	順豐	順豐	ㄕㄨㄣˋ ㄈㄥ	two_character_homophone	1	順豐	ㄕㄨㄣˋ ㄈㄥ	一路順風	ㄧ ㄌㄨˋ ㄕㄨㄣˋ ㄈㄥ	3	順風	2
+phrase.china.tsv	2795	順豐	順豐	ㄕㄨㄣˋ ㄈㄥ	two_character_homophone	1	順豐	ㄕㄨㄣˋ ㄈㄥ	一路順風	ㄧˊ ㄌㄨˋ ㄕㄨㄣˋ ㄈㄥ	3	順風	2
+phrase.china.tsv	2795	順豐	順豐	ㄕㄨㄣˋ ㄈㄥ	two_character_homophone	1	順豐	ㄕㄨㄣˋ ㄈㄥ	順風耳	ㄕㄨㄣˋ ㄈㄥ ㄦˇ	1	順風	2
+phrase.china.tsv	2806	享界	享界	ㄒㄧㄤˇ ㄐㄧㄝˋ	full_homophone	1	享界	ㄒㄧㄤˇ ㄐㄧㄝˋ	想借	ㄒㄧㄤˇ ㄐㄧㄝˋ	1	想借	13
+phrase.china.tsv	2806	享界	享界	ㄒㄧㄤˇ ㄐㄧㄝˋ	two_character_homophone	1	享界	ㄒㄧㄤˇ ㄐㄧㄝˋ	思想界	ㄙ ㄒㄧㄤˇ ㄐㄧㄝˋ	2	想界	11
+phrase.china.tsv	2824	小度	小度	ㄒㄧㄠˇ ㄉㄨˋ	full_homophone	1	小度	ㄒㄧㄠˇ ㄉㄨˋ	小肚	ㄒㄧㄠˇ ㄉㄨˋ	1	小肚	1
+phrase.china.tsv	2824	小度	小度	ㄒㄧㄠˇ ㄉㄨˋ	two_character_homophone	1	小度	ㄒㄧㄠˇ ㄉㄨˋ	小肚子	ㄒㄧㄠˇ ㄉㄨˋ ㄗ˙	1	小肚	1
+phrase.china.tsv	2830	小鵬	小鵬	ㄒㄧㄠˇ ㄆㄥˊ	two_character_homophone	1	小鵬	ㄒㄧㄠˇ ㄆㄥˊ	小朋友	ㄒㄧㄠˇ ㄆㄥˊ ㄧㄡˇ	1	小朋	2239
+phrase.china.tsv	2830	小鵬	小鵬	ㄒㄧㄠˇ ㄆㄥˊ	two_character_homophone	1	小鵬	ㄒㄧㄠˇ ㄆㄥˊ	小朋友們	ㄒㄧㄠˇ ㄆㄥˊ ㄧㄡˇ ㄇㄣˊ	1	小朋	57
+phrase.china.tsv	2830	小鵬	小鵬	ㄒㄧㄠˇ ㄆㄥˊ	two_character_homophone	1	小鵬	ㄒㄧㄠˇ ㄆㄥˊ	小朋友們	ㄒㄧㄠˇ ㄆㄥˊ ㄧㄡˇ ㄇㄣ˙	1	小朋	57
+phrase.china.tsv	2837	愛瑪	愛瑪	ㄞˋ ㄇㄚˇ	full_homophone	1	愛瑪	ㄞˋ ㄇㄚˇ	愛馬	ㄞˋ ㄇㄚˇ	1	愛馬	3
+phrase.china.tsv	2837	愛瑪	愛瑪	ㄞˋ ㄇㄚˇ	full_homophone	1	愛瑪	ㄞˋ ㄇㄚˇ	艾瑪	ㄞˋ ㄇㄚˇ	1	艾瑪	7
+phrase.china.tsv	2839	智界	智界	ㄓˋ ㄐㄧㄝˋ	two_character_homophone	1	智界	ㄓˋ ㄐㄧㄝˋ	政治界	ㄓㄥˋ ㄓˋ ㄐㄧㄝˋ	2	治界	7
+phrase.china.tsv	2858	白象	白象	ㄅㄞˊ ㄒㄧㄤˋ	full_homophone	1	白象	ㄅㄞˊ ㄒㄧㄤˋ	白相	ㄅㄞˊ ㄒㄧㄤˋ	1	白相	8
+phrase.china.tsv	2860	真功夫	真功夫	ㄓㄣ ㄍㄨㄥ ㄈㄨ	full_homophone	1	真功夫	ㄓㄣ ㄍㄨㄥ ㄈㄨ	真工夫	ㄓㄣ ㄍㄨㄥ ㄈㄨ	1	真工夫	1
+phrase.china.tsv	2893	中傳	中傳	ㄓㄨㄥ ㄔㄨㄢˊ	full_homophone	1	中傳	ㄓㄨㄥ ㄔㄨㄢˊ	中船	ㄓㄨㄥ ㄔㄨㄢˊ	1	中船	113
+phrase.china.tsv	2920	南郵	南郵	ㄋㄢˊ ㄧㄡˊ	full_homophone	1	南郵	ㄋㄢˊ ㄧㄡˊ	南遊	ㄋㄢˊ ㄧㄡˊ	1	南遊	1
+phrase.china.tsv	2965	華農	華農	ㄏㄨㄚˊ ㄋㄨㄥˊ	two_character_homophone	1	華農	ㄏㄨㄚˊ ㄋㄨㄥˊ	露華濃	ㄌㄨˋ ㄏㄨㄚˊ ㄋㄨㄥˊ	2	華濃	3
+phrase.china.tsv	3064	湘西	湘西	ㄒㄧㄤ ㄒㄧ	full_homophone	1	湘西	ㄒㄧㄤ ㄒㄧ	相吸	ㄒㄧㄤ ㄒㄧ	1	相吸	5
+phrase.china.tsv	3064	湘西	湘西	ㄒㄧㄤ ㄒㄧ	two_character_homophone	1	湘西	ㄒㄧㄤ ㄒㄧ	異性相吸	ㄧˋ ㄒㄧㄥˋ ㄒㄧㄤ ㄒㄧ	3	相吸	2
+phrase.china.tsv	3070	臨夏	臨夏	ㄌㄧㄣˊ ㄒㄧㄚˋ	full_homophone	1	臨夏	ㄌㄧㄣˊ ㄒㄧㄚˋ	林下	ㄌㄧㄣˊ ㄒㄧㄚˋ	1	林下	25
+phrase.china.tsv	3070	臨夏	臨夏	ㄌㄧㄣˊ ㄒㄧㄚˋ	two_character_homophone	1	臨夏	ㄌㄧㄣˊ ㄒㄧㄚˋ	居高臨下	ㄐㄩ ㄍㄠ ㄌㄧㄣˊ ㄒㄧㄚˋ	3	臨下	12
+phrase.china.tsv	3074	阿壩	阿壩	ㄚ ㄅㄚˋ	full_homophone	1	阿壩	ㄚ ㄅㄚˋ	阿爸	ㄚ ㄅㄚˋ	1	阿爸	12
 phrase.chinese.tsv	12	乙正	乙正	ㄧˇ ㄓㄥˋ	two_character_homophone	1	乙正	ㄧˇ ㄓㄥˋ	陸以正	ㄌㄨˋ ㄧˇ ㄓㄥˋ	2	以正	11
 phrase.chinese.tsv	18	倒文	倒文	ㄉㄠˋ ㄨㄣˊ	full_homophone	1	倒文	ㄉㄠˋ ㄨㄣˊ	悼文	ㄉㄠˋ ㄨㄣˊ	1	悼文	2
 phrase.chinese.tsv	19	借代	借代	ㄐㄧㄝˋ ㄉㄞˋ	full_homophone	1	借代	ㄐㄧㄝˋ ㄉㄞˋ	借貸	ㄐㄧㄝˋ ㄉㄞˋ	1	借貸	98
@@ -470,6 +753,198 @@ phrase.hongkong-macao.tsv	297	手信	手信	ㄕㄡˇ ㄒㄧㄣˋ	two_character_h
 phrase.hongkong-macao.tsv	313	的士	的士	ㄉㄧˊ ㄕˋ	full_homophone	1	的士	ㄉㄧˊ ㄕˋ	敵視	ㄉㄧˊ ㄕˋ	1	敵視	12
 phrase.hongkong-macao.tsv	313	的士	的士	ㄉㄧˊ ㄕˋ	two_character_homophone	1	的士	ㄉㄧˊ ㄕˋ	迪士尼	ㄉㄧˊ ㄕˋ ㄋㄧˊ	1	迪士	85
 phrase.hongkong-macao.tsv	313	的士	的士	ㄉㄧˊ ㄕˋ	two_character_homophone	1	的士	ㄉㄧˊ ㄕˋ	迪士尼樂園	ㄉㄧˊ ㄕˋ ㄋㄧˊ ㄌㄜˋ ㄩㄢˊ	1	迪士	7
+phrase.hongkong-macao.tsv	348	坪石	坪石	ㄆㄧㄥˊ ㄕˊ	full_homophone	1	坪石	ㄆㄧㄥˊ ㄕˊ	平實	ㄆㄧㄥˊ ㄕˊ	1	平實	41
+phrase.hongkong-macao.tsv	348	坪石	坪石	ㄆㄧㄥˊ ㄕˊ	full_homophone	1	坪石	ㄆㄧㄥˊ ㄕˊ	平時	ㄆㄧㄥˊ ㄕˊ	1	平時	391
+phrase.hongkong-macao.tsv	348	坪石	坪石	ㄆㄧㄥˊ ㄕˊ	two_character_homophone	1	坪石	ㄆㄧㄥˊ ㄕˊ	平平實實	ㄆㄧㄥˊ ㄆㄧㄥˊ ㄕˊ ㄕˊ	2	平實	1
+phrase.hongkong-macao.tsv	348	坪石	坪石	ㄆㄧㄥˊ ㄕˊ	two_character_homophone	1	坪石	ㄆㄧㄥˊ ㄕˊ	真憑實據	ㄓㄣ ㄆㄧㄥˊ ㄕˊ ㄐㄩˋ	2	憑實	2
+phrase.hongkong-macao.tsv	352	大圍	大圍	ㄉㄚˋ ㄨㄟˊ	full_homophone	1	大圍	ㄉㄚˋ ㄨㄟˊ	大為	ㄉㄚˋ ㄨㄟˊ	1	大為	166
+phrase.hongkong-macao.tsv	352	大圍	大圍	ㄉㄚˋ ㄨㄟˊ	two_character_homophone	1	大圍	ㄉㄚˋ ㄨㄟˊ	寬大為懷	ㄎㄨㄢ ㄉㄚˋ ㄨㄟˊ ㄏㄨㄞˊ	2	大為	1
+phrase.hongkong-macao.tsv	354	大棠	大棠	ㄉㄚˋ ㄊㄤˊ	full_homophone	1	大棠	ㄉㄚˋ ㄊㄤˊ	大唐	ㄉㄚˋ ㄊㄤˊ	1	大唐	9
+phrase.hongkong-macao.tsv	354	大棠	大棠	ㄉㄚˋ ㄊㄤˊ	full_homophone	1	大棠	ㄉㄚˋ ㄊㄤˊ	大堂	ㄉㄚˋ ㄊㄤˊ	1	大堂	9
+phrase.hongkong-macao.tsv	365	屏山	屏山	ㄆㄧㄥˊ ㄕㄢ	two_character_homophone	1	屏山	ㄆㄧㄥˊ ㄕㄢ	太平山	ㄊㄞˋ ㄆㄧㄥˊ ㄕㄢ	2	平山	13
+phrase.hongkong-macao.tsv	365	屏山	屏山	ㄆㄧㄥˊ ㄕㄢ	two_character_homophone	1	屏山	ㄆㄧㄥˊ ㄕㄢ	太平山頂	ㄊㄞˋ ㄆㄧㄥˊ ㄕㄢ ㄉㄧㄥˇ	2	平山	1
+phrase.hongkong-macao.tsv	366	康城	康城	ㄎㄤ ㄔㄥˊ	two_character_homophone	1	康城	ㄎㄤ ㄔㄥˊ	川端康成	ㄔㄨㄢ ㄉㄨㄢ ㄎㄤ ㄔㄥˊ	3	康成	3
+phrase.hongkong-macao.tsv	373	杏花邨	杏花邨	ㄒㄧㄥˋ ㄏㄨㄚ ㄘㄨㄣ	full_homophone	1	杏花邨	ㄒㄧㄥˋ ㄏㄨㄚ ㄘㄨㄣ	杏花村	ㄒㄧㄥˋ ㄏㄨㄚ ㄘㄨㄣ	1	杏花村	1
+phrase.hongkong-macao.tsv	407	美孚	美孚	ㄇㄟˇ ㄈㄨˊ	full_homophone	1	美孚	ㄇㄟˇ ㄈㄨˊ	每幅	ㄇㄟˇ ㄈㄨˊ	1	每幅	1
+phrase.hongkong-macao.tsv	601	俾錢	俾錢	ㄅㄧˇ ㄑㄧㄢˊ	two_character_homophone	1	俾錢	ㄅㄧˇ ㄑㄧㄢˊ	這筆錢	ㄓㄜˋ ㄅㄧˇ ㄑㄧㄢˊ	2	筆錢	50
+phrase.hongkong-macao.tsv	604	傾偈	傾偈	ㄑㄧㄥ ㄐㄧˋ	full_homophone	1	傾偈	ㄑㄧㄥ ㄐㄧˋ	輕騎	ㄑㄧㄥ ㄐㄧˋ	1	輕騎	4
+phrase.hongkong-macao.tsv	604	傾偈	傾偈	ㄑㄧㄥ ㄐㄧˋ	two_character_homophone	1	傾偈	ㄑㄧㄥ ㄐㄧˋ	輕騎兵	ㄑㄧㄥ ㄐㄧˋ ㄅㄧㄥ	1	輕騎	1
+phrase.hongkong-macao.tsv	606	傾計	傾計	ㄑㄧㄥ ㄐㄧˋ	full_homophone	1	傾計	ㄑㄧㄥ ㄐㄧˋ	輕騎	ㄑㄧㄥ ㄐㄧˋ	1	輕騎	4
+phrase.hongkong-macao.tsv	606	傾計	傾計	ㄑㄧㄥ ㄐㄧˋ	two_character_homophone	1	傾計	ㄑㄧㄥ ㄐㄧˋ	輕騎兵	ㄑㄧㄥ ㄐㄧˋ ㄅㄧㄥ	1	輕騎	1
+phrase.hongkong-macao.tsv	609	冇事	冇事	ㄇㄡˇ ㄕˋ	full_homophone	1	冇事	ㄇㄡˇ ㄕˋ	某事	ㄇㄡˇ ㄕˋ	1	某事	7
+phrase.hongkong-macao.tsv	609	冇事	冇事	ㄇㄡˇ ㄕˋ	full_homophone	1	冇事	ㄇㄡˇ ㄕˋ	某市	ㄇㄡˇ ㄕˋ	1	某市	4
+phrase.hongkong-macao.tsv	633	咁啱	咁啱	ㄏㄢˊ ㄧㄢˊ	two_character_homophone	1	咁啱	ㄏㄢˊ ㄧㄢˊ	含鹽奶油	ㄏㄢˊ ㄧㄢˊ ㄋㄞˇ ㄧㄡˊ	1	含鹽	1
+phrase.hongkong-macao.tsv	633	咁啱	咁啱	ㄏㄢˊ ㄧㄢˊ	two_character_homophone	1	咁啱	ㄏㄢˊ ㄧㄢˊ	含鹽度	ㄏㄢˊ ㄧㄢˊ ㄉㄨˋ	1	含鹽	1
+phrase.hongkong-macao.tsv	634	咁夜	咁夜	ㄏㄢˊ ㄧㄝˋ	full_homophone	1	咁夜	ㄏㄢˊ ㄧㄝˋ	寒夜	ㄏㄢˊ ㄧㄝˋ	1	寒夜	15
+phrase.hongkong-macao.tsv	659	唔啱	唔啱	ㄨˊ ㄧㄢˊ	full_homophone	1	唔啱	ㄨˊ ㄧㄢˊ	無言	ㄨˊ ㄧㄢˊ	1	無言	99
+phrase.hongkong-macao.tsv	659	唔啱	唔啱	ㄨˊ ㄧㄢˊ	two_character_homophone	1	唔啱	ㄨˊ ㄧㄢˊ	啞口無言	ㄧㄚˇ ㄎㄡˇ ㄨˊ ㄧㄢˊ	3	無言	13
+phrase.hongkong-macao.tsv	659	唔啱	唔啱	ㄨˊ ㄧㄢˊ	two_character_homophone	1	唔啱	ㄨˊ ㄧㄢˊ	無言以對	ㄨˊ ㄧㄢˊ ㄧˇ ㄉㄨㄟˋ	1	無言	18
+phrase.hongkong-macao.tsv	659	唔啱	唔啱	ㄨˊ ㄧㄢˊ	two_character_homophone	1	唔啱	ㄨˊ ㄧㄢˊ	無言抗議	ㄨˊ ㄧㄢˊ ㄎㄤˋ ㄧˋ	1	無言	1
+phrase.hongkong-macao.tsv	659	唔啱	唔啱	ㄨˊ ㄧㄢˊ	two_character_homophone	1	唔啱	ㄨˊ ㄧㄢˊ	無顏以對	ㄨˊ ㄧㄢˊ ㄧˇ ㄉㄨㄟˋ	1	無顏	3
+phrase.hongkong-macao.tsv	659	唔啱	唔啱	ㄨˊ ㄧㄢˊ	two_character_homophone	1	唔啱	ㄨˊ ㄧㄢˊ	無顏見人	ㄨˊ ㄧㄢˊ ㄐㄧㄢˋ ㄖㄣˊ	1	無顏	1
+phrase.hongkong-macao.tsv	659	唔啱	唔啱	ㄨˊ ㄧㄢˊ	two_character_homophone	1	唔啱	ㄨˊ ㄧㄢˊ	無鹽奶油	ㄨˊ ㄧㄢˊ ㄋㄞˇ ㄧㄡˊ	1	無鹽	2
+phrase.hongkong-macao.tsv	659	唔啱	唔啱	ㄨˊ ㄧㄢˊ	two_character_homophone	1	唔啱	ㄨˊ ㄧㄢˊ	默默無言	ㄇㄛˋ ㄇㄛˋ ㄨˊ ㄧㄢˊ	3	無言	3
+phrase.hongkong-macao.tsv	683	啱啱	啱啱	ㄧㄢˊ ㄧㄢˊ	full_homophone	1	啱啱	ㄧㄢˊ ㄧㄢˊ	嚴嚴	ㄧㄢˊ ㄧㄢˊ	1	嚴嚴	4
+phrase.hongkong-macao.tsv	683	啱啱	啱啱	ㄧㄢˊ ㄧㄢˊ	full_homophone	1	啱啱	ㄧㄢˊ ㄧㄢˊ	岩鹽	ㄧㄢˊ ㄧㄢˊ	1	岩鹽	6
+phrase.hongkong-macao.tsv	683	啱啱	啱啱	ㄧㄢˊ ㄧㄢˊ	full_homophone	1	啱啱	ㄧㄢˊ ㄧㄢˊ	炎炎	ㄧㄢˊ ㄧㄢˊ	1	炎炎	25
+phrase.hongkong-macao.tsv	683	啱啱	啱啱	ㄧㄢˊ ㄧㄢˊ	two_character_homophone	1	啱啱	ㄧㄢˊ ㄧㄢˊ	炎炎夏日	ㄧㄢˊ ㄧㄢˊ ㄒㄧㄚˋ ㄖˋ	1	炎炎	14
+phrase.hongkong-macao.tsv	706	大佬	大佬	ㄉㄚˋ ㄌㄠˇ	full_homophone	1	大佬	ㄉㄚˋ ㄌㄠˇ	大老	ㄉㄚˋ ㄌㄠˇ	1	大老	117
+phrase.hongkong-macao.tsv	706	大佬	大佬	ㄉㄚˋ ㄌㄠˇ	two_character_homophone	1	大佬	ㄉㄚˋ ㄌㄠˇ	大老爺	ㄉㄚˋ ㄌㄠˇ ㄧㄝˊ	1	大老	5
+phrase.hongkong-macao.tsv	706	大佬	大佬	ㄉㄚˋ ㄌㄠˇ	two_character_homophone	1	大佬	ㄉㄚˋ ㄌㄠˇ	大老級	ㄉㄚˋ ㄌㄠˇ ㄐㄧˊ	1	大老	2
+phrase.hongkong-macao.tsv	706	大佬	大佬	ㄉㄚˋ ㄌㄠˇ	two_character_homophone	1	大佬	ㄉㄚˋ ㄌㄠˇ	大老鼠	ㄉㄚˋ ㄌㄠˇ ㄕㄨˇ	1	大老	3
+phrase.hongkong-macao.tsv	709	好勁	好勁	ㄏㄠˇ ㄐㄧㄣˋ	full_homophone	1	好勁	ㄏㄠˇ ㄐㄧㄣˋ	好近	ㄏㄠˇ ㄐㄧㄣˋ	1	好近	2
+phrase.hongkong-macao.tsv	711	好平	好平	ㄏㄠˇ ㄆㄧㄥˊ	full_homophone	1	好平	ㄏㄠˇ ㄆㄧㄥˊ	好評	ㄏㄠˇ ㄆㄧㄥˊ	1	好評	109
+phrase.hongkong-macao.tsv	711	好平	好平	ㄏㄠˇ ㄆㄧㄥˊ	two_character_homophone	1	好平	ㄏㄠˇ ㄆㄧㄥˊ	備受好評	ㄅㄟˋ ㄕㄡˋ ㄏㄠˇ ㄆㄧㄥˊ	3	好評	1
+phrase.hongkong-macao.tsv	711	好平	好平	ㄏㄠˇ ㄆㄧㄥˊ	two_character_homophone	1	好平	ㄏㄠˇ ㄆㄧㄥˊ	深獲好評	ㄕㄣ ㄏㄨㄛˋ ㄏㄠˇ ㄆㄧㄥˊ	3	好評	1
+phrase.hongkong-macao.tsv	719	好攰	好攰	ㄏㄠˇ ㄍㄨㄟˋ	two_character_homophone	1	好攰	ㄏㄠˇ ㄍㄨㄟˋ	好貴的	ㄏㄠˇ ㄍㄨㄟˋ ㄉㄜ˙	1	好貴	4
+phrase.hongkong-macao.tsv	729	家姐	家姐	ㄐㄧㄚ ㄐㄧㄝˇ	full_homophone	1	家姐	ㄐㄧㄚ ㄐㄧㄝˇ	家姊	ㄐㄧㄚ ㄐㄧㄝˇ	1	家姊	5
+phrase.hongkong-macao.tsv	729	家姐	家姐	ㄐㄧㄚ ㄐㄧㄝˇ	two_character_homophone	1	家姐	ㄐㄧㄚ ㄐㄧㄝˇ	最佳解	ㄗㄨㄟˋ ㄐㄧㄚ ㄐㄧㄝˇ	2	佳解	2
+phrase.hongkong-macao.tsv	745	我地	我地	ㄨㄛˇ ㄉㄧˋ	full_homophone	1	我地	ㄨㄛˇ ㄉㄧˋ	我弟	ㄨㄛˇ ㄉㄧˋ	1	我弟	45
+phrase.hongkong-macao.tsv	750	搵人	搵人	ㄨㄣˋ ㄖㄣˊ	full_homophone	1	搵人	ㄨㄣˋ ㄖㄣˊ	問人	ㄨㄣˋ ㄖㄣˊ	1	問人	18
+phrase.hongkong-macao.tsv	763	是但	是但	ㄕˋ ㄉㄢˋ	two_character_homophone	1	是但	ㄕˋ ㄉㄢˋ	信誓旦旦	ㄒㄧㄣˋ ㄕˋ ㄉㄢˋ ㄉㄢˋ	2	誓旦	12
+phrase.hongkong-macao.tsv	772	望吓	望吓	ㄨㄤˋ ㄒㄧㄚˋ	full_homophone	1	望吓	ㄨㄤˋ ㄒㄧㄚˋ	妄下	ㄨㄤˋ ㄒㄧㄚˋ	1	妄下	4
+phrase.hongkong-macao.tsv	772	望吓	望吓	ㄨㄤˋ ㄒㄧㄚˋ	two_character_homophone	1	望吓	ㄨㄤˋ ㄒㄧㄚˋ	妄下斷語	ㄨㄤˋ ㄒㄧㄚˋ ㄉㄨㄢˋ ㄩˇ	1	妄下	1
+phrase.hongkong-macao.tsv	782	畀返	畀返	ㄅㄧˋ ㄈㄢˇ	two_character_homophone	1	畀返	ㄅㄧˋ ㄈㄢˇ	物極必反	ㄨˋ ㄐㄧˊ ㄅㄧˋ ㄈㄢˇ	3	必反	1
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	full_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下	ㄉㄧˋ ㄒㄧㄚˋ	1	地下	703
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下停車場	ㄉㄧˋ ㄒㄧㄚˋ ㄊㄧㄥˊ ㄔㄜ ㄔㄤˇ	1	地下	2
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下化	ㄉㄧˋ ㄒㄧㄚˋ ㄏㄨㄚˋ	1	地下	35
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下室	ㄉㄧˋ ㄒㄧㄚˋ ㄕˋ	1	地下	87
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下層	ㄉㄧˋ ㄒㄧㄚˋ ㄘㄥˊ	1	地下	5
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下工廠	ㄉㄧˋ ㄒㄧㄚˋ ㄍㄨㄥ ㄔㄤˇ	1	地下	6
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下有知	ㄉㄧˋ ㄒㄧㄚˋ ㄧㄡˇ ㄓ	1	地下	3
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下樓	ㄉㄧˋ ㄒㄧㄚˋ ㄌㄡˊ	1	地下	5
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下水	ㄉㄧˋ ㄒㄧㄚˋ ㄕㄨㄟˇ	1	地下	111
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下水位	ㄉㄧˋ ㄒㄧㄚˋ ㄕㄨㄟˇ ㄨㄟˋ	1	地下	5
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下水源	ㄉㄧˋ ㄒㄧㄚˋ ㄕㄨㄟˇ ㄩㄢˊ	1	地下	4
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下水道	ㄉㄧˋ ㄒㄧㄚˋ ㄕㄨㄟˇ ㄉㄠˋ	1	地下	2
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下活動	ㄉㄧˋ ㄒㄧㄚˋ ㄏㄨㄛˊ ㄉㄨㄥˋ	1	地下	1
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下莖	ㄉㄧˋ ㄒㄧㄚˋ ㄐㄧㄥ	1	地下	6
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下街	ㄉㄧˋ ㄒㄧㄚˋ ㄐㄧㄝ	1	地下	16
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下軍	ㄉㄧˋ ㄒㄧㄚˋ ㄐㄩㄣ	1	地下	1
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下道	ㄉㄧˋ ㄒㄧㄚˋ ㄉㄠˋ	1	地下	19
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下錢莊	ㄉㄧˋ ㄒㄧㄚˋ ㄑㄧㄢˊ ㄓㄨㄤ	1	地下	18
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下鐵	ㄉㄧˋ ㄒㄧㄚˋ ㄊㄧㄝˇ	1	地下	35
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	地下鐵路	ㄉㄧˋ ㄒㄧㄚˋ ㄊㄧㄝˇ ㄌㄨˋ	1	地下	6
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	轉入地下	ㄓㄨㄢˇ ㄖㄨˋ ㄉㄧˋ ㄒㄧㄚˋ	3	地下	2
+phrase.hongkong-macao.tsv	788	睇下	睇下	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇下	ㄉㄧˋ ㄒㄧㄚˋ	鐵路地下化	ㄊㄧㄝˇ ㄌㄨˋ ㄉㄧˋ ㄒㄧㄚˋ ㄏㄨㄚˋ	3	地下	6
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	full_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下	ㄉㄧˋ ㄒㄧㄚˋ	1	地下	703
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下停車場	ㄉㄧˋ ㄒㄧㄚˋ ㄊㄧㄥˊ ㄔㄜ ㄔㄤˇ	1	地下	2
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下化	ㄉㄧˋ ㄒㄧㄚˋ ㄏㄨㄚˋ	1	地下	35
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下室	ㄉㄧˋ ㄒㄧㄚˋ ㄕˋ	1	地下	87
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下層	ㄉㄧˋ ㄒㄧㄚˋ ㄘㄥˊ	1	地下	5
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下工廠	ㄉㄧˋ ㄒㄧㄚˋ ㄍㄨㄥ ㄔㄤˇ	1	地下	6
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下有知	ㄉㄧˋ ㄒㄧㄚˋ ㄧㄡˇ ㄓ	1	地下	3
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下樓	ㄉㄧˋ ㄒㄧㄚˋ ㄌㄡˊ	1	地下	5
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下水	ㄉㄧˋ ㄒㄧㄚˋ ㄕㄨㄟˇ	1	地下	111
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下水位	ㄉㄧˋ ㄒㄧㄚˋ ㄕㄨㄟˇ ㄨㄟˋ	1	地下	5
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下水源	ㄉㄧˋ ㄒㄧㄚˋ ㄕㄨㄟˇ ㄩㄢˊ	1	地下	4
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下水道	ㄉㄧˋ ㄒㄧㄚˋ ㄕㄨㄟˇ ㄉㄠˋ	1	地下	2
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下活動	ㄉㄧˋ ㄒㄧㄚˋ ㄏㄨㄛˊ ㄉㄨㄥˋ	1	地下	1
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下莖	ㄉㄧˋ ㄒㄧㄚˋ ㄐㄧㄥ	1	地下	6
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下街	ㄉㄧˋ ㄒㄧㄚˋ ㄐㄧㄝ	1	地下	16
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下軍	ㄉㄧˋ ㄒㄧㄚˋ ㄐㄩㄣ	1	地下	1
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下道	ㄉㄧˋ ㄒㄧㄚˋ ㄉㄠˋ	1	地下	19
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下錢莊	ㄉㄧˋ ㄒㄧㄚˋ ㄑㄧㄢˊ ㄓㄨㄤ	1	地下	18
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下鐵	ㄉㄧˋ ㄒㄧㄚˋ ㄊㄧㄝˇ	1	地下	35
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	地下鐵路	ㄉㄧˋ ㄒㄧㄚˋ ㄊㄧㄝˇ ㄌㄨˋ	1	地下	6
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	轉入地下	ㄓㄨㄢˇ ㄖㄨˋ ㄉㄧˋ ㄒㄧㄚˋ	3	地下	2
+phrase.hongkong-macao.tsv	790	睇吓	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	two_character_homophone	1	睇吓	ㄉㄧˋ ㄒㄧㄚˋ	鐵路地下化	ㄊㄧㄝˇ ㄌㄨˋ ㄉㄧˋ ㄒㄧㄚˋ ㄏㄨㄚˋ	3	地下	6
+phrase.hongkong-macao.tsv	807	細路	細路	ㄒㄧˋ ㄌㄨˋ	full_homophone	1	細路	ㄒㄧˋ ㄌㄨˋ	戲路	ㄒㄧˋ ㄌㄨˋ	1	戲路	3
+phrase.hongkong-macao.tsv	828	講笑	講笑	ㄐㄧㄤˇ ㄒㄧㄠˋ	two_character_homophone	1	講笑	ㄐㄧㄤˇ ㄒㄧㄠˋ	蔣孝嚴	ㄐㄧㄤˇ ㄒㄧㄠˋ ㄧㄢˊ	1	蔣孝	7
+phrase.hongkong-macao.tsv	828	講笑	講笑	ㄐㄧㄤˇ ㄒㄧㄠˋ	two_character_homophone	1	講笑	ㄐㄧㄤˇ ㄒㄧㄠˋ	蔣孝文	ㄐㄧㄤˇ ㄒㄧㄠˋ ㄨㄣˊ	1	蔣孝	1
+phrase.hongkong-macao.tsv	828	講笑	講笑	ㄐㄧㄤˇ ㄒㄧㄠˋ	two_character_homophone	1	講笑	ㄐㄧㄤˇ ㄒㄧㄠˋ	蔣孝武	ㄐㄧㄤˇ ㄒㄧㄠˋ ㄨˇ	1	蔣孝	8
+phrase.hongkong-macao.tsv	829	識做	識做	ㄕˊ ㄗㄨㄛˋ	full_homophone	1	識做	ㄕˊ ㄗㄨㄛˋ	十座	ㄕˊ ㄗㄨㄛˋ	1	十座	4
+phrase.hongkong-macao.tsv	829	識做	識做	ㄕˊ ㄗㄨㄛˋ	full_homophone	1	識做	ㄕˊ ㄗㄨㄛˋ	實作	ㄕˊ ㄗㄨㄛˋ	1	實作	105
+phrase.hongkong-macao.tsv	829	識做	識做	ㄕˊ ㄗㄨㄛˋ	two_character_homophone	1	識做	ㄕˊ ㄗㄨㄛˋ	糧食作物	ㄌㄧㄤˊ ㄕˊ ㄗㄨㄛˋ ㄨˋ	2	食作	1
+phrase.hongkong-macao.tsv	830	識嘆	識嘆	ㄕˊ ㄊㄢˋ	full_homophone	1	識嘆	ㄕˊ ㄊㄢˋ	石炭	ㄕˊ ㄊㄢˋ	1	石炭	1
+phrase.hongkong-macao.tsv	864	點做	點做	ㄉㄧㄢˇ ㄗㄨㄛˋ	two_character_homophone	1	點做	ㄉㄧㄢˇ ㄗㄨㄛˋ	經典作	ㄐㄧㄥ ㄉㄧㄢˇ ㄗㄨㄛˋ	2	典作	7
+phrase.hongkong-macao.tsv	870	點知	點知	ㄉㄧㄢˇ ㄓ	two_character_homophone	1	點知	ㄉㄧㄢˇ ㄓ	經典之作	ㄐㄧㄥ ㄉㄧㄢˇ ㄓ ㄗㄨㄛˋ	2	典之	9
+phrase.hongkong-macao.tsv	883	加底	加底	ㄐㄧㄚ ㄉㄧˇ	full_homophone	1	加底	ㄐㄧㄚ ㄉㄧˇ	家底	ㄐㄧㄚ ㄉㄧˇ	1	家底	1
+phrase.hongkong-macao.tsv	889	啡走	啡走	ㄈㄟ ㄗㄡˇ	full_homophone	1	啡走	ㄈㄟ ㄗㄡˇ	飛走	ㄈㄟ ㄗㄡˇ	1	飛走	24
+phrase.hongkong-macao.tsv	889	啡走	啡走	ㄈㄟ ㄗㄡˇ	two_character_homophone	1	啡走	ㄈㄟ ㄗㄡˇ	非走不可	ㄈㄟ ㄗㄡˇ ㄅㄨˋ ㄎㄜˇ	1	非走	2
+phrase.hongkong-macao.tsv	913	檸蜜	檸蜜	ㄋㄧㄥˊ ㄇㄧˋ	full_homophone	1	檸蜜	ㄋㄧㄥˊ ㄇㄧˋ	寧謐	ㄋㄧㄥˊ ㄇㄧˋ	1	寧謐	2
+phrase.hongkong-macao.tsv	920	油雞	油雞	ㄧㄡˊ ㄐㄧ	two_character_homophone	1	油雞	ㄧㄡˊ ㄐㄧ	柴油機	ㄔㄞˊ ㄧㄡˊ ㄐㄧ	2	油機	1
+phrase.hongkong-macao.tsv	920	油雞	油雞	ㄧㄡˊ ㄐㄧ	two_character_homophone	1	油雞	ㄧㄡˊ ㄐㄧ	自由基	ㄗˋ ㄧㄡˊ ㄐㄧ	2	由基	22
+phrase.hongkong-macao.tsv	1019	中五	中五	ㄓㄨㄥ ㄨˇ	full_homophone	1	中五	ㄓㄨㄥ ㄨˇ	中午	ㄓㄨㄥ ㄨˇ	1	中午	457
+phrase.hongkong-macao.tsv	1019	中五	中五	ㄓㄨㄥ ㄨˇ	two_character_homophone	1	中五	ㄓㄨㄥ ㄨˇ	昨天中午	ㄗㄨㄛˊ ㄊㄧㄢ ㄓㄨㄥ ㄨˇ	3	中午	6
+phrase.hongkong-macao.tsv	1047	城巴	城巴	ㄔㄥˊ ㄅㄚ	two_character_homophone	1	城巴	ㄔㄥˊ ㄅㄚ	二成八	ㄦˋ ㄔㄥˊ ㄅㄚ	2	成八	5
+phrase.hongkong-macao.tsv	1126	膠袋	膠袋	ㄐㄧㄠ ㄉㄞˋ	full_homophone	1	膠袋	ㄐㄧㄠ ㄉㄞˋ	交代	ㄐㄧㄠ ㄉㄞˋ	1	交代	168
+phrase.hongkong-macao.tsv	1126	膠袋	膠袋	ㄐㄧㄠ ㄉㄞˋ	full_homophone	1	膠袋	ㄐㄧㄠ ㄉㄞˋ	交待	ㄐㄧㄠ ㄉㄞˋ	1	交待	51
+phrase.hongkong-macao.tsv	1126	膠袋	膠袋	ㄐㄧㄠ ㄉㄞˋ	full_homophone	1	膠袋	ㄐㄧㄠ ㄉㄞˋ	膠帶	ㄐㄧㄠ ㄉㄞˋ	1	膠帶	34
+phrase.hongkong-macao.tsv	1126	膠袋	膠袋	ㄐㄧㄠ ㄉㄞˋ	two_character_homophone	1	膠袋	ㄐㄧㄠ ㄉㄞˋ	塑膠帶	ㄙㄨˋ ㄐㄧㄠ ㄉㄞˋ	2	膠帶	2
+phrase.hongkong-macao.tsv	1126	膠袋	膠袋	ㄐㄧㄠ ㄉㄞˋ	two_character_homophone	1	膠袋	ㄐㄧㄠ ㄉㄞˋ	有交待	ㄧㄡˇ ㄐㄧㄠ ㄉㄞˋ	2	交待	1
+phrase.hongkong-macao.tsv	1126	膠袋	膠袋	ㄐㄧㄠ ㄉㄞˋ	two_character_homophone	1	膠袋	ㄐㄧㄠ ㄉㄞˋ	紙膠帶	ㄓˇ ㄐㄧㄠ ㄉㄞˋ	2	膠帶	5
+phrase.hongkong-macao.tsv	1126	膠袋	膠袋	ㄐㄧㄠ ㄉㄞˋ	two_character_homophone	1	膠袋	ㄐㄧㄠ ㄉㄞˋ	透明膠帶	ㄊㄡˋ ㄇㄧㄥˊ ㄐㄧㄠ ㄉㄞˋ	3	膠帶	2
+phrase.hongkong-macao.tsv	1130	衞生署	衞生署	ㄨㄟˋ ㄕㄥ ㄕㄨˇ	full_homophone	1	衞生署	ㄨㄟˋ ㄕㄥ ㄕㄨˇ	衛生署	ㄨㄟˋ ㄕㄥ ㄕㄨˇ	1	衛生署	772
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	full_homophone	1	利是	ㄌㄧˋ ㄕˋ	利市	ㄌㄧˋ ㄕˋ	1	利市	9
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	full_homophone	1	利是	ㄌㄧˋ ㄕˋ	力士	ㄌㄧˋ ㄕˋ	1	力士	38
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	full_homophone	1	利是	ㄌㄧˋ ㄕˋ	立誓	ㄌㄧˋ ㄕˋ	1	立誓	5
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	two_character_homophone	1	利是	ㄌㄧˋ ㄕˋ	中壢市	ㄓㄨㄥ ㄌㄧˋ ㄕˋ	2	壢市	25
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	two_character_homophone	1	利是	ㄌㄧˋ ㄕˋ	勞力士	ㄌㄠˊ ㄌㄧˋ ㄕˋ	2	力士	10
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	two_character_homophone	1	利是	ㄌㄧˋ ㄕˋ	大力士	ㄉㄚˋ ㄌㄧˋ ㄕˋ	2	力士	14
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	two_character_homophone	1	利是	ㄌㄧˋ ㄕˋ	大發利市	ㄉㄚˋ ㄈㄚ ㄌㄧˋ ㄕˋ	3	利市	6
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	two_character_homophone	1	利是	ㄌㄧˋ ㄕˋ	比例式	ㄅㄧˇ ㄌㄧˋ ㄕˋ	2	例式	1
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	two_character_homophone	1	利是	ㄌㄧˋ ㄕˋ	營利事業	ㄧㄥˊ ㄌㄧˋ ㄕˋ ㄧㄝˋ	2	利事	35
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	two_character_homophone	1	利是	ㄌㄧˋ ㄕˋ	病歷室	ㄅㄧㄥˋ ㄌㄧˋ ㄕˋ	2	歷室	2
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	two_character_homophone	1	利是	ㄌㄧˋ ㄕˋ	直立式	ㄓˊ ㄌㄧˋ ㄕˋ	2	立式	4
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	two_character_homophone	1	利是	ㄌㄧˋ ㄕˋ	綺麗世界	ㄑㄧˇ ㄌㄧˋ ㄕˋ ㄐㄧㄝˋ	2	麗世	1
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	two_character_homophone	1	利是	ㄌㄧˋ ㄕˋ	義大利式	ㄧˋ ㄉㄚˋ ㄌㄧˋ ㄕˋ	3	利式	4
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	two_character_homophone	1	利是	ㄌㄧˋ ㄕˋ	義大利式燉飯	ㄧˋ ㄉㄚˋ ㄌㄧˋ ㄕˋ ㄉㄨㄣˋ ㄈㄢˋ	3	利式	2
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	two_character_homophone	1	利是	ㄌㄧˋ ㄕˋ	苗栗市	ㄇㄧㄠˊ ㄌㄧˋ ㄕˋ	2	栗市	15
+phrase.hongkong-macao.tsv	1168	利是	利是	ㄌㄧˋ ㄕˋ	two_character_homophone	1	利是	ㄌㄧˋ ㄕˋ	苗栗市人	ㄇㄧㄠˊ ㄌㄧˋ ㄕˋ ㄖㄣˊ	2	栗市	1
+phrase.hongkong-macao.tsv	1199	粵劇	粵劇	ㄩㄝˋ ㄐㄩˋ	full_homophone	1	粵劇	ㄩㄝˋ ㄐㄩˋ	樂句	ㄩㄝˋ ㄐㄩˋ	1	樂句	7
+phrase.hongkong-macao.tsv	1199	粵劇	粵劇	ㄩㄝˋ ㄐㄩˋ	full_homophone	1	粵劇	ㄩㄝˋ ㄐㄩˋ	越劇	ㄩㄝˋ ㄐㄩˋ	1	越劇	5
+phrase.hongkong-macao.tsv	1199	粵劇	粵劇	ㄩㄝˋ ㄐㄩˋ	two_character_homophone	1	粵劇	ㄩㄝˋ ㄐㄩˋ	音樂劇	ㄧㄣ ㄩㄝˋ ㄐㄩˋ	2	樂劇	51
+phrase.hongkong-macao.tsv	1200	粵曲	粵曲	ㄩㄝˋ ㄑㄩ	full_homophone	1	粵曲	ㄩㄝˋ ㄑㄩ	越區	ㄩㄝˋ ㄑㄩ	1	越區	12
+phrase.hongkong-macao.tsv	1200	粵曲	粵曲	ㄩㄝˋ ㄑㄩ	two_character_homophone	1	粵曲	ㄩㄝˋ ㄑㄩ	越區就讀	ㄩㄝˋ ㄑㄩ ㄐㄧㄡˋ ㄉㄨˊ	1	越區	3
+phrase.hongkong-macao.tsv	1220	信和	信和	ㄒㄧㄣˋ ㄏㄜˊ	two_character_homophone	1	信和	ㄒㄧㄣˋ ㄏㄜˊ	信合社	ㄒㄧㄣˋ ㄏㄜˊ ㄕㄜˋ	1	信合	42
+phrase.hongkong-macao.tsv	1222	先施	先施	ㄒㄧㄢ ㄕ	full_homophone	1	先施	ㄒㄧㄢ ㄕ	仙師	ㄒㄧㄢ ㄕ	1	仙師	1
+phrase.hongkong-macao.tsv	1222	先施	先施	ㄒㄧㄢ ㄕ	full_homophone	1	先施	ㄒㄧㄢ ㄕ	先師	ㄒㄧㄢ ㄕ	1	先師	13
+phrase.hongkong-macao.tsv	1222	先施	先施	ㄒㄧㄢ ㄕ	two_character_homophone	1	先施	ㄒㄧㄢ ㄕ	至聖先師	ㄓˋ ㄕㄥˋ ㄒㄧㄢ ㄕ	3	先師	10
+phrase.hongkong-macao.tsv	1226	利苑	利苑	ㄌㄧˋ ㄩㄢˋ	full_homophone	1	利苑	ㄌㄧˋ ㄩㄢˋ	立院	ㄌㄧˋ ㄩㄢˋ	1	立院	324
+phrase.hongkong-macao.tsv	1229	嘉里	嘉里	ㄐㄧㄚ ㄌㄧˇ	full_homophone	1	嘉里	ㄐㄧㄚ ㄌㄧˇ	佳里	ㄐㄧㄚ ㄌㄧˇ	1	佳里	24
+phrase.hongkong-macao.tsv	1229	嘉里	嘉里	ㄐㄧㄚ ㄌㄧˇ	full_homophone	1	嘉里	ㄐㄧㄚ ㄌㄧˇ	加里	ㄐㄧㄚ ㄌㄧˇ	1	加里	5
+phrase.hongkong-macao.tsv	1229	嘉里	嘉里	ㄐㄧㄚ ㄌㄧˇ	full_homophone	1	嘉里	ㄐㄧㄚ ㄌㄧˇ	嘉禮	ㄐㄧㄚ ㄌㄧˇ	1	嘉禮	2
+phrase.hongkong-macao.tsv	1229	嘉里	嘉里	ㄐㄧㄚ ㄌㄧˇ	full_homophone	1	嘉里	ㄐㄧㄚ ㄌㄧˇ	家裡	ㄐㄧㄚ ㄌㄧˇ	1	家裡	609
+phrase.hongkong-macao.tsv	1229	嘉里	嘉里	ㄐㄧㄚ ㄌㄧˇ	two_character_homophone	1	嘉里	ㄐㄧㄚ ㄌㄧˇ	佳里區	ㄐㄧㄚ ㄌㄧˇ ㄑㄩ	1	佳里	2
+phrase.hongkong-macao.tsv	1229	嘉里	嘉里	ㄐㄧㄚ ㄌㄧˇ	two_character_homophone	1	嘉里	ㄐㄧㄚ ㄌㄧˇ	佳里國中	ㄐㄧㄚ ㄌㄧˇ ㄍㄨㄛˊ ㄓㄨㄥ	1	佳里	1
+phrase.hongkong-macao.tsv	1229	嘉里	嘉里	ㄐㄧㄚ ㄌㄧˇ	two_character_homophone	1	嘉里	ㄐㄧㄚ ㄌㄧˇ	佳里國小	ㄐㄧㄚ ㄌㄧˇ ㄍㄨㄛˊ ㄒㄧㄠˇ	1	佳里	7
+phrase.hongkong-macao.tsv	1229	嘉里	嘉里	ㄐㄧㄚ ㄌㄧˇ	two_character_homophone	1	嘉里	ㄐㄧㄚ ㄌㄧˇ	回到家裡	ㄏㄨㄟˊ ㄉㄠˋ ㄐㄧㄚ ㄌㄧˇ	3	家裡	8
+phrase.hongkong-macao.tsv	1229	嘉里	嘉里	ㄐㄧㄚ ㄌㄧˇ	two_character_homophone	1	嘉里	ㄐㄧㄚ ㄌㄧˇ	家裡蹲	ㄐㄧㄚ ㄌㄧˇ ㄉㄨㄣ	1	家裡	3
+phrase.hongkong-macao.tsv	1229	嘉里	嘉里	ㄐㄧㄚ ㄌㄧˇ	two_character_homophone	1	嘉里	ㄐㄧㄚ ㄌㄧˇ	待在家裡	ㄉㄞ ㄗㄞˋ ㄐㄧㄚ ㄌㄧˇ	3	家裡	7
+phrase.hongkong-macao.tsv	1242	新地	新地	ㄒㄧㄣ ㄉㄧˋ	full_homophone	1	新地	ㄒㄧㄣ ㄉㄧˋ	心地	ㄒㄧㄣ ㄉㄧˋ	1	心地	103
+phrase.hongkong-macao.tsv	1242	新地	新地	ㄒㄧㄣ ㄉㄧˋ	two_character_homophone	1	新地	ㄒㄧㄣ ㄉㄧˋ	中心地帶	ㄓㄨㄥ ㄒㄧㄣ ㄉㄧˋ ㄉㄞˋ	2	心地	1
+phrase.hongkong-macao.tsv	1242	新地	新地	ㄒㄧㄣ ㄉㄧˋ	two_character_homophone	1	新地	ㄒㄧㄣ ㄉㄧˋ	心地光明	ㄒㄧㄣ ㄉㄧˋ ㄍㄨㄤ ㄇㄧㄥˊ	1	心地	1
+phrase.hongkong-macao.tsv	1242	新地	新地	ㄒㄧㄣ ㄉㄧˋ	two_character_homophone	1	新地	ㄒㄧㄣ ㄉㄧˋ	心地善良	ㄒㄧㄣ ㄉㄧˋ ㄕㄢˋ ㄌㄧㄤˊ	1	心地	3
+phrase.hongkong-macao.tsv	1265	華潤	華潤	ㄏㄨㄚˊ ㄖㄨㄣˋ	full_homophone	1	華潤	ㄏㄨㄚˊ ㄖㄨㄣˋ	滑潤	ㄏㄨㄚˊ ㄖㄨㄣˋ	1	滑潤	5
+phrase.hongkong-macao.tsv	1280	樹仁	樹仁	ㄕㄨˋ ㄖㄣˊ	full_homophone	1	樹仁	ㄕㄨˋ ㄖㄣˊ	庶人	ㄕㄨˋ ㄖㄣˊ	1	庶人	3
+phrase.hongkong-macao.tsv	1280	樹仁	樹仁	ㄕㄨˋ ㄖㄣˊ	full_homophone	1	樹仁	ㄕㄨˋ ㄖㄣˊ	數人	ㄕㄨˋ ㄖㄣˊ	1	數人	170
+phrase.hongkong-macao.tsv	1280	樹仁	樹仁	ㄕㄨˋ ㄖㄣˊ	full_homophone	1	樹仁	ㄕㄨˋ ㄖㄣˊ	樹人	ㄕㄨˋ ㄖㄣˊ	1	樹人	15
+phrase.hongkong-macao.tsv	1280	樹仁	樹仁	ㄕㄨˋ ㄖㄣˊ	two_character_homophone	1	樹仁	ㄕㄨˋ ㄖㄣˊ	多數人	ㄉㄨㄛ ㄕㄨˋ ㄖㄣˊ	2	數人	110
+phrase.hongkong-macao.tsv	1280	樹仁	樹仁	ㄕㄨˋ ㄖㄣˊ	two_character_homophone	1	樹仁	ㄕㄨˋ ㄖㄣˊ	少數人	ㄕㄠˇ ㄕㄨˋ ㄖㄣˊ	2	數人	45
+phrase.hongkong-macao.tsv	1280	樹仁	樹仁	ㄕㄨˋ ㄖㄣˊ	two_character_homophone	1	樹仁	ㄕㄨˋ ㄖㄣˊ	技術人員	ㄐㄧˋ ㄕㄨˋ ㄖㄣˊ ㄩㄢˊ	2	術人	49
+phrase.hongkong-macao.tsv	1280	樹仁	樹仁	ㄕㄨˋ ㄖㄣˊ	two_character_homophone	1	樹仁	ㄕㄨˋ ㄖㄣˊ	百年樹人	ㄅㄞˇ ㄋㄧㄢˊ ㄕㄨˋ ㄖㄣˊ	3	樹人	2
+phrase.hongkong-macao.tsv	1280	樹仁	樹仁	ㄕㄨˋ ㄖㄣˊ	two_character_homophone	1	樹仁	ㄕㄨˋ ㄖㄣˊ	簽署人	ㄑㄧㄢ ㄕㄨˋ ㄖㄣˊ	2	署人	1
+phrase.hongkong-macao.tsv	1281	浸會	浸會	ㄐㄧㄣˋ ㄏㄨㄟˋ	two_character_homophone	1	浸會	ㄐㄧㄣˋ ㄏㄨㄟˋ	促進會	ㄘㄨˋ ㄐㄧㄣˋ ㄏㄨㄟˋ	2	進會	102
+phrase.hongkong-macao.tsv	1281	浸會	浸會	ㄐㄧㄣˋ ㄏㄨㄟˋ	two_character_homophone	1	浸會	ㄐㄧㄣˋ ㄏㄨㄟˋ	協進會	ㄒㄧㄝˊ ㄐㄧㄣˋ ㄏㄨㄟˋ	2	進會	45
+phrase.hongkong-macao.tsv	1281	浸會	浸會	ㄐㄧㄣˋ ㄏㄨㄟˋ	two_character_homophone	1	浸會	ㄐㄧㄣˋ ㄏㄨㄟˋ	策進會	ㄘㄜˋ ㄐㄧㄣˋ ㄏㄨㄟˋ	2	進會	41
+phrase.hongkong-macao.tsv	1338	青洲	青洲	ㄑㄧㄥ ㄓㄡ	full_homophone	1	青洲	ㄑㄧㄥ ㄓㄡ	輕舟	ㄑㄧㄥ ㄓㄡ	1	輕舟	6
+phrase.hongkong-macao.tsv	1338	青洲	青洲	ㄑㄧㄥ ㄓㄡ	full_homophone	1	青洲	ㄑㄧㄥ ㄓㄡ	青州	ㄑㄧㄥ ㄓㄡ	1	青州	1
+phrase.hongkong-macao.tsv	1338	青洲	青洲	ㄑㄧㄥ ㄓㄡ	two_character_homophone	1	青洲	ㄑㄧㄥ ㄓㄡ	清粥小菜	ㄑㄧㄥ ㄓㄡ ㄒㄧㄠˇ ㄘㄞˋ	1	清粥	1
+phrase.hongkong-macao.tsv	1338	青洲	青洲	ㄑㄧㄥ ㄓㄡ	two_character_homophone	1	青洲	ㄑㄧㄥ ㄓㄡ	清粥店	ㄑㄧㄥ ㄓㄡ ㄉㄧㄢˋ	1	清粥	1
+phrase.hongkong-macao.tsv	1339	青茂	青茂	ㄑㄧㄥ ㄇㄠˋ	two_character_homophone	1	青茂	ㄑㄧㄥ ㄇㄠˋ	年輕貌美	ㄋㄧㄢˊ ㄑㄧㄥ ㄇㄠˋ ㄇㄟˇ	2	輕貌	3
+phrase.hongkong-macao.tsv	1341	黑沙	黑沙	ㄏㄟ ㄕㄚ	full_homophone	1	黑沙	ㄏㄟ ㄕㄚ	黑紗	ㄏㄟ ㄕㄚ	1	黑紗	5
+phrase.hongkong-macao.tsv	1448	蛋卷	蛋卷	ㄉㄢˋ ㄐㄩㄢˇ	full_homophone	1	蛋卷	ㄉㄢˋ ㄐㄩㄢˇ	蛋捲	ㄉㄢˋ ㄐㄩㄢˇ	1	蛋捲	20
+phrase.hongkong-macao.tsv	1458	博企	博企	ㄅㄛˊ ㄑㄧˇ	full_homophone	1	博企	ㄅㄛˊ ㄑㄧˇ	勃起	ㄅㄛˊ ㄑㄧˇ	1	勃起	16
+phrase.hongkong-macao.tsv	1464	嘆茶	嘆茶	ㄊㄢˋ ㄔㄚˊ	full_homophone	1	嘆茶	ㄊㄢˋ ㄔㄚˊ	探察	ㄊㄢˋ ㄔㄚˊ	1	探察	2
+phrase.hongkong-macao.tsv	1464	嘆茶	嘆茶	ㄊㄢˋ ㄔㄚˊ	full_homophone	1	嘆茶	ㄊㄢˋ ㄔㄚˊ	探查	ㄊㄢˋ ㄔㄚˊ	1	探查	12
+phrase.hongkong-macao.tsv	1477	歎茶	歎茶	ㄊㄢˋ ㄔㄚˊ	full_homophone	1	歎茶	ㄊㄢˋ ㄔㄚˊ	探察	ㄊㄢˋ ㄔㄚˊ	1	探察	2
+phrase.hongkong-macao.tsv	1477	歎茶	歎茶	ㄊㄢˋ ㄔㄚˊ	full_homophone	1	歎茶	ㄊㄢˋ ㄔㄚˊ	探查	ㄊㄢˋ ㄔㄚˊ	1	探查	12
+phrase.hongkong-macao.tsv	1493	荷官	荷官	ㄏㄜˊ ㄍㄨㄢ	two_character_homophone	1	荷官	ㄏㄜˊ ㄍㄨㄢ	競合關係	ㄐㄧㄥˋ ㄏㄜˊ ㄍㄨㄢ ㄒㄧˋ	2	合關	2
+phrase.hongkong-macao.tsv	1496	藍卡	藍卡	ㄌㄢˊ ㄎㄚˇ	two_character_homophone	1	藍卡	ㄌㄢˊ ㄎㄚˇ	斯里蘭卡	ㄙ ㄌㄧˇ ㄌㄢˊ ㄎㄚˇ	3	蘭卡	15
+phrase.hongkong-macao.tsv	1505	金巴	金巴	ㄐㄧㄣ ㄅㄚ	two_character_homophone	1	金巴	ㄐㄧㄣ ㄅㄚ	半斤八兩	ㄅㄢˋ ㄐㄧㄣ ㄅㄚ ㄌㄧㄤˇ	2	斤八	4
+phrase.hongkong-macao.tsv	1515	永利	永利	ㄩㄥˇ ㄌㄧˋ	full_homophone	1	永利	ㄩㄥˇ ㄌㄧˋ	擁立	ㄩㄥˇ ㄌㄧˋ	1	擁立	1
+phrase.hongkong-macao.tsv	1515	永利	永利	ㄩㄥˇ ㄌㄧˋ	full_homophone	1	永利	ㄩㄥˇ ㄌㄧˋ	永曆	ㄩㄥˇ ㄌㄧˋ	1	永曆	25
 phrase.industrial-engineering.tsv	16	前置	前置	ㄑㄧㄢˊ ㄓˋ	full_homophone	1	前置	ㄑㄧㄢˊ ㄓˋ	箝制	ㄑㄧㄢˊ ㄓˋ	1	箝制	28
 phrase.industrial-engineering.tsv	16	前置	前置	ㄑㄧㄢˊ ㄓˋ	full_homophone	1	前置	ㄑㄧㄢˊ ㄓˋ	鉗制	ㄑㄧㄢˊ ㄓˋ	1	鉗制	1
 phrase.industrial-engineering.tsv	50	常態分布	常態分布	ㄔㄤˊ ㄊㄞˋ ㄈㄣ ㄅㄨˋ	full_homophone	1	常態分布	ㄔㄤˊ ㄊㄞˋ ㄈㄣ ㄅㄨˋ	常態分佈	ㄔㄤˊ ㄊㄞˋ ㄈㄣ ㄅㄨˋ	1	常態分佈	3
@@ -577,9 +1052,7 @@ phrase.taiwan.tsv	300	臺東市	臺東市	ㄊㄞˊ ㄉㄨㄥ ㄕˋ	full_homophon
 phrase.taiwan.tsv	891	蘭潭	蘭潭	ㄌㄢˊ ㄊㄢˊ	full_homophone	1	蘭潭	ㄌㄢˊ ㄊㄢˊ	籃壇	ㄌㄢˊ ㄊㄢˊ	1	籃壇	11
 phrase.taiwan.tsv	904	車埕	車埕	ㄔㄜ ㄔㄥˊ	full_homophone	1	車埕	ㄔㄜ ㄔㄥˊ	車城	ㄔㄜ ㄔㄥˊ	1	車城	7
 phrase.taiwan.tsv	904	車埕	車埕	ㄔㄜ ㄔㄥˊ	full_homophone	1	車埕	ㄔㄜ ㄔㄥˊ	車程	ㄔㄜ ㄔㄥˊ	1	車程	63
-phrase.taiwan.tsv	925	駁二	駁二	ㄅㄛˊ ㄦˋ	two_character_homophone	1	駁二	ㄅㄛˊ ㄦˋ	一泊二食	ㄧ ㄅㄛˊ ㄦˋ ㄕˊ	2	泊二	1
 phrase.taiwan.tsv	950	唉唷	唉唷	ㄞ ㄧㄛ	full_homophone	1	唉唷	ㄞ ㄧㄛ	哎唷	ㄞ ㄧㄛ	1	哎唷	3
-phrase.taiwan.tsv	955	嘿呀	嘿呀	ㄏㄟ ㄧㄚ	two_character_homophone	1	嘿呀	ㄏㄟ ㄧㄚ	黑壓壓	ㄏㄟ ㄧㄚ ㄧㄚ	1	黑壓	19
 phrase.taiwan.tsv	999	中鼎	中鼎	ㄓㄨㄥ ㄉㄧㄥˇ	full_homophone	1	中鼎	ㄓㄨㄥ ㄉㄧㄥˇ	鐘鼎	ㄓㄨㄥ ㄉㄧㄥˇ	1	鐘鼎	3
 phrase.taiwan.tsv	999	中鼎	中鼎	ㄓㄨㄥ ㄉㄧㄥˇ	two_character_homophone	1	中鼎	ㄓㄨㄥ ㄉㄧㄥˇ	鐘鼎山林	ㄓㄨㄥ ㄉㄧㄥˇ ㄕㄢ ㄌㄧㄣˊ	1	鐘鼎	1
 phrase.taiwan.tsv	999	中鼎	中鼎	ㄓㄨㄥ ㄉㄧㄥˇ	two_character_homophone	1	中鼎	ㄓㄨㄥ ㄉㄧㄥˇ	鐘鼎文	ㄓㄨㄥ ㄉㄧㄥˇ ㄨㄣˊ	1	鐘鼎	1
@@ -710,6 +1183,61 @@ phrase.taiwan.tsv	1341	臺大	臺大	ㄊㄞˊ ㄉㄚˋ	two_character_homophone	1
 phrase.taiwan.tsv	1341	臺大	臺大	ㄊㄞˊ ㄉㄚˋ	two_character_homophone	1	臺大	ㄊㄞˊ ㄉㄚˋ	台大醫院站	ㄊㄞˊ ㄉㄚˋ ㄧ ㄩㄢˋ ㄓㄢˋ	1	台大	1
 phrase.taiwan.tsv	1344	臺科大	臺科大	ㄊㄞˊ ㄎㄜ ㄉㄚˋ	full_homophone	1	臺科大	ㄊㄞˊ ㄎㄜ ㄉㄚˋ	台科大	ㄊㄞˊ ㄎㄜ ㄉㄚˋ	1	台科大	12
 phrase.taiwan.tsv	1353	金大	金大	ㄐㄧㄣ ㄉㄚˋ	two_character_homophone	1	金大	ㄐㄧㄣ ㄉㄚˋ	牛津大學	ㄋㄧㄡˊ ㄐㄧㄣ ㄉㄚˋ ㄒㄩㄝˊ	2	津大	4
+phrase.taiwan.tsv	1392	好嘛	好嘛	ㄏㄠˇ ㄇㄚ˙	full_homophone	1	好嘛	ㄏㄠˇ ㄇㄚ˙	好嗎	ㄏㄠˇ ㄇㄚ˙	1	好嗎	170
+phrase.taiwan.tsv	1545	超煩	超煩	ㄔㄠ ㄈㄢˊ	full_homophone	1	超煩	ㄔㄠ ㄈㄢˊ	超凡	ㄔㄠ ㄈㄢˊ	1	超凡	14
+phrase.taiwan.tsv	1545	超煩	超煩	ㄔㄠ ㄈㄢˊ	two_character_homophone	1	超煩	ㄔㄠ ㄈㄢˊ	超凡入聖	ㄔㄠ ㄈㄢˊ ㄖㄨˋ ㄕㄥˋ	1	超凡	5
+phrase.taiwan.tsv	1547	好讚	好讚	ㄏㄠˇ ㄗㄢˋ	two_character_homophone	1	好讚	ㄏㄠˇ ㄗㄢˋ	好贊的	ㄏㄠˇ ㄗㄢˋ ㄉㄜ˙	1	好贊	3
+phrase.taiwan.tsv	1692	阿沙力	阿沙力	ㄚ ㄕㄚ ㄌㄧˋ	full_homophone	1	阿沙力	ㄚ ㄕㄚ ㄌㄧˋ	阿莎力	ㄚ ㄕㄚ ㄌㄧˋ	1	阿莎力	3
+phrase.taiwan.tsv	1707	俗仔	俗仔	ㄙㄨˊ ㄗˇ	full_homophone	1	俗仔	ㄙㄨˊ ㄗˇ	俗子	ㄙㄨˊ ㄗˇ	1	俗子	10
+phrase.taiwan.tsv	1707	俗仔	俗仔	ㄙㄨˊ ㄗˇ	two_character_homophone	1	俗仔	ㄙㄨˊ ㄗˇ	凡夫俗子	ㄈㄢˊ ㄈㄨ ㄙㄨˊ ㄗˇ	3	俗子	10
+phrase.taiwan.tsv	1747	好野	好野	ㄏㄠˇ ㄧㄝˇ	two_character_homophone	1	好野	ㄏㄠˇ ㄧㄝˇ	再好也不過	ㄗㄞˋ ㄏㄠˇ ㄧㄝˇ ㄅㄨˊ ㄍㄨㄛˋ	2	好也	1
+phrase.taiwan.tsv	1747	好野	好野	ㄏㄠˇ ㄧㄝˇ	two_character_homophone	1	好野	ㄏㄠˇ ㄧㄝˇ	再好也不過	ㄗㄞˋ ㄏㄠˇ ㄧㄝˇ ㄅㄨˋ ㄍㄨㄛˋ	2	好也	1
+phrase.taiwan.tsv	1747	好野	好野	ㄏㄠˇ ㄧㄝˇ	two_character_homophone	1	好野	ㄏㄠˇ ㄧㄝˇ	再好也沒有	ㄗㄞˋ ㄏㄠˇ ㄧㄝˇ ㄇㄟˊ ㄧㄡˇ	2	好也	1
+phrase.taiwan.tsv	1776	呷飯	呷飯	ㄒㄧㄚˊ ㄈㄢˋ	two_character_homophone	1	呷飯	ㄒㄧㄚˊ ㄈㄢˋ	阿霞飯店	ㄚ ㄒㄧㄚˊ ㄈㄢˋ ㄉㄧㄢˋ	2	霞飯	1
+phrase.taiwan.tsv	1839	小編	小編	ㄒㄧㄠˇ ㄅㄧㄢ	full_homophone	1	小編	ㄒㄧㄠˇ ㄅㄧㄢ	小邊	ㄒㄧㄠˇ ㄅㄧㄢ	1	小邊	1
+phrase.taiwan.tsv	1841	板友	板友	ㄅㄢˇ ㄧㄡˇ	two_character_homophone	1	板友	ㄅㄢˇ ㄧㄡˇ	有板有眼	ㄧㄡˇ ㄅㄢˇ ㄧㄡˇ ㄧㄢˇ	2	板有	6
+phrase.taiwan.tsv	1852	廢文	廢文	ㄈㄟˋ ㄨㄣˊ	two_character_homophone	1	廢文	ㄈㄟˋ ㄨㄣˊ	消費文化	ㄒㄧㄠ ㄈㄟˋ ㄨㄣˊ ㄏㄨㄚˋ	2	費文	3
+phrase.taiwan.tsv	1867	奧客	奧客	ㄠˋ ㄎㄜˋ	two_character_homophone	1	奧客	ㄠˋ ㄎㄜˋ	奧克拉荷馬	ㄠˋ ㄎㄜˋ ㄌㄚ ㄏㄜˊ ㄇㄚˇ	1	奧克	17
+phrase.taiwan.tsv	1867	奧客	奧客	ㄠˋ ㄎㄜˋ	two_character_homophone	1	奧客	ㄠˋ ㄎㄜˋ	奧克拉荷馬州	ㄠˋ ㄎㄜˋ ㄌㄚ ㄏㄜˊ ㄇㄚˇ ㄓㄡ	1	奧克	1
+phrase.taiwan.tsv	1867	奧客	奧客	ㄠˋ ㄎㄜˋ	two_character_homophone	1	奧客	ㄠˋ ㄎㄜˋ	奧克拉荷馬市	ㄠˋ ㄎㄜˋ ㄌㄚ ㄏㄜˊ ㄇㄚˇ ㄕˋ	1	奧克	11
+phrase.taiwan.tsv	1867	奧客	奧客	ㄠˋ ㄎㄜˋ	two_character_homophone	1	奧客	ㄠˋ ㄎㄜˋ	奧克蘭	ㄠˋ ㄎㄜˋ ㄌㄢˊ	1	奧克	21
+phrase.taiwan.tsv	1944	控肉飯	控肉飯	ㄎㄨㄥˋ ㄖㄡˋ ㄈㄢˋ	full_homophone	1	控肉飯	ㄎㄨㄥˋ ㄖㄡˋ ㄈㄢˋ	焢肉飯	ㄎㄨㄥˋ ㄖㄡˋ ㄈㄢˋ	1	焢肉飯	3
+phrase.taiwan.tsv	2086	發糕	發糕	ㄈㄚ ㄍㄠ	two_character_homophone	1	發糕	ㄈㄚ ㄍㄠ	發高燒	ㄈㄚ ㄍㄠ ㄕㄠ	1	發高	10
+phrase.taiwan.tsv	2124	刈包	刈包	ㄧˋ ㄅㄠ	full_homophone	1	刈包	ㄧˋ ㄅㄠ	一包	ㄧˋ ㄅㄠ	1	一包	60
+phrase.taiwan.tsv	2124	刈包	刈包	ㄧˋ ㄅㄠ	two_character_homophone	1	刈包	ㄧˋ ㄅㄠ	一包藥	ㄧˋ ㄅㄠ ㄧㄠˋ	1	一包	2
+phrase.taiwan.tsv	2126	煎粿	煎粿	ㄐㄧㄢ ㄍㄨㄛˇ	full_homophone	1	煎粿	ㄐㄧㄢ ㄍㄨㄛˇ	堅果	ㄐㄧㄢ ㄍㄨㄛˇ	1	堅果	9
+phrase.taiwan.tsv	2126	煎粿	煎粿	ㄐㄧㄢ ㄍㄨㄛˇ	two_character_homophone	1	煎粿	ㄐㄧㄢ ㄍㄨㄛˇ	堅果饅頭	ㄐㄧㄢ ㄍㄨㄛˇ ㄇㄢˊ ㄊㄡˊ	1	堅果	1
+phrase.taiwan.tsv	2126	煎粿	煎粿	ㄐㄧㄢ ㄍㄨㄛˇ	two_character_homophone	1	煎粿	ㄐㄧㄢ ㄍㄨㄛˇ	雜糧堅果饅頭	ㄗㄚˊ ㄌㄧㄤˊ ㄐㄧㄢ ㄍㄨㄛˇ ㄇㄢˊ ㄊㄡˊ	3	堅果	1
+phrase.taiwan.tsv	2150	中捷	中捷	ㄓㄨㄥ ㄐㄧㄝˊ	full_homophone	1	中捷	ㄓㄨㄥ ㄐㄧㄝˊ	終結	ㄓㄨㄥ ㄐㄧㄝˊ	1	終結	148
+phrase.taiwan.tsv	2150	中捷	中捷	ㄓㄨㄥ ㄐㄧㄝˊ	two_character_homophone	1	中捷	ㄓㄨㄥ ㄐㄧㄝˊ	終結者	ㄓㄨㄥ ㄐㄧㄝˊ ㄓㄜˇ	1	終結	12
+phrase.taiwan.tsv	2224	寄貨	寄貨	ㄐㄧˋ ㄏㄨㄛˋ	two_character_homophone	1	寄貨	ㄐㄧˋ ㄏㄨㄛˋ	國際貨幣基金	ㄍㄨㄛˊ ㄐㄧˋ ㄏㄨㄛˋ ㄅㄧˋ ㄐㄧ ㄐㄧㄣ	2	際貨	18
+phrase.taiwan.tsv	2230	加購	加購	ㄐㄧㄚ ㄍㄡˋ	full_homophone	1	加購	ㄐㄧㄚ ㄍㄡˋ	佳構	ㄐㄧㄚ ㄍㄡˋ	1	佳構	5
+phrase.taiwan.tsv	2230	加購	加購	ㄐㄧㄚ ㄍㄡˋ	full_homophone	1	加購	ㄐㄧㄚ ㄍㄡˋ	加夠	ㄐㄧㄚ ㄍㄡˋ	1	加夠	2
+phrase.taiwan.tsv	2272	實坪	實坪	ㄕˊ ㄆㄧㄥˊ	full_homophone	1	實坪	ㄕˊ ㄆㄧㄥˊ	十坪	ㄕˊ ㄆㄧㄥˊ	1	十坪	6
+phrase.taiwan.tsv	2272	實坪	實坪	ㄕˊ ㄆㄧㄥˊ	full_homophone	1	實坪	ㄕˊ ㄆㄧㄥˊ	時評	ㄕˊ ㄆㄧㄥˊ	1	時評	6
+phrase.taiwan.tsv	2272	實坪	實坪	ㄕˊ ㄆㄧㄥˊ	two_character_homophone	1	實坪	ㄕˊ ㄆㄧㄥˊ	十平方	ㄕˊ ㄆㄧㄥˊ ㄈㄤ	1	十平	2
+phrase.taiwan.tsv	2319	藥袋	藥袋	ㄧㄠˋ ㄉㄞˋ	full_homophone	1	藥袋	ㄧㄠˋ ㄉㄞˋ	要帶	ㄧㄠˋ ㄉㄞˋ	1	要帶	286
+phrase.taiwan.tsv	2322	健檢	健檢	ㄐㄧㄢˋ ㄐㄧㄢˇ	full_homophone	1	健檢	ㄐㄧㄢˋ ㄐㄧㄢˇ	漸減	ㄐㄧㄢˋ ㄐㄧㄢˇ	1	漸減	22
+phrase.taiwan.tsv	2331	國保	國保	ㄍㄨㄛˊ ㄅㄠˇ	full_homophone	1	國保	ㄍㄨㄛˊ ㄅㄠˇ	國寶	ㄍㄨㄛˊ ㄅㄠˇ	1	國寶	113
+phrase.taiwan.tsv	2331	國保	國保	ㄍㄨㄛˊ ㄅㄠˇ	two_character_homophone	1	國保	ㄍㄨㄛˊ ㄅㄠˇ	國寶級	ㄍㄨㄛˊ ㄅㄠˇ ㄐㄧˊ	1	國寶	44
+phrase.taiwan.tsv	2361	連假	連假	ㄌㄧㄢˊ ㄐㄧㄚˋ	full_homophone	1	連假	ㄌㄧㄢˊ ㄐㄧㄚˋ	廉價	ㄌㄧㄢˊ ㄐㄧㄚˋ	1	廉價	185
+phrase.taiwan.tsv	2361	連假	連假	ㄌㄧㄢˊ ㄐㄧㄚˋ	two_character_homophone	1	連假	ㄌㄧㄢˊ ㄐㄧㄚˋ	廉價品	ㄌㄧㄢˊ ㄐㄧㄚˋ ㄆㄧㄣˇ	1	廉價	2
+phrase.taiwan.tsv	2427	班導	班導	ㄅㄢ ㄉㄠˇ	full_homophone	1	班導	ㄅㄢ ㄉㄠˇ	扳倒	ㄅㄢ ㄉㄠˇ	1	扳倒	10
+phrase.taiwan.tsv	2456	二階	二階	ㄦˋ ㄐㄧㄝ	full_homophone	1	二階	ㄦˋ ㄐㄧㄝ	二街	ㄦˋ ㄐㄧㄝ	1	二街	2
+phrase.taiwan.tsv	2456	二階	二階	ㄦˋ ㄐㄧㄝ	two_character_homophone	1	二階	ㄦˋ ㄐㄧㄝ	光華二街	ㄍㄨㄤ ㄏㄨㄚˊ ㄦˋ ㄐㄧㄝ	3	二街	1
+phrase.taiwan.tsv	2468	團膳	團膳	ㄊㄨㄢˊ ㄕㄢˋ	full_homophone	1	團膳	ㄊㄨㄢˊ ㄕㄢˋ	團扇	ㄊㄨㄢˊ ㄕㄢˋ	1	團扇	3
+phrase.taiwan.tsv	2480	系服	系服	ㄒㄧˋ ㄈㄨˊ	full_homophone	1	系服	ㄒㄧˋ ㄈㄨˊ	戲服	ㄒㄧˋ ㄈㄨˊ	1	戲服	16
+phrase.taiwan.tsv	2573	求財	求財	ㄑㄧㄡˊ ㄘㄞˊ	full_homophone	1	求財	ㄑㄧㄡˊ ㄘㄞˊ	求才	ㄑㄧㄡˊ ㄘㄞˊ	1	求才	24
+phrase.taiwan.tsv	2573	求財	求財	ㄑㄧㄡˊ ㄘㄞˊ	two_character_homophone	1	求財	ㄑㄧㄡˊ ㄘㄞˊ	求才若渴	ㄑㄧㄡˊ ㄘㄞˊ ㄖㄨㄛˋ ㄎㄜˇ	1	求才	2
+phrase.taiwan.tsv	2607	薪轉	薪轉	ㄒㄧㄣ ㄓㄨㄢˇ	two_character_homophone	1	薪轉	ㄒㄧㄣ ㄓㄨㄢˇ	回心轉意	ㄏㄨㄟˊ ㄒㄧㄣ ㄓㄨㄢˇ ㄧˋ	2	心轉	4
+phrase.taiwan.tsv	2709	臺中一中	臺中一中	ㄊㄞˊ ㄓㄨㄥ ㄧ ㄓㄨㄥ	full_homophone	1	臺中一中	ㄊㄞˊ ㄓㄨㄥ ㄧ ㄓㄨㄥ	台中一中	ㄊㄞˊ ㄓㄨㄥ ㄧ ㄓㄨㄥ	1	台中一中	6
+phrase.taiwan.tsv	2713	彰中	彰中	ㄓㄤ ㄓㄨㄥ	two_character_homophone	1	彰中	ㄓㄤ ㄓㄨㄥ	張忠謀	ㄓㄤ ㄓㄨㄥ ㄇㄡˊ	1	張忠	36
+phrase.taiwan.tsv	2715	嘉中	嘉中	ㄐㄧㄚ ㄓㄨㄥ	full_homophone	1	嘉中	ㄐㄧㄚ ㄓㄨㄥ	家中	ㄐㄧㄚ ㄓㄨㄥ	1	家中	275
+phrase.taiwan.tsv	2716	嘉女	嘉女	ㄐㄧㄚ ㄋㄩˇ	two_character_homophone	1	嘉女	ㄐㄧㄚ ㄋㄩˇ	富家女	ㄈㄨˋ ㄐㄧㄚ ㄋㄩˇ	2	家女	2
+phrase.taiwan.tsv	2716	嘉女	嘉女	ㄐㄧㄚ ㄋㄩˇ	two_character_homophone	1	嘉女	ㄐㄧㄚ ㄋㄩˇ	最佳女主角獎	ㄗㄨㄟˋ ㄐㄧㄚ ㄋㄩˇ ㄓㄨˇ ㄐㄧㄠˇ ㄐㄧㄤˇ	2	佳女	1
+phrase.taiwan.tsv	2716	嘉女	嘉女	ㄐㄧㄚ ㄋㄩˇ	two_character_homophone	1	嘉女	ㄐㄧㄚ ㄋㄩˇ	最佳女配角獎	ㄗㄨㄟˋ ㄐㄧㄚ ㄋㄩˇ ㄆㄟˋ ㄐㄧㄠˇ ㄐㄧㄤˇ	2	佳女	3
+phrase.taiwan.tsv	2716	嘉女	嘉女	ㄐㄧㄚ ㄋㄩˇ	two_character_homophone	1	嘉女	ㄐㄧㄚ ㄋㄩˇ	農家女	ㄋㄨㄥˊ ㄐㄧㄚ ㄋㄩˇ	2	家女	1
+phrase.taiwan.tsv	2716	嘉女	嘉女	ㄐㄧㄚ ㄋㄩˇ	two_character_homophone	1	嘉女	ㄐㄧㄚ ㄋㄩˇ	酒家女	ㄐㄧㄡˇ ㄐㄧㄚ ㄋㄩˇ	2	家女	2
 search-trend-unigram-source.txt	9	空氣污染	空氣污染	ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ	full_homophone	1	空氣污染	ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ	空氣汙染	ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ	1	空氣汙染	10
 search-trend-unigram-source.txt	128	車貸	車貸	ㄔㄜ ㄉㄞˋ	full_homophone	1	車貸	ㄔㄜ ㄉㄞˋ	車帶	ㄔㄜ ㄉㄞˋ	1	車帶	6
 search-trend-unigram-source.txt	128	車貸	車貸	ㄔㄜ ㄉㄞˋ	two_character_homophone	1	車貸	ㄔㄜ ㄉㄞˋ	連車帶人	ㄌㄧㄢˊ ㄔㄜ ㄉㄞˋ ㄖㄣˊ	2	車帶	2

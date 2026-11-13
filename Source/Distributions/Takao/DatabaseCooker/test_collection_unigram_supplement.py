@@ -4,6 +4,7 @@ import tempfile
 import unittest
 
 from collection_unigram_supplement import apply, source_records, verify_sources
+from phrase_unigram_supplement import query_for_reading
 from unigram_collisions import CollisionIndex
 
 
@@ -35,7 +36,8 @@ class CollectionTests(unittest.TestCase):
         old = list(self.db.execute("SELECT * FROM unigrams"))
         bigrams = list(self.db.execute("SELECT * FROM bigrams"))
         result = apply(self.db, [b, a], 1000, collision_index=self.index)
-        self.assertEqual(result["totals"], dict(rows=3, inserted=1, existing=1, duplicate=1, rejected=0, collision=0))
+        self.assertEqual(result["totals"], dict(rows=3, inserted=1, existing=1, duplicate=1, rejected=0,
+                                               collision=0, reviewed_post_training=0, single_character_source_only=0))
         self.assertEqual(list(self.db.execute("SELECT * FROM unigrams WHERE current='新的'")), old)
         self.assertEqual(self.db.execute("SELECT probability,backoff FROM unigrams WHERE current='舊的'").fetchone(), (-3., 0.))
         self.assertEqual(list(self.db.execute("SELECT * FROM bigrams")), bigrams)
@@ -56,6 +58,27 @@ class CollectionTests(unittest.TestCase):
         self.assertFalse(result["exclusions"])
         self.assertEqual(result["downranked"][0]["conflict_word"], "新的")
         self.assertEqual(self.db.execute("SELECT probability FROM unigrams WHERE current='心的'").fetchone(), (-5,))
+
+    def test_reviewed_reading_is_deferred_without_dropping_other_readings(self):
+        a = self.source("a.tsv", "心的\t10\tㄒㄧㄣ ㄉㄜ˙\t一般\n心的\t10\tㄒㄧㄣ ㄉㄧˋ\t一般\n")
+        first = query_for_reading("ㄒㄧㄣ")
+        reviewed = first + query_for_reading("ㄉㄜ˙")
+        other = first + query_for_reading("ㄉㄧˋ")
+        result = apply(self.db, [a], 1000, collision_index=self.index,
+                       reviewed_post_training={(reviewed, "心的")})
+        self.assertEqual(result["totals"]["reviewed_post_training"], 1)
+        self.assertEqual(result["skipped"][0]["reason"], "reviewed_post_training")
+        self.assertFalse(result["downranked"])
+        self.assertEqual(self.db.execute("SELECT qstring FROM unigrams WHERE current='心的'").fetchall(),
+                         [(other,)])
+
+    def test_new_single_characters_are_recorded_without_adding_readings(self):
+        a = self.source("a.tsv", "嚟\t1\tㄌㄧˊ\t口語\n啲\t1\tinvalid\t口語\n")
+        result = apply(self.db, [a], 1000, collision_index=self.index)
+        self.assertEqual(result["totals"]["single_character_source_only"], 1)
+        self.assertEqual(result["exclusions"][0]["reason"], "single_character_source_only")
+        self.assertEqual(result["rejected"][0]["word"], "啲")
+        self.assertEqual(self.db.execute("SELECT current FROM unigrams").fetchall(), [("新的",)])
 
     def test_bad_header_does_not_partially_apply(self):
         a = self.source("a.tsv", "舊的\t10\tㄐㄧㄡˋ ㄉㄜ˙\t一般\n")
