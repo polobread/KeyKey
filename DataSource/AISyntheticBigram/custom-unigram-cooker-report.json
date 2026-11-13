@@ -43637,7 +43637,7 @@
     "bigram_rows": 870903,
     "cin_reading_frequencies": {
       "entries": 3863,
-      "file": "/Volumes/polobread/workspace/KeyKey/Installer/local-builds/buxiang-unigram-00a3c3f/source/DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv",
+      "file": "/home/runner/work/KeyKey/KeyKey/DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv",
       "sha256": "2c9b9bb3d99516b401188311a87dc5b41e14b4f25b13978afccef7e2a25426fb"
     },
     "sentences": 325113,
@@ -46819,9 +46819,9 @@
   "people_words": 62,
   "policy": "mcp-homophones-retained-low-ranked-long-partial-diagnostic-v3",
   "refinement": {
-    "base_database_sha256": "088e715bbed84d844dea116c252a7caa911e40390a15944a565d1300a09d34b1",
+    "base_database_sha256": "f3892f2a4543a8f82ffde75f852f959b4970f75dba81cd310ba19c149e8c0353",
     "collection_supplement": null,
-    "database_sha256": "954e709551db92ee9829f2694c5a8dd9b2104f9fc02ccf18e90b6937143bb7c0",
+    "database_sha256": "7fd4965245baedf6ea0027c21bce912cc01d8110c97c251b146041231aa398d5",
     "document_frequency_bands": {
       "five_plus": 44942,
       "one": 380922,

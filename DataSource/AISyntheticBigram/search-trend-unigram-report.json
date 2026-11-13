@@ -3,7 +3,7 @@
   "collision_terms_downranked": 6,
   "collision_terms_removed": 0,
   "custom_terms": 157,
-  "database_sha256": "65c6bd04f4ce9fe430ed2ec0e2afdfccfadf32074e1df78564af85e6fd6bbae5",
+  "database_sha256": "13c070dcb4bca174bab874419a83b34d6bace8b70099e7f688c3af871ffbbd22",
   "existing_terms_removed": 393,
   "format": 1,
   "frequency_policy": "min(100, max(1, exact substring occurrences in all 2300 training articles))",
