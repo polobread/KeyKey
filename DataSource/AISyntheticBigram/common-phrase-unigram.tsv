@@ -69,3 +69,83 @@ word	target_count	reading	training_occurrences	training_documents	reason	stage	a
 哈囉出行	1	ㄏㄚ ㄌㄨㄛˊ ㄔㄨ ㄒㄧㄥˊ	0	0	中國用語輸入別讀，沿用原詞詞頻	post-training	add
 哈囉單車	1	ㄏㄚ ㄌㄨㄛˊ ㄉㄢ ㄔㄜ	0	0	中國用語輸入別讀，沿用原詞詞頻	post-training	add
 錫林郭勒	1	ㄒㄧˊ ㄌㄧㄣˊ ㄍㄨㄛ ㄌㄜˋ	0	0	中國用語輸入別讀，沿用原詞詞頻	post-training	add
+正要	122	ㄓㄥˋ ㄧㄠˋ	43	41	保留單打鄭為首字；完整詞在單獨輸入和固定回歸原錯例的組字驗證	post-training	reweight
+正對	78	ㄓㄥˋ ㄉㄨㄟˋ	14	12	保留單打鄭為首字；完整詞在單獨輸入和固定回歸原錯例的組字驗證	post-training	reweight
+正本	54	ㄓㄥˋ ㄅㄣˇ	88	46	保留單打鄭為首字；完整詞在單獨輸入和固定回歸原錯例的組字驗證	post-training	reweight
+正式	3687	ㄓㄥˋ ㄕˋ	1278	759	保留單打鄭為首字；完整詞在單獨輸入和固定回歸原錯例的組字驗證	post-training	reweight
+正片	24	ㄓㄥˋ ㄆㄧㄢˋ	2	2	保留單打鄭為首字；完整詞在單獨輸入和固定回歸原錯例的組字驗證	post-training	reweight
+正準備	41	ㄓㄥˋ ㄓㄨㄣˇ ㄅㄟˋ	5	5	保留單打鄭為首字；完整詞在單獨輸入和固定回歸原錯例的組字驗證	post-training	add
+訂正	83	ㄉㄧㄥˋ ㄓㄥˋ	9	8	保留單打鄭為首字；完整詞在單獨輸入和固定回歸原錯例的組字驗證	post-training	reweight
+證人	192	ㄓㄥˋ ㄖㄣˊ	28	20	保留單打鄭為首字；完整詞在單獨輸入和固定回歸原錯例的組字驗證	post-training	reweight
+工作證	85	ㄍㄨㄥ ㄗㄨㄛˋ ㄓㄥˋ	0	0	保留單打鄭為首字；完整詞在單獨輸入和固定回歸原錯例的組字驗證	post-training	reweight
+辦證	65	ㄅㄢˋ ㄓㄥˋ	0	0	保留單打鄭為首字；完整詞在單獨輸入和固定回歸原錯例的組字驗證	post-training	add
+章節	90	ㄓㄤ ㄐㄧㄝˊ	14	11	單打ㄓㄤ優先組成張後，保留完整詞直接組字的最低整數詞頻	post-training	reweight
+章法	35	ㄓㄤ ㄈㄚˇ	0	0	單打ㄓㄤ優先組成張後，保留完整詞直接組字的最低整數詞頻	post-training	reweight
+票務	1	ㄆㄧㄠˋ ㄨˋ	17	11	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+管委	1	ㄍㄨㄢˇ ㄨㄟˇ	127	28	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+擺滿	6	ㄅㄞˇ ㄇㄢˇ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+擺攤	1	ㄅㄞˇ ㄊㄢ	1	1	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+擺盤	3	ㄅㄞˇ ㄆㄢˊ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+跑偏	5	ㄆㄠˇ ㄆㄧㄢ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+偏強	12	ㄆㄧㄢ ㄑㄧㄤˊ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+偏紅	5	ㄆㄧㄢ ㄏㄨㄥˊ	1	1	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+偏藍	5	ㄆㄧㄢ ㄌㄢˊ	1	1	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+偏鹹	2	ㄆㄧㄢ ㄒㄧㄢˊ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+偏軟	4	ㄆㄧㄢ ㄖㄨㄢˇ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+偏乾	3	ㄆㄧㄢ ㄍㄢ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+偏淡	33	ㄆㄧㄢ ㄉㄢˋ	2	2	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+很煩	1	ㄏㄣˇ ㄈㄢˊ	32	30	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+越煩	3	ㄩㄝˋ ㄈㄢˊ	3	3	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+有點煩	1	ㄧㄡˇ ㄉㄧㄢˇ ㄈㄢˊ	6	6	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+最煩	1	ㄗㄨㄟˋ ㄈㄢˊ	3	3	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+代入	1	ㄉㄞˋ ㄖㄨˋ	7	5	補收完整詞供選字，保留同音「帶入」的原順位	post-training	add
+代填	3	ㄉㄞˋ ㄊㄧㄢˊ	10	10	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+沒電	1	ㄇㄟˊ ㄉㄧㄢˋ	65	45	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+綁定	1	ㄅㄤˇ ㄉㄧㄥˋ	10	10	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+拉力	39	ㄌㄚ ㄌㄧˋ	2	2	人工複核指定補詞，採可直接組字的詞頻	post-training	reweight
+拉行李	1	ㄌㄚ ㄒㄧㄥˊ ㄌㄧˇ	7	7	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+李先生	9	ㄌㄧˇ ㄒㄧㄢ ㄕㄥ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+李小姐	3	ㄌㄧˇ ㄒㄧㄠˇ ㄐㄧㄝˇ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+李女士	1	ㄌㄧˇ ㄋㄩˇ ㄕˋ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+劉先生	8	ㄌㄧㄡˊ ㄒㄧㄢ ㄕㄥ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+劉小姐	3	ㄌㄧㄡˊ ㄒㄧㄠˇ ㄐㄧㄝˇ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+劉女士	1	ㄌㄧㄡˊ ㄋㄩˇ ㄕˋ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+濾水壺	1	ㄌㄩˋ ㄕㄨㄟˇ ㄏㄨˊ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+櫃員	20	ㄍㄨㄟˋ ㄩㄢˊ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+電視櫃	1	ㄉㄧㄢˋ ㄕˋ ㄍㄨㄟˋ	4	2	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+邊櫃	5	ㄅㄧㄢ ㄍㄨㄟˋ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+櫃門	11	ㄍㄨㄟˋ ㄇㄣˊ	17	6	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+場館	1	ㄔㄤˇ ㄍㄨㄢˇ	37	15	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+展館	1	ㄓㄢˇ ㄍㄨㄢˇ	21	13	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+閉館	22	ㄅㄧˋ ㄍㄨㄢˇ	4	4	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+入館	1	ㄖㄨˋ ㄍㄨㄢˇ	7	6	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+館方	65	ㄍㄨㄢˇ ㄈㄤ	53	19	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+客訴	7	ㄎㄜˋ ㄙㄨˋ	10	7	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+考後	86	ㄎㄠˇ ㄏㄡˋ	3	3	人工複核指定補詞，採可直接組字的詞頻	post-training	reweight
+何先生	6	ㄏㄜˊ ㄒㄧㄢ ㄕㄥ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+何小姐	2	ㄏㄜˊ ㄒㄧㄠˇ ㄐㄧㄝˇ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+何女士	1	ㄏㄜˊ ㄋㄩˇ ㄕˋ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+畫得	1309	ㄏㄨㄚˋ ㄉㄜ˙	14	13	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+重畫	175	ㄔㄨㄥˊ ㄏㄨㄚˋ	8	8	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+畫了	269	ㄏㄨㄚˋ ㄌㄜ˙	13	12	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+照片集	128	ㄓㄠˋ ㄆㄧㄢˋ ㄐㄧˊ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+整集	79	ㄓㄥˇ ㄐㄧˊ	4	3	人工複核指定補詞，採可直接組字的詞頻	post-training	reweight
+半集	59	ㄅㄢˋ ㄐㄧˊ	2	2	人工複核指定補詞，採可直接組字的詞頻	post-training	reweight
+下集	90	ㄒㄧㄚˋ ㄐㄧˊ	3	3	人工複核指定補詞，採可直接組字的詞頻	post-training	reweight
+下一集	1	ㄒㄧㄚˋ ㄧ ㄐㄧˊ	3	2	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+這集	131	ㄓㄜˋ ㄐㄧˊ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	reweight
+解鎖	136	ㄐㄧㄝˇ ㄙㄨㄛˇ	5	5	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+解任務	2	ㄐㄧㄝˇ ㄖㄣˋ ㄨˋ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+解完	38	ㄐㄧㄝˇ ㄨㄢˊ	5	5	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+解方	108	ㄐㄧㄝˇ ㄈㄤ	2	2	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+交期	96	ㄐㄧㄠ ㄑㄧˊ	105	50	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+晚交	1	ㄨㄢˇ ㄐㄧㄠ	17	16	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+交報告	9	ㄐㄧㄠ ㄅㄠˋ ㄍㄠˋ	8	8	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+周先生	7	ㄓㄡ ㄒㄧㄢ ㄕㄥ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+周小姐	2	ㄓㄡ ㄒㄧㄠˇ ㄐㄧㄝˇ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+周女士	1	ㄓㄡ ㄋㄩˇ ㄕˋ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+正臉	4	ㄓㄥˋ ㄌㄧㄢˇ	4	4	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+濕黏	127	ㄕ ㄋㄧㄢˊ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+蔡先生	7	ㄘㄞˋ ㄒㄧㄢ ㄕㄥ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+蔡小姐	2	ㄘㄞˋ ㄒㄧㄠˇ ㄐㄧㄝˇ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+蔡女士	1	ㄘㄞˋ ㄋㄩˇ ㄕˋ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add

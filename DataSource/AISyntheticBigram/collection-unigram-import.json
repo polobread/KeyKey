@@ -1,6 +1,6 @@
 {
   "base_commit": "63a5a33beb5a24a23c91cd74d5ff021c65affde2",
-  "database_sha256": "e8e1376cf3a141550191608242bd348448d4b8ce76d24b29a2e52e1a76c9a2ef",
+  "database_sha256": "bac8d0bb526ca41a1280b6799218be815d785899258b738547a1da80a634f589",
   "files": [
     {
       "collision": 2,
@@ -369,7 +369,7 @@
   "frequency_policy": "minimum",
   "policy": "Chinese aliases; text deduplication; homophones retained below existing candidates; long partial overlaps diagnostic only; anime and colliding words added after training at count <=0.01; other personal names added after training at count <=1",
   "rejected": [],
-  "semantic_sha256": "e5988d3b62fb316bc0a4486f15045ff852a6c4837e3f2b647109b039a9f6e5a8",
+  "semantic_sha256": "f1364e6965be4e5ccf23ba70e7597f1604287566d2edeaf657c293d7f8b06d5a",
   "skipped": [
     {
       "file": "phrase.agriculture-food.tsv",
@@ -21580,6 +21580,11 @@
       "word": "需求"
     }
   ],
+  "source_frequency_files": [
+    "phrase.china.tsv",
+    "phrase.hongkong-macao.tsv",
+    "phrase.taiwan.tsv"
+  ],
   "sources": [
     {
       "file": "phrase.agriculture-food.tsv",
@@ -21603,7 +21608,7 @@
     },
     {
       "file": "phrase.china.tsv",
-      "sha256": "9c0f2cb6d3ad0f30e44fd0f93ed2e02138bfce9a0eed10fbeb5d37eb07bb0382"
+      "sha256": "3fa1ad929029f54df7c7003998b3c07628b11ebd6b8ccdba6cb4fb730c3d587b"
     },
     {
       "file": "phrase.chinese.tsv",
@@ -21647,7 +21652,7 @@
     },
     {
       "file": "phrase.hongkong-macao.tsv",
-      "sha256": "0e05ba401da87ec01f45413e4bac7b667b1f5d55578e0146a0f9dcbca11293f8"
+      "sha256": "d912e885b4c77d8a74a4edc026747be413fdf8c747232bb44ddde0bfc65b1379"
     },
     {
       "file": "phrase.industrial-engineering.tsv",
@@ -21707,7 +21712,7 @@
     },
     {
       "file": "phrase.taiwan.tsv",
-      "sha256": "8c78ee2b784bf5b3f3611921dfbf726345908eb98fa6b27d44627944f9a24b62"
+      "sha256": "cbdea8f9034fd5bf0762c8049e3310f0db407b9adbe3f24797a897bc93349c12"
     },
     {
       "file": "phrase.transport-logistics.tsv",
@@ -21724,5 +21729,5 @@
     "rows": 13997,
     "single_character_source_only": 11
   },
-  "unigram_total_count": 22614922.0
+  "unigram_total_count": 22634075.0
 }
