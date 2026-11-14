@@ -34,12 +34,12 @@ def load_overrides(path):
 
 
 def apply(database, paths, total_count, overrides=None, frequency_policy="minimum", collision_index=None,
-          *, reviewed_post_training=frozenset()):
+          *, reviewed_post_training=frozenset(), source_frequency_files=()):
     """Text deduplication: existing model wins, then first valid source row.
 
     Source filenames and row order define precedence. New entries default to
-    count one; source frequency is retained in the audit, never summed or used
-    to rescale existing unigrams. Unencodable rows are reported, never
+    count one. Opted-in files use source counts for new entries. Source counts
+    are never summed or used to rescale existing unigrams. Unencodable rows are reported, never
     converted to guessed pronunciations. Explicitly reviewed readings
     are deferred to the post-training phrase supplement.
     """
@@ -54,6 +54,7 @@ def apply(database, paths, total_count, overrides=None, frequency_policy="minimu
     seen, prepared, skipped, rejected, files, inserted, exclusions = set(), [], [], [], [], [], []
     partial_overlaps, downranked = [], []
     for path in sorted(paths):
+        use_source_count = frequency_policy == "source" or path.name in source_frequency_files
         counts = Counter(rows=0, inserted=0, existing=0, duplicate=0, rejected=0, collision=0,
                          reviewed_post_training=0, single_character_source_only=0)
         with path.open(encoding="utf-8", newline="") as source:
@@ -108,7 +109,9 @@ def apply(database, paths, total_count, overrides=None, frequency_policy="minimu
                 partial_overlaps.extend(dict(source=path.name, line=line, source_word=item.get("source_word", word),
                                              word=word, reading=fields[2], **conflict)
                                         for conflict in collision_index.conflicts(word, fields[2]) if conflict not in conflicts)
-                target_count = 0.01 if conflicts or fields[3] == "動漫" or path.name == "phrase.anime.tsv" else count if frequency_policy == "source" else 1
+                target_count = count if use_source_count else 1
+                if conflicts or fields[3] == "動漫" or path.name == "phrase.anime.tsv":
+                    target_count = 0.01
                 prepared.append((query, word, math.log10(target_count / total_count), 0.0))
                 inserted.append({**item, "reading": fields[2], "target_count": target_count,
                                  "source_count": count, "category": fields[3]})
@@ -122,6 +125,7 @@ def apply(database, paths, total_count, overrides=None, frequency_policy="minimu
                           "reviewed_post_training", "single_character_source_only")}
     return {"policy": "normalize reviewed Chinese aliases then skip by word text; existing model wins; first valid row in filename order wins; fixed base total; backoff zero",
             "frequency_policy": frequency_policy,
+            "source_frequency_files": sorted(source_frequency_files),
             "totals": totals, "files": files, "skipped": skipped, "rejected": rejected,
             "inserted_entries": inserted, "exclusions": exclusions, "partial_overlaps": partial_overlaps,
             "downranked": downranked}

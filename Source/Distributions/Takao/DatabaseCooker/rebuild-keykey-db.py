@@ -33,6 +33,9 @@ ROOT = Path(__file__).resolve().parents[4]
 COOKER = Path(__file__).resolve().parent
 DATA = Path("DataSource/AISyntheticBigram")
 EXCLUDED_REGRESSION_CHARACTERS = "她他時十"
+REGIONAL_SOURCE_FREQUENCY_FILES = frozenset({
+    "phrase.taiwan.tsv", "phrase.hongkong-macao.tsv", "phrase.china.tsv",
+})
 STANDALONE_WEIGHTS = Path("DataSource/CINReadingFrequency/standalone-composition-weights.json")
 STANDALONE_SELECTION = Path("DataSource/CINReadingFrequency/standalone-composition-review.tsv")
 DB = Path("Source/Distributions/Takao/CookedDatabase/KeyKey.db")
@@ -319,7 +322,8 @@ def main():
         # Explicitly reviewed common phrases remain separate from scraped words.
         phrases = apply_phrases(db, phrase_path, total)
         collection = apply_collection(db, paths, total, overrides, collision_index=collision_index,
-                                      reviewed_post_training=reviewed_post_training)
+                                      reviewed_post_training=reviewed_post_training,
+                                      source_frequency_files=REGIONAL_SOURCE_FREQUENCY_FILES)
         if collection["rejected"]:
             raise ValueError(f"unresolved collection readings: {collection['rejected']}")
     anime_words, people_words = set(), set()
@@ -495,6 +499,7 @@ def main():
     c = sources["collection_unigram_supplement"]
     c.update(files=source_records(paths), source_rows=collection["totals"]["rows"], inserted=collection["totals"]["inserted"],
              existing_rows_skipped=collection["totals"]["existing"], duplicate_rows_skipped=collection["totals"]["duplicate"], rejected=0, collision_rows_excluded=0, collision_rows_downranked=collection["totals"]["collision"], cooked=True)
+    c["source_frequency_files"] = collection["source_frequency_files"]
     c.pop("user_accepted_regression", None)
     for key in ("overrides", "list", "skipped", "search_presence", "report", "validation"):
         filename = c[key + "_file"]

@@ -1,9 +1,9 @@
 {
-  "before_sha256": "5cff8cb09773501783d56c826a48ec4caaf05f1421403483f38b7e379afca35e",
-  "candidate_semantic_sha256": "e5988d3b62fb316bc0a4486f15045ff852a6c4837e3f2b647109b039a9f6e5a8",
-  "candidate_sha256": "e8e1376cf3a141550191608242bd348448d4b8ce76d24b29a2e52e1a76c9a2ef",
+  "before_sha256": "e8e1376cf3a141550191608242bd348448d4b8ce76d24b29a2e52e1a76c9a2ef",
+  "candidate_semantic_sha256": "f1364e6965be4e5ccf23ba70e7597f1604287566d2edeaf657c293d7f8b06d5a",
+  "candidate_sha256": "bac8d0bb526ca41a1280b6799218be815d785899258b738547a1da80a634f589",
   "decision": "adopted",
-  "delta_actions": 1,
+  "delta_actions": -1421,
   "inputs": {
     "DataSource/AISyntheticArticles/typing-articles-v2.jsonl": "460a136690046afee2f98824717613a84b7aa2e4df2534bcd1f5491619fdd132",
     "DataSource/AISyntheticArticles/typing-articles-v3.jsonl": "e1f39e99f721b12d05c97b538abf5ce91736f4031a9ef7929dd66d539bfdf790",
@@ -141,7 +141,7 @@
     "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0131.md": "0bbbf1b6471dba74ccd2650e2f40a99080b2d6d2253fe15f868469da7f49421e",
     "DataSource/AISyntheticBigram/basic-bigram-protected-characters.txt": "54c2a5eaa78b69d77b64ccffefe14c6da7cf6c20a2875c3fef9f60093f8d0cda",
     "DataSource/AISyntheticBigram/collection-unigram-overrides.tsv": "e904d8db9d8f6f71e336fca9ee5daa3a7f990bd97e01d897d246e336c3b37550",
-    "DataSource/AISyntheticBigram/common-phrase-unigram.tsv": "800c07d505a4bab0eff8a664d40cab074d1acf8c6189cad59ff88953346327fc",
+    "DataSource/AISyntheticBigram/common-phrase-unigram.tsv": "70fcefda1d0aa7fb5027022a5e811e28407bf6500291de4c5de0683662658b71",
     "DataSource/AISyntheticBigram/common-unigram-supplement.tsv": "b1bcff76f1551de638847680465113809579638d5794b256697a31ff6bba82ad",
     "DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv": "6da32f4960d909763c987986cef1f2a6d9aaf38c0c88386dc732bf37944a97f9",
     "DataSource/AISyntheticBigram/search-trend-reading-overrides.tsv": "1a2f9b2ab4b73aadb3ac12dbdce3da56495ac64fb576682359071a76f89afc8f",
@@ -149,8 +149,8 @@
     "DataSource/AISyntheticBigram/supplemental-lexicon.tsv": "55c8d7d4410f9b79c212bb8bdd5bf0216ba8f3ef861bbc9cd8d77b8266a026ba",
     "DataSource/AssociatedPhraseCollectionNames.tsv": "4bca71ecc6330823d086fad0ffd12087c91c9d4e5bd907c9923afe32dda3bef1",
     "DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv": "2c9b9bb3d99516b401188311a87dc5b41e14b4f25b13978afccef7e2a25426fb",
-    "DataSource/CINReadingFrequency/standalone-composition-review.tsv": "1461f27c4798e0dd45129f37d6e10035c5416a98d5013bb0ff8c631d3556e493",
-    "DataSource/CINReadingFrequency/standalone-composition-weights.json": "d762a91a697a32c23b1e0b92c9e823d5ce9c71cedad21adaeec721698983ac7d",
+    "DataSource/CINReadingFrequency/standalone-composition-review.tsv": "2e9a6b9c84cd7f18cfce4b3fd940141a1bc61cea7c49e4e3be3bf242258892dd",
+    "DataSource/CINReadingFrequency/standalone-composition-weights.json": "23972599d0931755b7138b93c70c640a80296eb5afaaa1611045e069bc54df02",
     "DataSource/McBopomofo/BPMFMappings.txt": "51715ee5c731f9994be3b168d7681ed9692b8c335ae6fc2e7cfd4af6fd0e0781",
     "DataSource/McBopomofo/phrase.occ": "0fc51c5245a8820e1003e3fa3fb2759b0d1b502a71da81bbfa265e9ac6c9fb5a",
     "DataSource/chichi77Collection/phrase.agriculture-food.tsv": "784ced9492d917f4c30d444d35c7df99597cc5cdc39c5b30cac04b92822e8b8f",
@@ -158,7 +158,7 @@
     "DataSource/chichi77Collection/phrase.anime.tsv": "4b2f78ebd6a0ce23377f9ddf29f91ca7cf80c97be24f3d3f97447288aeec6e60",
     "DataSource/chichi77Collection/phrase.biotech-pharma.tsv": "c62ad3ec34737928a11510d81fdfa853bbf1ca708325b5b0befa187766caa22f",
     "DataSource/chichi77Collection/phrase.business.tsv": "15d02771e998f79fbd98cea499ea7fb71a40fc9e49c88bd852e1f2a1fb605852",
-    "DataSource/chichi77Collection/phrase.china.tsv": "9c0f2cb6d3ad0f30e44fd0f93ed2e02138bfce9a0eed10fbeb5d37eb07bb0382",
+    "DataSource/chichi77Collection/phrase.china.tsv": "3fa1ad929029f54df7c7003998b3c07628b11ebd6b8ccdba6cb4fb730c3d587b",
     "DataSource/chichi77Collection/phrase.chinese.tsv": "8f1e92365022b66d3a2505f76833df829dffc153caf6e49446ec7d274d45f166",
     "DataSource/chichi77Collection/phrase.civil-engineering.tsv": "d6160514eac652434bc723d1c62c74152d71230088c98d3f5608a149dcd80fd0",
     "DataSource/chichi77Collection/phrase.education.tsv": "d26ed0c823e5db5e3614cbb52875f04860b0e6b11d911c3228ba65d18f31252e",
@@ -169,7 +169,7 @@
     "DataSource/chichi77Collection/phrase.given-names.tsv": "5e11ce1a3880559639e87049b89fc5c2e163a7febf8dabe994b1b675e462c044",
     "DataSource/chichi77Collection/phrase.government.tsv": "c5314c93b1b4146ac10237aee6f61a27f705974cf8d48b2d88677a866f8df55e",
     "DataSource/chichi77Collection/phrase.history.tsv": "89fe6eab08580ceca972deae1c87797d9fe7932b211ca802e4a67ad604126b20",
-    "DataSource/chichi77Collection/phrase.hongkong-macao.tsv": "0e05ba401da87ec01f45413e4bac7b667b1f5d55578e0146a0f9dcbca11293f8",
+    "DataSource/chichi77Collection/phrase.hongkong-macao.tsv": "d912e885b4c77d8a74a4edc026747be413fdf8c747232bb44ddde0bfc65b1379",
     "DataSource/chichi77Collection/phrase.industrial-engineering.tsv": "dcd3401750068579ac25fceba77fb728e351feda9d485b2c6ed277cd4685aad0",
     "DataSource/chichi77Collection/phrase.law.tsv": "e0943e7f799de793e07152ae136c499350e71a499c4a29037eb580e2e2b7c854",
     "DataSource/chichi77Collection/phrase.manufacturing.tsv": "1f74e498e34aaa0ffe2e048e34a74bfc806d484df072472d98e2883e67ec5e54",
@@ -184,454 +184,454 @@
     "DataSource/chichi77Collection/phrase.science.tsv": "efe2ed2a4551a245b173794e818082d87a0079a85017fe4569ab860310500339",
     "DataSource/chichi77Collection/phrase.semiconductor.tsv": "3504725ccee662529eb0f8182e0ac1f444e349e52751b5c826e9469417a204ba",
     "DataSource/chichi77Collection/phrase.software.tsv": "29d5b5263db056ffb12ecc97f07d5f56f816c13cf4e07620ade59cee23362acf",
-    "DataSource/chichi77Collection/phrase.taiwan.tsv": "8c78ee2b784bf5b3f3611921dfbf726345908eb98fa6b27d44627944f9a24b62",
+    "DataSource/chichi77Collection/phrase.taiwan.tsv": "cbdea8f9034fd5bf0762c8049e3310f0db407b9adbe3f24797a897bc93349c12",
     "DataSource/chichi77Collection/phrase.transport-logistics.tsv": "3b35634cc638940ebef1db5a09b6e5bbc838fd70336a612c59ec3cee2092cae6",
     "Source/DataTables/bpmf-ext.cin": "2283c5c217effece97d79918f01da219a39d6bb94390ec9f1cfb2e4959840bff"
   },
   "maximum_regression_actions": 30,
-  "reason": "排除人名及「她、他、時、十」後，總動作差 1 次，未超過 30 次門檻",
+  "reason": "排除人名及「她、他、時、十」後，總動作差 -1421 次，未超過 30 次門檻",
   "regression": {
-    "added_actions": 29,
-    "after": 318426,
+    "added_actions": 0,
+    "after": 317005,
     "articles": [
       {
-        "delta": 2,
+        "delta": -14,
         "id": "tw-corpus-0001"
       },
       {
-        "delta": 0,
+        "delta": -14,
         "id": "tw-corpus-0002"
       },
       {
-        "delta": 0,
+        "delta": -14,
         "id": "tw-corpus-0003"
       },
       {
-        "delta": 0,
+        "delta": -6,
         "id": "tw-corpus-0004"
       },
       {
-        "delta": 0,
+        "delta": -22,
         "id": "tw-corpus-0005"
       },
       {
-        "delta": -2,
+        "delta": -44,
         "id": "tw-corpus-0006"
       },
       {
-        "delta": 0,
+        "delta": -14,
         "id": "tw-corpus-0007"
       },
       {
-        "delta": 2,
+        "delta": -18,
         "id": "tw-corpus-0008"
       },
       {
-        "delta": 0,
+        "delta": -8,
         "id": "tw-corpus-0009"
       },
       {
-        "delta": 0,
+        "delta": -24,
         "id": "tw-corpus-0010"
       },
       {
-        "delta": 0,
+        "delta": -6,
         "id": "tw-corpus-0011"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0012"
       },
       {
-        "delta": 4,
+        "delta": -16,
         "id": "tw-corpus-0013"
       },
       {
-        "delta": 2,
+        "delta": -10,
         "id": "tw-corpus-0014"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0015"
       },
       {
-        "delta": 0,
+        "delta": -18,
         "id": "tw-corpus-0016"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0017"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0018"
       },
       {
-        "delta": 0,
+        "delta": -6,
         "id": "tw-corpus-0019"
       },
       {
-        "delta": -6,
+        "delta": -14,
         "id": "tw-corpus-0020"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0021"
       },
       {
-        "delta": 0,
+        "delta": -18,
         "id": "tw-corpus-0022"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0023"
       },
       {
-        "delta": 0,
+        "delta": -16,
         "id": "tw-corpus-0024"
       },
       {
-        "delta": 0,
+        "delta": -2,
         "id": "tw-corpus-0025"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0026"
       },
       {
-        "delta": 2,
+        "delta": -16,
         "id": "tw-corpus-0027"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0028"
       },
       {
-        "delta": 2,
+        "delta": -4,
         "id": "tw-corpus-0029"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0030"
       },
       {
-        "delta": 2,
+        "delta": -10,
         "id": "tw-corpus-0031"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0032"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0033"
       },
       {
-        "delta": 0,
+        "delta": -16,
         "id": "tw-corpus-0034"
       },
       {
-        "delta": 2,
+        "delta": -6,
         "id": "tw-corpus-0035"
       },
       {
-        "delta": 0,
+        "delta": -25,
         "id": "tw-corpus-0036"
       },
       {
-        "delta": 0,
+        "delta": -24,
         "id": "tw-corpus-0037"
       },
       {
-        "delta": 0,
+        "delta": -18,
         "id": "tw-corpus-0038"
       },
       {
-        "delta": 0,
+        "delta": -18,
         "id": "tw-corpus-0039"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0040"
       },
       {
-        "delta": 0,
+        "delta": -8,
         "id": "tw-corpus-0041"
       },
       {
-        "delta": 0,
+        "delta": -6,
         "id": "tw-corpus-0042"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0043"
       },
       {
-        "delta": 0,
+        "delta": -8,
         "id": "tw-corpus-0044"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0045"
       },
       {
-        "delta": 0,
+        "delta": -6,
         "id": "tw-corpus-0046"
       },
       {
-        "delta": 0,
+        "delta": -8,
         "id": "tw-corpus-0047"
       },
       {
-        "delta": 2,
+        "delta": -10,
         "id": "tw-corpus-0048"
       },
       {
-        "delta": 0,
+        "delta": -6,
         "id": "tw-corpus-0049"
       },
       {
-        "delta": -2,
+        "delta": -6,
         "id": "tw-corpus-0050"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0051"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0052"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0053"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0054"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0055"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0056"
       },
       {
-        "delta": -4,
+        "delta": -10,
         "id": "tw-corpus-0057"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0058"
       },
       {
-        "delta": 0,
+        "delta": -26,
         "id": "tw-corpus-0059"
       },
       {
-        "delta": -2,
+        "delta": -12,
         "id": "tw-corpus-0060"
       },
       {
-        "delta": 0,
+        "delta": -8,
         "id": "tw-corpus-0061"
       },
       {
-        "delta": 2,
+        "delta": -12,
         "id": "tw-corpus-0062"
       },
       {
-        "delta": -2,
+        "delta": -12,
         "id": "tw-corpus-0063"
       },
       {
-        "delta": 0,
+        "delta": -2,
         "id": "tw-corpus-0064"
       },
       {
-        "delta": 0,
+        "delta": -6,
         "id": "tw-corpus-0065"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0066"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0067"
       },
       {
-        "delta": 0,
+        "delta": -16,
         "id": "tw-corpus-0068"
       },
       {
-        "delta": 1,
+        "delta": -24,
         "id": "tw-corpus-0069"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0070"
       },
       {
-        "delta": 0,
+        "delta": -2,
         "id": "tw-corpus-0071"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0072"
       },
       {
-        "delta": 0,
+        "delta": -6,
         "id": "tw-corpus-0073"
       },
       {
-        "delta": 0,
+        "delta": -2,
         "id": "tw-corpus-0074"
       },
       {
-        "delta": -2,
+        "delta": -6,
         "id": "tw-corpus-0075"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0076"
       },
       {
-        "delta": 0,
+        "delta": -8,
         "id": "tw-corpus-0077"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0078"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0079"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0080"
       },
       {
-        "delta": 4,
+        "delta": -28,
         "id": "tw-corpus-0081"
       },
       {
-        "delta": 0,
+        "delta": -14,
         "id": "tw-corpus-0082"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0083"
       },
       {
-        "delta": 2,
+        "delta": -10,
         "id": "tw-corpus-0084"
       },
       {
-        "delta": 0,
+        "delta": -20,
         "id": "tw-corpus-0085"
       },
       {
-        "delta": 0,
+        "delta": -22,
         "id": "tw-corpus-0086"
       },
       {
-        "delta": 0,
+        "delta": -20,
         "id": "tw-corpus-0087"
       },
       {
-        "delta": -2,
+        "delta": -4,
         "id": "tw-corpus-0088"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0089"
       },
       {
-        "delta": 0,
+        "delta": -6,
         "id": "tw-corpus-0090"
       },
       {
-        "delta": 0,
+        "delta": -6,
         "id": "tw-corpus-0091"
       },
       {
-        "delta": 0,
+        "delta": -20,
         "id": "tw-corpus-0092"
       },
       {
-        "delta": 0,
+        "delta": -8,
         "id": "tw-corpus-0093"
       },
       {
-        "delta": 0,
+        "delta": -14,
         "id": "tw-corpus-0094"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0095"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0096"
       },
       {
-        "delta": -4,
+        "delta": -8,
         "id": "tw-corpus-0097"
       },
       {
-        "delta": 0,
+        "delta": -18,
         "id": "tw-corpus-0098"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0099"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0100"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0101"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0102"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0103"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0104"
       },
       {
-        "delta": 0,
+        "delta": -8,
         "id": "tw-corpus-0105"
       },
       {
-        "delta": 0,
+        "delta": -14,
         "id": "tw-corpus-0106"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0107"
       },
       {
-        "delta": 0,
+        "delta": -20,
         "id": "tw-corpus-0108"
       },
       {
-        "delta": 0,
+        "delta": -14,
         "id": "tw-corpus-0109"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0110"
       },
       {
@@ -639,329 +639,852 @@
         "id": "tw-corpus-0111"
       },
       {
-        "delta": 0,
+        "delta": -24,
         "id": "tw-corpus-0112"
       },
       {
-        "delta": 0,
+        "delta": -2,
         "id": "tw-corpus-0113"
       },
       {
-        "delta": 0,
+        "delta": -22,
         "id": "tw-corpus-0114"
       },
       {
-        "delta": 0,
+        "delta": -10,
         "id": "tw-corpus-0115"
       },
       {
-        "delta": 0,
+        "delta": -6,
         "id": "tw-corpus-0116"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0117"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0118"
       },
       {
-        "delta": 0,
+        "delta": -16,
         "id": "tw-corpus-0119"
       },
       {
-        "delta": 0,
+        "delta": -14,
         "id": "tw-corpus-0120"
       },
       {
-        "delta": 0,
+        "delta": -2,
         "id": "tw-corpus-0121"
       },
       {
-        "delta": 0,
+        "delta": -6,
         "id": "tw-corpus-0122"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0123"
       },
       {
-        "delta": 0,
+        "delta": -12,
         "id": "tw-corpus-0124"
       },
       {
-        "delta": 0,
+        "delta": -8,
         "id": "tw-corpus-0125"
       },
       {
-        "delta": 0,
+        "delta": -6,
         "id": "tw-corpus-0126"
       },
       {
-        "delta": 0,
+        "delta": -4,
         "id": "tw-corpus-0127"
       },
       {
-        "delta": 0,
+        "delta": -8,
         "id": "tw-corpus-0128"
       },
       {
-        "delta": -2,
+        "delta": -10,
         "id": "tw-corpus-0129"
       },
       {
-        "delta": 0,
+        "delta": -2,
         "id": "tw-corpus-0130"
       },
       {
-        "delta": 0,
+        "delta": -6,
         "id": "tw-corpus-0131"
       }
     ],
-    "before": 318425,
-    "character_corrections_after": 4047,
+    "before": 318426,
+    "character_corrections_after": 3302,
     "character_corrections_before": 4047,
-    "corrections_after": 3625,
+    "corrections_after": 2914,
     "corrections_before": 3625,
-    "delta": 1,
-    "improved_articles": 10,
+    "delta": -1421,
+    "improved_articles": 130,
     "maximum_regression_actions": 30,
     "passes": true,
-    "passes_strict_diagnostic": false,
-    "reduction_percent": -0.00031404569364842585,
-    "regressed_articles": 13,
-    "saved_actions": 28,
+    "passes_strict_diagnostic": true,
+    "reduction_percent": 0.44625752922186,
+    "regressed_articles": 0,
+    "saved_actions": 1421,
     "syllables": 93630,
     "tiers": {
       "basic100": {
-        "after": 655,
+        "after": 462,
         "before": 655,
         "character_changes": [
           {
-            "after": 11,
-            "before": 12,
+            "after": 6,
+            "before": 88,
+            "character": "裡",
+            "delta": -82
+          },
+          {
+            "after": 14,
+            "before": 59,
+            "character": "已",
+            "delta": -45
+          },
+          {
+            "after": 4,
+            "before": 39,
+            "character": "嗎",
+            "delta": -35
+          },
+          {
+            "after": 5,
+            "before": 32,
+            "character": "新",
+            "delta": -27
+          },
+          {
+            "after": 0,
+            "before": 7,
+            "character": "而",
+            "delta": -7
+          },
+          {
+            "after": 7,
+            "before": 8,
+            "character": "只",
+            "delta": -1
+          },
+          {
+            "after": 17,
+            "before": 18,
+            "character": "得",
+            "delta": -1
+          },
+          {
+            "after": 10,
+            "before": 11,
             "character": "第",
             "delta": -1
           },
           {
-            "after": 88,
-            "before": 87,
-            "character": "裡",
+            "after": 15,
+            "before": 14,
+            "character": "的",
             "delta": 1
+          },
+          {
+            "after": 5,
+            "before": 0,
+            "character": "那",
+            "delta": 5
           }
         ],
-        "delta": 0
+        "delta": -193
       },
       "core83": {
-        "after": 534,
+        "after": 450,
         "before": 534,
-        "character_changes": [],
-        "delta": 0
-      },
-      "general101_1000": {
-        "after": 2281,
-        "before": 2284,
         "character_changes": [
           {
+            "after": 4,
+            "before": 39,
+            "character": "嗎",
+            "delta": -35
+          },
+          {
+            "after": 16,
+            "before": 41,
+            "character": "哪",
+            "delta": -25
+          },
+          {
+            "after": 6,
+            "before": 26,
+            "character": "每",
+            "delta": -20
+          },
+          {
             "after": 0,
-            "before": 2,
-            "character": "微",
+            "before": 7,
+            "character": "而",
+            "delta": -7
+          },
+          {
+            "after": 7,
+            "before": 8,
+            "character": "只",
+            "delta": -1
+          },
+          {
+            "after": 17,
+            "before": 18,
+            "character": "得",
+            "delta": -1
+          },
+          {
+            "after": 8,
+            "before": 9,
+            "character": "進",
+            "delta": -1
+          },
+          {
+            "after": 15,
+            "before": 14,
+            "character": "的",
+            "delta": 1
+          },
+          {
+            "after": 5,
+            "before": 0,
+            "character": "那",
+            "delta": 5
+          }
+        ],
+        "delta": -84
+      },
+      "general101_1000": {
+        "after": 1887,
+        "before": 2281,
+        "character_changes": [
+          {
+            "after": 10,
+            "before": 37,
+            "character": "線",
+            "delta": -27
+          },
+          {
+            "after": 16,
+            "before": 41,
+            "character": "哪",
+            "delta": -25
+          },
+          {
+            "after": 7,
+            "before": 32,
+            "character": "常",
+            "delta": -25
+          },
+          {
+            "after": 15,
+            "before": 37,
+            "character": "店",
+            "delta": -22
+          },
+          {
+            "after": 6,
+            "before": 26,
+            "character": "每",
+            "delta": -20
+          },
+          {
+            "after": 5,
+            "before": 24,
+            "character": "叫",
+            "delta": -19
+          },
+          {
+            "after": 0,
+            "before": 19,
+            "character": "洗",
+            "delta": -19
+          },
+          {
+            "after": 14,
+            "before": 32,
+            "character": "帶",
+            "delta": -18
+          },
+          {
+            "after": 3,
+            "before": 19,
+            "character": "站",
+            "delta": -16
+          },
+          {
+            "after": 0,
+            "before": 15,
+            "character": "菜",
+            "delta": -15
+          },
+          {
+            "after": 1,
+            "before": 15,
+            "character": "歌",
+            "delta": -14
+          },
+          {
+            "after": 1,
+            "before": 14,
+            "character": "按",
+            "delta": -13
+          },
+          {
+            "after": 1,
+            "before": 13,
+            "character": "正",
+            "delta": -12
+          },
+          {
+            "after": 1,
+            "before": 13,
+            "character": "留",
+            "delta": -12
+          },
+          {
+            "after": 2,
+            "before": 13,
+            "character": "版",
+            "delta": -11
+          },
+          {
+            "after": 1,
+            "before": 12,
+            "character": "頁",
+            "delta": -11
+          },
+          {
+            "after": 4,
+            "before": 15,
+            "character": "題",
+            "delta": -11
+          },
+          {
+            "after": 1,
+            "before": 11,
+            "character": "課",
+            "delta": -10
+          },
+          {
+            "after": 4,
+            "before": 14,
+            "character": "飯",
+            "delta": -10
+          },
+          {
+            "after": 2,
+            "before": 11,
+            "character": "借",
+            "delta": -9
+          },
+          {
+            "after": 0,
+            "before": 8,
+            "character": "啦",
+            "delta": -8
+          },
+          {
+            "after": 19,
+            "before": 26,
+            "character": "句",
+            "delta": -7
+          },
+          {
+            "after": 0,
+            "before": 7,
+            "character": "另",
+            "delta": -7
+          },
+          {
+            "after": 2,
+            "before": 9,
+            "character": "硬",
+            "delta": -7
+          },
+          {
+            "after": 0,
+            "before": 7,
+            "character": "費",
+            "delta": -7
+          },
+          {
+            "after": 20,
+            "before": 26,
+            "character": "記",
+            "delta": -6
+          },
+          {
+            "after": 0,
+            "before": 5,
+            "character": "蓋",
+            "delta": -5
+          },
+          {
+            "after": 2,
+            "before": 7,
+            "character": "解",
+            "delta": -5
+          },
+          {
+            "after": 1,
+            "before": 5,
+            "character": "壓",
+            "delta": -4
+          },
+          {
+            "after": 3,
+            "before": 7,
+            "character": "期",
+            "delta": -4
+          },
+          {
+            "after": 0,
+            "before": 4,
+            "character": "氣",
+            "delta": -4
+          },
+          {
+            "after": 1,
+            "before": 5,
+            "character": "演",
+            "delta": -4
+          },
+          {
+            "after": 3,
+            "before": 7,
+            "character": "睡",
+            "delta": -4
+          },
+          {
+            "after": 14,
+            "before": 18,
+            "character": "集",
+            "delta": -4
+          },
+          {
+            "after": 6,
+            "before": 10,
+            "character": "館",
+            "delta": -4
+          },
+          {
+            "after": 0,
+            "before": 3,
+            "character": "戶",
+            "delta": -3
+          },
+          {
+            "after": 1,
+            "before": 4,
+            "character": "拖",
+            "delta": -3
+          },
+          {
+            "after": 0,
+            "before": 3,
+            "character": "招",
+            "delta": -3
+          },
+          {
+            "after": 21,
+            "before": 24,
+            "character": "畫",
+            "delta": -3
+          },
+          {
+            "after": 0,
+            "before": 3,
+            "character": "臨",
+            "delta": -3
+          },
+          {
+            "after": 0,
+            "before": 3,
+            "character": "證",
+            "delta": -3
+          },
+          {
+            "after": 13,
+            "before": 15,
+            "character": "交",
+            "delta": -2
+          },
+          {
+            "after": 15,
+            "before": 17,
+            "character": "員",
+            "delta": -2
+          },
+          {
+            "after": 5,
+            "before": 7,
+            "character": "擺",
+            "delta": -2
+          },
+          {
+            "after": 19,
+            "before": 21,
+            "character": "步",
+            "delta": -2
+          },
+          {
+            "after": 2,
+            "before": 4,
+            "character": "網",
+            "delta": -2
+          },
+          {
+            "after": 1,
+            "before": 3,
+            "character": "購",
             "delta": -2
           },
           {
             "after": 11,
             "before": 13,
-            "character": "糖",
+            "character": "首",
             "delta": -2
           },
           {
-            "after": 32,
-            "before": 33,
-            "character": "帶",
+            "after": 6,
+            "before": 7,
+            "character": "公",
+            "delta": -1
+          },
+          {
+            "after": 31,
+            "before": 32,
+            "character": "加",
+            "delta": -1
+          },
+          {
+            "after": 4,
+            "before": 5,
+            "character": "名",
+            "delta": -1
+          },
+          {
+            "after": 8,
+            "before": 9,
+            "character": "型",
+            "delta": -1
+          },
+          {
+            "after": 12,
+            "before": 13,
+            "character": "寄",
             "delta": -1
           },
           {
             "after": 2,
             "before": 3,
-            "character": "搶",
+            "character": "寫",
+            "delta": -1
+          },
+          {
+            "after": 16,
+            "before": 17,
+            "character": "式",
+            "delta": -1
+          },
+          {
+            "after": 2,
+            "before": 3,
+            "character": "張",
+            "delta": -1
+          },
+          {
+            "after": 12,
+            "before": 13,
+            "character": "掉",
+            "delta": -1
+          },
+          {
+            "after": 4,
+            "before": 5,
+            "character": "案",
+            "delta": -1
+          },
+          {
+            "after": 29,
+            "before": 30,
+            "character": "聲",
+            "delta": -1
+          },
+          {
+            "after": 5,
+            "before": 6,
+            "character": "藍",
+            "delta": -1
+          },
+          {
+            "after": 2,
+            "before": 3,
+            "character": "藥",
             "delta": -1
           },
           {
             "after": 19,
             "before": 20,
-            "character": "站",
+            "character": "變",
             "delta": -1
           },
           {
-            "after": 0,
-            "before": 1,
-            "character": "置",
+            "after": 2,
+            "before": 3,
+            "character": "超",
             "delta": -1
           },
           {
-            "after": 6,
-            "before": 7,
-            "character": "衝",
+            "after": 21,
+            "before": 22,
+            "character": "越",
+            "delta": -1
+          },
+          {
+            "after": 2,
+            "before": 3,
+            "character": "趕",
             "delta": -1
           },
           {
             "after": 3,
             "before": 4,
-            "character": "鐘",
+            "character": "辦",
             "delta": -1
           },
           {
-            "after": 15,
-            "before": 16,
-            "character": "題",
+            "after": 8,
+            "before": 9,
+            "character": "進",
             "delta": -1
           },
           {
-            "after": 12,
-            "before": 11,
-            "character": "劇",
+            "after": 37,
+            "before": 38,
+            "character": "道",
+            "delta": -1
+          },
+          {
+            "after": 4,
+            "before": 5,
+            "character": "面",
+            "delta": -1
+          },
+          {
+            "after": 3,
+            "before": 2,
+            "character": "代",
             "delta": 1
           },
           {
-            "after": 26,
-            "before": 25,
-            "character": "句",
+            "after": 2,
+            "before": 1,
+            "character": "應",
             "delta": 1
           },
           {
-            "after": 32,
-            "before": 31,
-            "character": "常",
+            "after": 1,
+            "before": 0,
+            "character": "李",
             "delta": 1
+          },
+          {
+            "after": 1,
+            "before": 0,
+            "character": "腳",
+            "delta": 1
+          },
+          {
+            "after": 3,
+            "before": 2,
+            "character": "計",
+            "delta": 1
+          },
+          {
+            "after": 3,
+            "before": 1,
+            "character": "定",
+            "delta": 2
+          },
+          {
+            "after": 2,
+            "before": 0,
+            "character": "紅",
+            "delta": 2
+          },
+          {
+            "after": 2,
+            "before": 0,
+            "character": "考",
+            "delta": 2
+          },
+          {
+            "after": 3,
+            "before": 0,
+            "character": "冊",
+            "delta": 3
+          },
+          {
+            "after": 3,
+            "before": 0,
+            "character": "據",
+            "delta": 3
           },
           {
             "after": 10,
-            "before": 9,
-            "character": "筆",
-            "delta": 1
+            "before": 6,
+            "character": "教",
+            "delta": 4
           },
           {
-            "after": 30,
-            "before": 29,
-            "character": "聲",
-            "delta": 1
+            "after": 5,
+            "before": 1,
+            "character": "長",
+            "delta": 4
+          },
+          {
+            "after": 5,
+            "before": 0,
+            "character": "板",
+            "delta": 5
+          },
+          {
+            "after": 7,
+            "before": 2,
+            "character": "電",
+            "delta": 5
           },
           {
             "after": 6,
-            "before": 5,
-            "character": "貨",
-            "delta": 1
+            "before": 0,
+            "character": "眼",
+            "delta": 6
           },
           {
-            "after": 26,
-            "before": 24,
-            "character": "室",
-            "delta": 2
+            "after": 11,
+            "before": 3,
+            "character": "媽",
+            "delta": 8
+          },
+          {
+            "after": 9,
+            "before": 0,
+            "character": "提",
+            "delta": 9
           }
         ],
-        "delta": -3
+        "delta": -394
       }
     },
-    "unchanged_articles": 108,
+    "unchanged_articles": 1,
     "unfiltered": {
-      "added_actions": 16,
-      "after": 334365,
+      "added_actions": 22,
+      "after": 333018,
       "articles": [
         {
-          "delta": 2,
+          "delta": -14,
           "id": "tw-corpus-0001"
         },
         {
-          "delta": 0,
+          "delta": -12,
           "id": "tw-corpus-0002"
         },
         {
-          "delta": 0,
+          "delta": -10,
           "id": "tw-corpus-0003"
         },
         {
-          "delta": 0,
+          "delta": -6,
           "id": "tw-corpus-0004"
         },
         {
-          "delta": 2,
+          "delta": -24,
           "id": "tw-corpus-0005"
         },
         {
-          "delta": -8,
+          "delta": -44,
           "id": "tw-corpus-0006"
         },
         {
-          "delta": 0,
+          "delta": -14,
           "id": "tw-corpus-0007"
         },
         {
-          "delta": -2,
+          "delta": -18,
           "id": "tw-corpus-0008"
         },
         {
-          "delta": -2,
+          "delta": -8,
           "id": "tw-corpus-0009"
         },
         {
-          "delta": -2,
+          "delta": -24,
           "id": "tw-corpus-0010"
         },
         {
-          "delta": -2,
+          "delta": -6,
           "id": "tw-corpus-0011"
         },
         {
-          "delta": -2,
+          "delta": -10,
           "id": "tw-corpus-0012"
         },
         {
-          "delta": 4,
+          "delta": -16,
           "id": "tw-corpus-0013"
         },
         {
-          "delta": 2,
+          "delta": -10,
           "id": "tw-corpus-0014"
         },
         {
-          "delta": 0,
+          "delta": -10,
           "id": "tw-corpus-0015"
         },
         {
-          "delta": -8,
+          "delta": -18,
           "id": "tw-corpus-0016"
         },
         {
-          "delta": -2,
+          "delta": -12,
           "id": "tw-corpus-0017"
         },
         {
-          "delta": -2,
+          "delta": -10,
           "id": "tw-corpus-0018"
         },
         {
-          "delta": 0,
+          "delta": -6,
           "id": "tw-corpus-0019"
         },
         {
-          "delta": -12,
+          "delta": -14,
           "id": "tw-corpus-0020"
         },
         {
-          "delta": 0,
+          "delta": -4,
           "id": "tw-corpus-0021"
         },
         {
-          "delta": -2,
+          "delta": -18,
           "id": "tw-corpus-0022"
         },
         {
-          "delta": -2,
+          "delta": 0,
           "id": "tw-corpus-0023"
         },
         {
-          "delta": 0,
+          "delta": -16,
           "id": "tw-corpus-0024"
         },
         {
@@ -969,183 +1492,183 @@
           "id": "tw-corpus-0025"
         },
         {
-          "delta": -2,
+          "delta": -10,
           "id": "tw-corpus-0026"
         },
         {
-          "delta": 2,
+          "delta": -16,
           "id": "tw-corpus-0027"
         },
         {
-          "delta": 0,
+          "delta": -12,
           "id": "tw-corpus-0028"
         },
         {
-          "delta": -2,
+          "delta": -6,
           "id": "tw-corpus-0029"
         },
         {
-          "delta": -2,
+          "delta": -12,
           "id": "tw-corpus-0030"
         },
         {
-          "delta": 2,
+          "delta": -10,
           "id": "tw-corpus-0031"
         },
         {
-          "delta": -2,
+          "delta": -4,
           "id": "tw-corpus-0032"
         },
         {
-          "delta": -4,
+          "delta": -10,
           "id": "tw-corpus-0033"
         },
         {
-          "delta": -2,
+          "delta": -16,
           "id": "tw-corpus-0034"
         },
         {
-          "delta": -4,
+          "delta": -6,
           "id": "tw-corpus-0035"
         },
         {
-          "delta": 0,
+          "delta": -25,
           "id": "tw-corpus-0036"
         },
         {
-          "delta": -2,
+          "delta": -24,
           "id": "tw-corpus-0037"
         },
         {
-          "delta": 0,
+          "delta": -18,
           "id": "tw-corpus-0038"
         },
         {
-          "delta": 0,
+          "delta": -18,
           "id": "tw-corpus-0039"
         },
         {
-          "delta": 0,
+          "delta": -12,
           "id": "tw-corpus-0040"
         },
         {
-          "delta": -2,
+          "delta": -8,
           "id": "tw-corpus-0041"
         },
         {
-          "delta": 0,
+          "delta": 6,
           "id": "tw-corpus-0042"
         },
         {
-          "delta": 0,
+          "delta": -12,
           "id": "tw-corpus-0043"
         },
         {
-          "delta": 0,
+          "delta": -8,
           "id": "tw-corpus-0044"
         },
         {
-          "delta": -4,
+          "delta": -6,
           "id": "tw-corpus-0045"
         },
         {
-          "delta": 0,
+          "delta": -4,
           "id": "tw-corpus-0046"
         },
         {
-          "delta": 0,
+          "delta": -8,
           "id": "tw-corpus-0047"
         },
         {
-          "delta": 2,
+          "delta": -10,
           "id": "tw-corpus-0048"
         },
         {
-          "delta": 0,
+          "delta": -6,
           "id": "tw-corpus-0049"
         },
         {
-          "delta": -4,
+          "delta": -6,
           "id": "tw-corpus-0050"
         },
         {
-          "delta": 0,
+          "delta": -10,
           "id": "tw-corpus-0051"
         },
         {
-          "delta": -2,
+          "delta": -10,
           "id": "tw-corpus-0052"
         },
         {
-          "delta": -2,
+          "delta": -4,
           "id": "tw-corpus-0053"
         },
         {
-          "delta": -4,
+          "delta": -10,
           "id": "tw-corpus-0054"
         },
         {
-          "delta": 0,
+          "delta": -8,
           "id": "tw-corpus-0055"
         },
         {
-          "delta": 0,
+          "delta": -12,
           "id": "tw-corpus-0056"
         },
         {
-          "delta": -6,
+          "delta": -10,
           "id": "tw-corpus-0057"
         },
         {
-          "delta": -2,
+          "delta": -4,
           "id": "tw-corpus-0058"
         },
         {
-          "delta": 0,
+          "delta": -26,
           "id": "tw-corpus-0059"
         },
         {
-          "delta": -4,
+          "delta": -12,
           "id": "tw-corpus-0060"
         },
         {
-          "delta": 0,
+          "delta": -8,
           "id": "tw-corpus-0061"
         },
         {
-          "delta": -2,
+          "delta": -12,
           "id": "tw-corpus-0062"
         },
         {
-          "delta": -6,
+          "delta": -12,
           "id": "tw-corpus-0063"
         },
         {
-          "delta": 0,
+          "delta": -2,
           "id": "tw-corpus-0064"
         },
         {
-          "delta": -2,
+          "delta": -6,
           "id": "tw-corpus-0065"
         },
         {
-          "delta": 0,
+          "delta": -4,
           "id": "tw-corpus-0066"
         },
         {
-          "delta": -2,
+          "delta": -4,
           "id": "tw-corpus-0067"
         },
         {
-          "delta": -12,
+          "delta": -16,
           "id": "tw-corpus-0068"
         },
         {
-          "delta": -3,
+          "delta": -20,
           "id": "tw-corpus-0069"
         },
         {
-          "delta": 0,
+          "delta": -4,
           "id": "tw-corpus-0070"
         },
         {
@@ -1153,35 +1676,35 @@
           "id": "tw-corpus-0071"
         },
         {
-          "delta": 0,
+          "delta": -4,
           "id": "tw-corpus-0072"
         },
         {
-          "delta": 0,
+          "delta": -6,
           "id": "tw-corpus-0073"
         },
         {
-          "delta": 0,
+          "delta": -2,
           "id": "tw-corpus-0074"
         },
         {
-          "delta": -2,
+          "delta": -6,
           "id": "tw-corpus-0075"
         },
         {
-          "delta": 0,
+          "delta": -4,
           "id": "tw-corpus-0076"
         },
         {
-          "delta": 0,
+          "delta": -8,
           "id": "tw-corpus-0077"
         },
         {
-          "delta": -2,
+          "delta": -10,
           "id": "tw-corpus-0078"
         },
         {
-          "delta": -4,
+          "delta": -12,
           "id": "tw-corpus-0079"
         },
         {
@@ -1189,123 +1712,123 @@
           "id": "tw-corpus-0080"
         },
         {
-          "delta": -2,
+          "delta": -28,
           "id": "tw-corpus-0081"
         },
         {
-          "delta": -4,
+          "delta": -14,
           "id": "tw-corpus-0082"
         },
         {
-          "delta": 0,
+          "delta": -12,
           "id": "tw-corpus-0083"
         },
         {
-          "delta": 0,
+          "delta": -8,
           "id": "tw-corpus-0084"
         },
         {
-          "delta": -2,
+          "delta": -20,
           "id": "tw-corpus-0085"
         },
         {
-          "delta": 0,
+          "delta": -22,
           "id": "tw-corpus-0086"
         },
         {
-          "delta": -4,
+          "delta": -20,
           "id": "tw-corpus-0087"
         },
         {
-          "delta": -6,
+          "delta": -4,
           "id": "tw-corpus-0088"
         },
         {
-          "delta": -2,
+          "delta": -10,
           "id": "tw-corpus-0089"
         },
         {
-          "delta": 0,
+          "delta": -6,
           "id": "tw-corpus-0090"
         },
         {
-          "delta": -2,
+          "delta": -6,
           "id": "tw-corpus-0091"
         },
         {
-          "delta": -2,
+          "delta": -20,
           "id": "tw-corpus-0092"
         },
         {
-          "delta": -6,
+          "delta": -8,
           "id": "tw-corpus-0093"
         },
         {
-          "delta": 0,
+          "delta": -14,
           "id": "tw-corpus-0094"
         },
         {
-          "delta": 0,
+          "delta": -6,
           "id": "tw-corpus-0095"
         },
         {
-          "delta": 0,
+          "delta": -10,
           "id": "tw-corpus-0096"
         },
         {
-          "delta": -6,
+          "delta": -8,
           "id": "tw-corpus-0097"
         },
         {
-          "delta": 0,
+          "delta": -18,
           "id": "tw-corpus-0098"
         },
         {
-          "delta": 0,
+          "delta": -10,
           "id": "tw-corpus-0099"
         },
         {
-          "delta": -2,
+          "delta": -12,
           "id": "tw-corpus-0100"
         },
         {
-          "delta": -4,
+          "delta": -2,
           "id": "tw-corpus-0101"
         },
         {
-          "delta": 0,
+          "delta": -4,
           "id": "tw-corpus-0102"
         },
         {
-          "delta": 0,
+          "delta": -12,
           "id": "tw-corpus-0103"
         },
         {
-          "delta": 0,
+          "delta": -12,
           "id": "tw-corpus-0104"
         },
         {
-          "delta": -4,
+          "delta": -6,
           "id": "tw-corpus-0105"
         },
         {
-          "delta": -2,
+          "delta": -12,
           "id": "tw-corpus-0106"
         },
         {
-          "delta": 0,
+          "delta": -10,
           "id": "tw-corpus-0107"
         },
         {
-          "delta": -4,
+          "delta": -20,
           "id": "tw-corpus-0108"
         },
         {
-          "delta": 0,
+          "delta": -14,
           "id": "tw-corpus-0109"
         },
         {
-          "delta": -2,
+          "delta": -10,
           "id": "tw-corpus-0110"
         },
         {
@@ -1313,39 +1836,39 @@
           "id": "tw-corpus-0111"
         },
         {
-          "delta": -2,
+          "delta": -22,
           "id": "tw-corpus-0112"
         },
         {
-          "delta": 0,
+          "delta": -2,
           "id": "tw-corpus-0113"
         },
         {
-          "delta": -2,
+          "delta": -22,
           "id": "tw-corpus-0114"
         },
         {
-          "delta": 0,
+          "delta": -10,
           "id": "tw-corpus-0115"
         },
         {
-          "delta": 0,
+          "delta": -6,
           "id": "tw-corpus-0116"
         },
         {
-          "delta": 0,
+          "delta": -4,
           "id": "tw-corpus-0117"
         },
         {
-          "delta": 0,
+          "delta": -12,
           "id": "tw-corpus-0118"
         },
         {
-          "delta": -2,
+          "delta": -16,
           "id": "tw-corpus-0119"
         },
         {
-          "delta": -2,
+          "delta": -14,
           "id": "tw-corpus-0120"
         },
         {
@@ -1353,35 +1876,35 @@
           "id": "tw-corpus-0121"
         },
         {
-          "delta": 0,
+          "delta": 8,
           "id": "tw-corpus-0122"
         },
         {
-          "delta": 0,
+          "delta": -12,
           "id": "tw-corpus-0123"
         },
         {
-          "delta": -2,
+          "delta": -12,
           "id": "tw-corpus-0124"
         },
         {
-          "delta": 0,
+          "delta": -8,
           "id": "tw-corpus-0125"
         },
         {
-          "delta": 0,
+          "delta": 8,
           "id": "tw-corpus-0126"
         },
         {
-          "delta": 0,
+          "delta": -4,
           "id": "tw-corpus-0127"
         },
         {
-          "delta": 0,
+          "delta": -8,
           "id": "tw-corpus-0128"
         },
         {
-          "delta": -4,
+          "delta": -10,
           "id": "tw-corpus-0129"
         },
         {
@@ -1393,27 +1916,27 @@
           "id": "tw-corpus-0131"
         }
       ],
-      "before": 334560,
-      "character_corrections_after": 5944,
-      "character_corrections_before": 6044,
-      "correction_action_delta": -195,
-      "corrections_after": 5387,
-      "corrections_before": 5485,
-      "delta": -195,
-      "improved_articles": 63,
+      "before": 334365,
+      "character_corrections_after": 5262,
+      "character_corrections_before": 5944,
+      "correction_action_delta": -1347,
+      "corrections_after": 4713,
+      "corrections_before": 5387,
+      "delta": -1347,
+      "improved_articles": 123,
       "passes": false,
-      "reduction_percent": 0.058285509325681495,
-      "regressed_articles": 7,
-      "saved_actions": 211,
+      "reduction_percent": 0.4028531694405814,
+      "regressed_articles": 3,
+      "saved_actions": 1369,
       "syllables": 93630,
-      "unchanged_articles": 61,
-      "worst_regression": 4
+      "unchanged_articles": 5,
+      "worst_regression": 8
     },
-    "worst_regression": 4
+    "worst_regression": 0
   },
   "rows": [
-    124944,
-    871022
+    125008,
+    871383
   ],
   "source_totals": {
     "collision": 463,

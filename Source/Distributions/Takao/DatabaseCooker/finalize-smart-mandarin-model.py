@@ -449,7 +449,8 @@ def finalize(database_path: Path, training_paths: tuple[Path, ...], protected_pa
                     search_trend_existing += 1
             phrase_entries = apply_phrase_supplement(database, phrase_path, unigram_total_count) if phrase_path else []
             collection_result = apply_collections(database, collection_paths, unigram_total_count,
-                                                 collection_overrides, collection_source["frequency_policy"]) if collection_source else None
+                                                 collection_overrides, collection_source["frequency_policy"],
+                                                 source_frequency_files=collection_source.get("source_frequency_files", ())) if collection_source else None
             if collection_result and collection_result["totals"]["rejected"]:
                 raise ValueError("unresolved collection readings")
             if cin_entries is not None:

@@ -1,12 +1,12 @@
 {
-  "base_database_sha256": "088e715bbed84d844dea116c252a7caa911e40390a15944a565d1300a09d34b1",
-  "bigram_rows": 871022,
-  "canonical_database_sha256": "e8e1376cf3a141550191608242bd348448d4b8ce76d24b29a2e52e1a76c9a2ef",
+  "base_database_sha256": "71dc14bc36e04169411e035de638ff0739d0156e734c16de44e600984a2793c1",
+  "bigram_rows": 871383,
+  "canonical_database_sha256": "bac8d0bb526ca41a1280b6799218be815d785899258b738547a1da80a634f589",
   "description": "McBopomofo with deduplicated custom Unigrams; source-cooked document-frequency Bigram; personal names, anime and homophone additions inserted after training",
   "format": 1,
   "rebuild": {
     "cooker_report_file": "custom-unigram-cooker-report.json",
-    "cooker_report_sha256": "6517232728cbcc236670b003387407daffe2af2366cf7b7d5a7d2655f3e7bf10",
+    "cooker_report_sha256": "345d10e5087c21b0be9a21fcdaaefbc0e85f905c9ff70bbf24a72eb50f227c96",
     "downranked_file": "custom-unigram-downranked.tsv",
     "downranked_sha256": "e395ef35dd253cc5a396701184f30cab431a50b8fddd3eee9f4b62b9be2bb038",
     "excluded_file": "custom-unigram-excluded.tsv",
@@ -18,7 +18,7 @@
     "seed_database_sha256": "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252",
     "validation": "collection-unigram-validation.json"
   },
-  "semantic_sha256": "e5988d3b62fb316bc0a4486f15045ff852a6c4837e3f2b647109b039a9f6e5a8",
+  "semantic_sha256": "f1364e6965be4e5ccf23ba70e7597f1604287566d2edeaf657c293d7f8b06d5a",
   "single_syllable_readings": 1347,
   "sources": {
     "cin_reading_frequencies": {
@@ -55,7 +55,7 @@
         },
         {
           "file": "phrase.china.tsv",
-          "sha256": "9c0f2cb6d3ad0f30e44fd0f93ed2e02138bfce9a0eed10fbeb5d37eb07bb0382"
+          "sha256": "3fa1ad929029f54df7c7003998b3c07628b11ebd6b8ccdba6cb4fb730c3d587b"
         },
         {
           "file": "phrase.chinese.tsv",
@@ -99,7 +99,7 @@
         },
         {
           "file": "phrase.hongkong-macao.tsv",
-          "sha256": "0e05ba401da87ec01f45413e4bac7b667b1f5d55578e0146a0f9dcbca11293f8"
+          "sha256": "d912e885b4c77d8a74a4edc026747be413fdf8c747232bb44ddde0bfc65b1379"
         },
         {
           "file": "phrase.industrial-engineering.tsv",
@@ -159,7 +159,7 @@
         },
         {
           "file": "phrase.taiwan.tsv",
-          "sha256": "8c78ee2b784bf5b3f3611921dfbf726345908eb98fa6b27d44627944f9a24b62"
+          "sha256": "cbdea8f9034fd5bf0762c8049e3310f0db407b9adbe3f24797a897bc93349c12"
         },
         {
           "file": "phrase.transport-logistics.tsv",
@@ -169,30 +169,35 @@
       "frequency_policy": "minimum",
       "inserted": 10463,
       "list_file": "collection-unigram.tsv",
-      "list_sha256": "6f113b5b99f65c7ef1a7e13f34b2406aef2366a0b32e9232cae5ea99b551dcdb",
+      "list_sha256": "8e2e4908332da570052346c0f73b3f67cc566b7cda64235cfab4460c5dfbd88d",
       "overrides_file": "collection-unigram-overrides.tsv",
       "overrides_sha256": "e904d8db9d8f6f71e336fca9ee5daa3a7f990bd97e01d897d246e336c3b37550",
       "rejected": 0,
       "report_file": "collection-unigram-import.json",
-      "report_sha256": "39c8b5b62148700453c246e7a82d142d8d28144fcf5290f427f6b4d11e66bd4e",
+      "report_sha256": "34f975b994e01665626a608b344f0aaa9bce9cd0658512ca39fe4cd58c053550",
       "search_presence_file": "search-trend-unigram-presence.tsv",
       "search_presence_sha256": "0e398aa45a4bb4f1b5d5ce09d99c80e84f8337ed5a60e9ed4e21b4819ec5a88a",
       "skipped_file": "collection-unigram-skipped.tsv",
       "skipped_sha256": "0324a060267908c3bf969ea1a7db7e2a47ad27f1f2f9e0a79b1cc420ee7872d1",
+      "source_frequency_files": [
+        "phrase.china.tsv",
+        "phrase.hongkong-macao.tsv",
+        "phrase.taiwan.tsv"
+      ],
       "source_rows": 13997,
       "validation_file": "collection-unigram-validation.json",
-      "validation_sha256": "23704ccc455535220ebdde5dd06a2d3b31093281f73d934815ca408cc29b10ed"
+      "validation_sha256": "e8ef0626cb65b99cca3fb288782858729de4a56f8aa4fcf90173bc9f3b9f3dfe"
     },
     "phrase_unigram_supplement": {
-      "entries": 70,
+      "entries": 150,
       "file": "common-phrase-unigram.tsv",
-      "inserted": 62,
+      "inserted": 126,
       "policy": "Pre-training reviewed phrases use the minimum score above same-reading tokenizations and retain existing probabilities. Post-training reviewed phrases use explicit counts and preserve existing backoffs and Bigram edges without adding new edges.",
-      "post_training_entries": 68,
+      "post_training_entries": 148,
       "pre_training_entries": 2,
       "retained": 1,
-      "reweighted": 7,
-      "sha256": "800c07d505a4bab0eff8a664d40cab074d1acf8c6189cad59ff88953346327fc",
+      "reweighted": 23,
+      "sha256": "70fcefda1d0aa7fb5027022a5e811e28407bf6500291de4c5de0683662658b71",
       "validation_file": "whole-phrase-unigram-validation.json",
       "validation_sha256": "8ce428d08f9fc9fa626eff1d0c40ff10df812672bb2b4bfdbf6a16ede431151e"
     },
@@ -210,13 +215,13 @@
       "reading_overrides_sha256": "1a2f9b2ab4b73aadb3ac12dbdce3da56495ac64fb576682359071a76f89afc8f",
       "review_file": "search-trend-unigram-review.tsv",
       "review_sha256": "0b7b0dc636c2000f072c013d1cafa366b1fdc62f8a6524c2c5e1f2cac9864433",
-      "sha256": "3db6fa8739a44a57aae0274547d14fe06a3ca3c8ed6e34a3b12a96c662d1089b",
+      "sha256": "e276a35a760f849e449c2309ca3b41d6b27a71c5f74d1ab697bb8cbe7b8cd445",
       "source_file": "search-trend-unigram-source.txt",
       "source_sha256": "01e48faf3da36e5b1ccac713153b4656113e777b8d8043d1026ee1f93037e9c1",
       "source_terms": 550
     },
     "standalone_composition_weights": {
-      "bigram_upserts": 179,
+      "bigram_upserts": 235,
       "cin_overrides": [
         [
           "0i",
@@ -259,6 +264,10 @@
           "折"
         ],
         [
+          "<1",
+          "嗎"
+        ],
+        [
           "=A",
           "暇"
         ],
@@ -269,6 +278,14 @@
         [
           "?1",
           "他"
+        ],
+        [
+          "A1",
+          "啦"
+        ],
+        [
+          "BL",
+          "涼"
         ],
         [
           "Ci",
@@ -288,6 +305,10 @@
         ],
         [
           "Nb",
+          "側"
+        ],
+        [
+          "Nb",
           "冊"
         ],
         [
@@ -297,6 +318,10 @@
         [
           "O@",
           "足"
+        ],
+        [
+          "OP",
+          "哪"
         ],
         [
           "O_",
@@ -311,12 +336,32 @@
           "刨"
         ],
         [
+          "RV",
+          "尾"
+        ],
+        [
+          "U3",
+          "顆"
+        ],
+        [
+          "Ud",
+          "蓋"
+        ],
+        [
           "X[",
           "檔"
         ],
         [
           "Y[",
           "倘"
+        ],
+        [
+          "Yc",
+          "頁"
+        ],
+        [
+          "Ye",
+          "費"
         ],
         [
           "[Z",
@@ -347,12 +392,20 @@
           "瘥"
         ],
         [
+          "cO",
+          "洗"
+        ],
+        [
           "e[",
           "嚷"
         ],
         [
           "h5",
           "嗨"
+        ],
+        [
+          "m_",
+          "句"
         ],
         [
           "nk",
@@ -369,13 +422,17 @@
         [
           "|?",
           "泥"
+        ],
+        [
+          "~7",
+          "招"
         ]
       ],
       "file": "DataSource/CINReadingFrequency/standalone-composition-weights.json",
       "selection_file": "DataSource/CINReadingFrequency/standalone-composition-review.tsv",
-      "selection_sha256": "1461f27c4798e0dd45129f37d6e10035c5416a98d5013bb0ff8c631d3556e493",
-      "sha256": "d762a91a697a32c23b1e0b92c9e823d5ce9c71cedad21adaeec721698983ac7d",
-      "unigram_upserts": 156
+      "selection_sha256": "2e9a6b9c84cd7f18cfce4b3fd940141a1bc61cea7c49e4e3be3bf242258892dd",
+      "sha256": "23972599d0931755b7138b93c70c640a80296eb5afaaa1611045e069bc54df02",
+      "unigram_upserts": 212
     },
     "training_articles": [
       {
@@ -401,7 +458,7 @@
     }
   },
   "training_articles": 2300,
-  "unigram_rows": 124944,
-  "unigram_total_count": 22614922.0,
+  "unigram_rows": 125008,
+  "unigram_total_count": 22634075.0,
   "validation_articles": 131
 }
