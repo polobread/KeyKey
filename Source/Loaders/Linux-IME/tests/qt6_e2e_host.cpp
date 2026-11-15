@@ -241,6 +241,7 @@ void onTextChanged(TestState &state, const std::string &name,
     }
     if (state.positiveComplete && value.empty()) {
         state.clearedAfterPositive = true;
+        writeValue(state.artifactDirectory + "/field-cleared", "");
         return;
     }
     if (state.clearedAfterPositive && value == state.expectedLiteral) {
