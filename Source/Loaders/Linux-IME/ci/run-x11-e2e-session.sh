@@ -386,7 +386,8 @@ if [[ "$session_mode" == managed ]]; then
     # Keep the complete native form visible for the fixed-scale pointer fixture.
     screen_size=1024x4096x24
   fi
-  Xvfb -displayfd 3 -screen 0 "$screen_size" -nolisten tcp 3>"$display_file" \
+  # A delayed synthetic key release must not produce extra key presses.
+  Xvfb -displayfd 3 -screen 0 "$screen_size" -nolisten tcp -r 3>"$display_file" \
     >"$KEYKEY_E2E_ARTIFACT_DIR/xvfb.log" 2>&1 &
   xvfb_pid=$!
   display_ready=false
@@ -1008,6 +1009,7 @@ run_case() {
 
   case_dir="$KEYKEY_E2E_ARTIFACT_DIR/$case_id"
   mkdir -p "$case_dir"
+  rm -f -- "$case_dir/positive-ready" "$case_dir/field-cleared"
   export KEYKEY_E2E_CASE_DIR="$case_dir"
   export KEYKEY_E2E_EXPECTED_COMMIT="$expected_commit"
   export KEYKEY_E2E_EXPECTED_LITERAL="$expected_literal"
@@ -1097,7 +1099,23 @@ run_case() {
     echo "The negative-control keyboard engine is not active." >&2
     exit 1
   fi
-  xdotool key --delay "$key_delay_ms" ctrl+a BackSpace
+  # Keep Control held until a is released so X11 cannot repeat a plain a.
+  if ! xdotool keydown Control_L key --delay "$key_delay_ms" a \
+      keyup Control_L key --delay "$key_delay_ms" BackSpace; then
+    xdotool keyup Control_L || true
+    echo "Could not send the field-clearing keys for $case_id." >&2
+    exit 1
+  fi
+  for _ in {1..100}; do
+    if [[ -f "$case_dir/field-cleared" ]] || ! kill -0 "$host_pid" 2>/dev/null; then
+      break
+    fi
+    sleep 0.05
+  done
+  if [[ ! -f "$case_dir/field-cleared" ]]; then
+    echo "$case_id did not confirm an empty field after switching to keyboard-us." >&2
+    exit 1
+  fi
   negative_phase=true
   send_key_sequence "$@"
   negative_phase=false

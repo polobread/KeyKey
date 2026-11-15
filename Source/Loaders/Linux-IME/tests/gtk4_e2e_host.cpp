@@ -276,6 +276,7 @@ void onTextChanged(GtkEditable *editable, gpointer userData) {
     }
     if (state.positiveComplete && value.empty()) {
         state.clearedAfterPositive = true;
+        writeValue(state.artifactDirectory + "/field-cleared", "");
         return;
     }
     if (state.clearedAfterPositive && value == state.expectedLiteral) {
