@@ -187,10 +187,10 @@ Json operation(const char *type) { auto result = object(); put(result.get(), "ty
 bool GuanyinmaConfig::operator==(const GuanyinmaConfig &other) const noexcept {
     return std::tie(inputMethod, smartMode, layout, traditionalSelectionKeys,
                     ignoreCapsLockInChinese, literalKeypad,
-                    userPhrases, restrictBopomofoToBig5) ==
+                    userPhrases, restrictBopomofoToBig5, primeSmartMandarin) ==
            std::tie(other.inputMethod, other.smartMode, other.layout, other.traditionalSelectionKeys,
                     other.ignoreCapsLockInChinese, other.literalKeypad,
-                    other.userPhrases, other.restrictBopomofoToBig5) &&
+                    other.userPhrases, other.restrictBopomofoToBig5, other.primeSmartMandarin) &&
            smart == other.smart && table == other.table && simplex == other.simplex;
 }
 
@@ -208,6 +208,7 @@ public:
         const bool smart = config.inputMethod == InputMethod::Bopomofo && config.smartMode;
         put(root.get(), "method", config.inputMethod == InputMethod::Cangjie ? "cangjie" :
             config.inputMethod == InputMethod::Simplex ? "simplex" : smart ? "smart" : "traditional");
+        if (smart && config.primeSmartMandarin) put(root.get(), "prime_smart_mandarin", true);
         put(root.get(), "profile", "desktop");
         put(root.get(), "layout", layoutName(config.layout));
         put(root.get(), "user_database", user);

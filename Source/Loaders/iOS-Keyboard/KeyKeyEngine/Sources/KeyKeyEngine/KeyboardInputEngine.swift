@@ -20,7 +20,7 @@ public final class KeyboardInputEngine: InputEngine {
             method: method, hardwareSmartEditing: hardwareSmartEditing, keyboardLayout: keyboardLayout,
             tableOptions: tableOptions, spaceSelectsCandidates: spaceSelectsCandidates,
             omitsTones: omitsTones,
-            associatedPhrases: associatedPhrases, candidateFilter: candidateFilter)
+            associatedPhrases: associatedPhrases, primeSmartMandarin: true, candidateFilter: candidateFilter)
     }
 
     /// Called only after the original host accepted the returned effects.

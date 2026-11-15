@@ -53,6 +53,7 @@ use crate::candidate_filter::CandidateFilter;
 use crate::database::{DatabaseError, ModelDatabase};
 use crate::engine::{Effects, EngineError, Key, Modifiers};
 use crate::learning::LearningOptions;
+use crate::reading_codec::{encode_reading, EncodeOptions};
 use crate::user_store::{UserChange, UserSnapshot};
 use crate::walker::{SmartCandidate, SmartGraph, SmartSegment};
 use serde::{Deserialize, Serialize};
@@ -189,6 +190,27 @@ impl SmartState {
         self.reading.clear();
         self.cursor = 0;
         self.candidates.clear();
+    }
+
+    /// Compose 琦琦輸入法 through this session's model and font filter. Graph
+    /// insertion has no host effects and only explicit selection learns.
+    pub(crate) fn prime(&mut self, database: &ModelDatabase) {
+        debug_assert!(self.is_empty());
+        for reading in ["ㄑㄧˊ", "ㄑㄧˊ", "ㄕㄨ", "ㄖㄨˋ", "ㄈㄚˇ"] {
+            let Ok(encoded) = encode_reading(reading, &EncodeOptions::default()) else {
+                break;
+            };
+            if !matches!(
+                self.graph
+                    .insert(database, self.graph.len(), &encoded.qstring),
+                Ok(true)
+            ) {
+                break;
+            }
+        }
+        // A rejected candidate or a model read failure can leave a prefix in
+        // the graph. Clear it while retaining the same initialized session.
+        self.clear();
     }
 
     /// Apply scoring choices without committing, dropping readings, or moving

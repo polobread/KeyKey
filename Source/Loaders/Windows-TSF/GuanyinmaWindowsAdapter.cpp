@@ -136,6 +136,7 @@ Json Configuration(const std::string& method, const Preferences& prefs, std::str
     const auto name = smart ? "smart" : table ? (cangjie ? "cangjie" : "simplex") : "traditional";
     Json config;
     Set(config, L"profile", "desktop"); Set(config, L"method", name);
+    Set(config, L"prime_smart_mandarin", smart);
     const auto layout = Layout(prefs); Set(config, L"layout", layout);
     const auto directory = SettingsDirectory();
     if (directory.empty()) throw std::runtime_error("no writable Guanyinma profile");

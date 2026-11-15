@@ -21,6 +21,7 @@ struct GuanyinmaConfig {
     bool literalKeypad = true;
     bool userPhrases = true;
     bool restrictBopomofoToBig5 = false;
+    bool primeSmartMandarin = false;
 
     bool operator==(const GuanyinmaConfig &other) const noexcept;
     bool operator!=(const GuanyinmaConfig &other) const noexcept {

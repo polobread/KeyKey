@@ -177,6 +177,8 @@ pub struct SessionConfig {
     pub layout: BopomofoLayout,
     pub behaviors: BehaviorOptions,
     pub smart: SmartOptions,
+    /// Start Smart Mandarin by composing an internal sample before returning the session.
+    pub prime_smart_mandarin: bool,
     pub learning: LearningOptions,
     pub user_database: Option<String>,
     pub traditional_selection_keys: Option<String>,
@@ -192,6 +194,7 @@ impl Default for SessionConfig {
             layout: BopomofoLayout::Standard,
             behaviors: BehaviorOptions::default(),
             smart: SmartOptions::default(),
+            prime_smart_mandarin: false,
             learning: LearningOptions::default(),
             user_database: None,
             traditional_selection_keys: None,
@@ -674,6 +677,9 @@ impl InputSession {
             &result.state.user_data,
             result.config.learning,
         )?;
+        if result.config.prime_smart_mandarin && result.config.method == InputMethod::Smart {
+            result.state.smart.prime(&result.database);
+        }
         result.state.page_size = result.selection_keys()?.len();
         Ok(result)
     }
@@ -691,6 +697,11 @@ impl InputSession {
         };
         let result = (|| {
             let invalidated_view = self.sync_user_data()?;
+            let prepare_after_publication = self.config.prime_smart_mandarin
+                && self.config.method == InputMethod::Smart
+                && matches!(&operation, InputOperation::ReplaceUserPhrases { .. })
+                && self.empty()
+                && self.state.candidates.is_empty();
             if invalidated_view
                 && matches!(
                     &operation,
@@ -712,7 +723,20 @@ impl InputSession {
                 self.accept_marked_phrase_request(&mut effects)?;
             }
             self.refresh_display()?;
+            let prepare = prepare_after_publication && !self.state.pending_user_changes.is_empty();
             self.save_user_changes()?;
+            if prepare
+                && self
+                    .state
+                    .smart
+                    .set_user_data(&self.database, &self.state.user_data, self.config.learning)
+                    .is_ok()
+            {
+                // Publication may arrive after startup and invalidate the graph.
+                // Prepare it again using the committed user snapshot, even when
+                // another process changed that snapshot during the transaction.
+                self.state.smart.prime(&self.database);
+            }
             Ok::<(), EngineError>(())
         })();
         if let Err(error) = result {
@@ -2707,6 +2731,132 @@ mod edge_contracts {
 
     fn state(input: &InputSession) -> serde_json::Value {
         serde_json::to_value(input.snapshot()).unwrap()
+    }
+
+    #[test]
+    fn smart_startup_primes_the_live_session_without_composition_or_learning() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::Arc;
+
+        let open = |prime_smart_mandarin| {
+            let calls = Arc::new(AtomicUsize::new(0));
+            let observed = Arc::clone(&calls);
+            let session = InputSession::open_with_candidate_filter(
+                crate::test_support::model_path(),
+                SessionConfig {
+                    method: InputMethod::Smart,
+                    prime_smart_mandarin,
+                    learning: LearningOptions {
+                        candidate_overrides: true,
+                        bigrams: true,
+                        ..LearningOptions::default()
+                    },
+                    ..SessionConfig::default()
+                },
+                CandidateFilter::new(move |_| {
+                    observed.fetch_add(1, Ordering::Relaxed);
+                    true
+                }),
+            )
+            .unwrap();
+            (session, calls)
+        };
+        let (mut primed, primed_calls) = open(true);
+        let (mut plain, plain_calls) = open(false);
+        let during_startup = primed_calls.load(Ordering::Relaxed);
+        assert!(
+            during_startup > 0,
+            "startup traverses the model and font filter"
+        );
+        assert_eq!(plain_calls.load(Ordering::Relaxed), 0);
+        assert_eq!(state(&primed), state(&plain));
+        assert_eq!(primed.user_data().unwrap(), plain.user_data().unwrap());
+
+        for key in "fu6fu6gj bj4z83".chars() {
+            let ready = primed.apply(InputOperation::character(key)).unwrap();
+            let reference = plain.apply(InputOperation::character(key)).unwrap();
+            assert_eq!(
+                serde_json::to_value(ready).unwrap(),
+                serde_json::to_value(reference).unwrap()
+            );
+        }
+        assert_eq!(primed.snapshot().readings.len(), 5);
+        assert!(
+            primed_calls.load(Ordering::Relaxed) - during_startup
+                < plain_calls.load(Ordering::Relaxed)
+        );
+    }
+
+    #[test]
+    fn rejected_startup_sample_leaves_the_real_layout_and_first_key_intact() {
+        let mut primed = InputSession::open_with_candidate_filter(
+            crate::test_support::model_path(),
+            SessionConfig {
+                prime_smart_mandarin: true,
+                method: InputMethod::Smart,
+                layout: BopomofoLayout::ETen,
+                ..SessionConfig::default()
+            },
+            // The first reading can enter the graph before the next reading fails.
+            CandidateFilter::new(|candidate| candidate == "琦"),
+        )
+        .unwrap();
+        assert!(primed.snapshot().visible_text.is_empty());
+        let first = primed.apply(InputOperation::character('n')).unwrap();
+        assert_eq!(first.visible_text, "ㄋ");
+        assert!(first.effects.commit.is_empty());
+    }
+
+    #[test]
+    fn startup_preparation_survives_changed_phrase_publication_while_idle() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::Arc;
+
+        let calls = Arc::new(AtomicUsize::new(0));
+        let observed = Arc::clone(&calls);
+        let mut input = InputSession::open_with_candidate_filter(
+            crate::test_support::model_path(),
+            SessionConfig {
+                method: InputMethod::Smart,
+                prime_smart_mandarin: true,
+                ..SessionConfig::default()
+            },
+            CandidateFilter::new(move |_| {
+                observed.fetch_add(1, Ordering::Relaxed);
+                true
+            }),
+        )
+        .unwrap();
+        let published = InputOperation::ReplaceUserPhrases {
+            phrases: vec![Unigram {
+                qstring: crate::reading_codec::encode_reading("ㄑㄧˊ,ㄑㄧˊ", &Default::default())
+                    .unwrap()
+                    .qstring,
+                current: "琦琦".into(),
+                probability: -1.0,
+                backoff: 0.0,
+            }],
+        };
+        let initial_view = input.snapshot();
+        let startup_calls = calls.load(Ordering::Relaxed);
+        let snapshot = input.apply(published.clone()).unwrap();
+        let published_calls = calls.load(Ordering::Relaxed);
+        assert!(published_calls > startup_calls);
+        assert_eq!(snapshot.visible_text, initial_view.visible_text);
+        assert!(snapshot.effects.commit.is_empty());
+        assert_eq!(input.user_data().unwrap().phrases[0].current, "琦琦");
+
+        input.apply(published).unwrap();
+        assert_eq!(calls.load(Ordering::Relaxed), published_calls);
+        let first = input.apply(InputOperation::character('s')).unwrap();
+        let first_calls = calls.load(Ordering::Relaxed);
+        assert_eq!(first.visible_text, "ㄋ");
+        let active = input
+            .apply(InputOperation::ReplaceUserPhrases { phrases: vec![] })
+            .unwrap();
+        assert_eq!(active.visible_text, first.visible_text);
+        assert!(active.effects.commit.is_empty());
+        assert_eq!(calls.load(Ordering::Relaxed), first_calls);
     }
 
     #[test]

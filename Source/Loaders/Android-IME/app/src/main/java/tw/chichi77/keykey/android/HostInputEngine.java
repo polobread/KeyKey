@@ -16,7 +16,7 @@ final class HostInputEngine implements InputEngine {
             BopomofoKeyboardLayout layout, TableInputOptions options, boolean spaceSelects,
             boolean useBigrams, Predicate<String> filter) {
         rust = new GuanyinmaInputEngine(modelPath, userDatabasePath, method, layout, options,
-                spaceSelects, useBigrams, false, filter);
+                spaceSelects, useBigrams, false, true, filter);
     }
     private InputEngine backend() { return rust; }
     String coreError() { return transactionError != null ? transactionError : rust.lastError(); }
