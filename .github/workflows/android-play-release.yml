@@ -5,6 +5,8 @@ on:
     paths:
       - 'Source/Loaders/Android-IME/**'
       - 'Source/DataTables/**'
+      - 'Source/Loaders/Linux-IME/data/tc2sc.cin'
+      - 'LICENSES/OpenVanilla-HanConvert.txt'
       - '.github/workflows/android-play-release.yml'
       - 'Source/Guanyinma/**'
       - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'

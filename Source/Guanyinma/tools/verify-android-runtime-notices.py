@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+from pathlib import Path
 import re
 import zipfile
 
@@ -13,6 +14,8 @@ with zipfile.ZipFile(args.apk) as archive:
     prefix = "assets/" if "assets/licenses/Guanyinma-Notices.json" in archive.namelist() else "base/assets/"
     catalog = json.loads(archive.read(prefix + "licenses/Guanyinma-Notices.json"))
     text = archive.read(prefix + "licenses/Guanyinma-Notices.txt").decode("utf-8")
+    conversion_table = Path(__file__).resolve().parents[2] / "Loaders/Linux-IME/data/tc2sc.cin"
+    assert archive.read(prefix + "tc2sc.cin") == conversion_table.read_bytes(), "Conversion table differs from the shared source"
     assert not any(name.endswith(".audit.json") for name in archive.namelist()), "Audit report leaked into APK"
 assert catalog["schemaVersion"] == 1
 bodies = {item["id"]: item["text"] for item in catalog["licenses"]}
@@ -21,7 +24,7 @@ assert len(bodies) == len(catalog["licenses"])
 assert len(components) == len(catalog["components"])
 for identity, body in bodies.items():
     assert identity == hashlib.sha256(" ".join(body.split()).encode()).hexdigest()
-required = {"keykey", "yahoo", "formosa", "unicode", "mcbopomofo", "ai-data", "collection", "rust", "rust-compiler_builtins", "rust-libm", "sqlite", "ndk-compiler_rt", "ndk-libc++", "ndk-libc++abi", "ndk-libunwind"}
+required = {"keykey", "yahoo", "formosa", "han-convert", "unicode", "mcbopomofo", "ai-data", "collection", "rust", "rust-compiler_builtins", "rust-libm", "sqlite", "ndk-compiler_rt", "ndk-libc++", "ndk-libc++abi", "ndk-libunwind"}
 assert required <= components.keys()
 assert any(k.startswith("android-com.android.billingclient:billing:") for k in components)
 references = set()

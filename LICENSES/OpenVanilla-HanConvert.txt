@@ -1,4 +1,4 @@
-OpenVanilla Han conversion used by the Windows output boundary
+OpenVanilla Han conversion
 
 Both VXHCTC2SCTable.c and VXHCSC2TCTable.c retain the following notice:
 

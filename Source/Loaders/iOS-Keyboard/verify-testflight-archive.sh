@@ -70,6 +70,13 @@ DATABASE_PATH="$EXTENSION_PATH/KeyKey.db"
 [[ -s "$DATABASE_PATH" ]] || fail "Keyboard.appex/KeyKey.db is missing or empty"
 pass "container app, keyboard extension, and database are present"
 
+conversion_table="$(dirname "$0")/../Linux-IME/data/tc2sc.cin"
+cmp -s "$APP_PATH/tc2sc.cin" "$conversion_table" \
+  || fail "Container conversion table is missing or differs from the shared source"
+cmp -s "$EXTENSION_PATH/tc2sc.cin" "$conversion_table" \
+  || fail "Keyboard conversion table is missing or differs from the shared source"
+pass "both bundles contain the shared Traditional-to-Simplified conversion table"
+
 [[ -s "$APP_PATH/GuanyinmaNotices.txt" && -s "$EXTENSION_PATH/GuanyinmaNotices.txt" ]] \
   || fail "Guanyinma runtime notices are missing from the app or keyboard extension"
 cmp -s "$APP_PATH/GuanyinmaNotices.txt" "$EXTENSION_PATH/GuanyinmaNotices.txt" \
@@ -89,7 +96,7 @@ for identity, text in terms.items():
     assert identity == hashlib.sha256(" ".join(text.split()).encode("utf-8")).hexdigest()
 components = {item["id"]: item for item in catalog["components"]}
 assert len(components) == len(catalog["components"]), "Duplicate component IDs"
-assert {"keykey", "yahoo", "formosa", "unicode", "mcbopomofo", "ai-data", "collection", "rust", "rust-compiler_builtins"} <= components.keys()
+assert {"keykey", "yahoo", "formosa", "han-convert", "unicode", "mcbopomofo", "ai-data", "collection", "rust", "rust-compiler_builtins"} <= components.keys()
 for component in components.values():
     assert component["licenseIDs"] and set(component["licenseIDs"]) <= terms.keys()
     assert component["sources"] and all(s["sha256"] for s in component["sources"])

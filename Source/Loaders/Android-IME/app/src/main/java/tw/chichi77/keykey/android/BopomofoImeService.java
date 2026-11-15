@@ -34,6 +34,8 @@ public final class BopomofoImeService extends InputMethodService
     private HostInputEngine engine;
     private String lastReportedCoreError;
     private boolean hostTransactionFailed;
+    private boolean simplifiedChineseOutput;
+    private SimplifiedChineseOutput simplifiedChineseConverter;
     private BopomofoKeyboardView keyboardView;
     private FloatingCandidateWindow floatingCandidateWindow;
     private Vibrator vibrator;
@@ -92,6 +94,7 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onCreate() {
         super.onCreate();
+        simplifiedChineseOutput = ChineseInputMethodSettings.simplifiedChineseOutput(this);
         openEngine();
         schedulePhraseDictionaryReload();
         vibrator = getSystemService(Vibrator.class);
@@ -520,6 +523,15 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences preferences, String key) {
+        if (key == null || ChineseInputMethodSettings.KEY_SIMPLIFIED_CHINESE_OUTPUT.equals(key)) {
+            boolean enabled = ChineseInputMethodSettings.simplifiedChineseOutput(this);
+            if (enabled != simplifiedChineseOutput) {
+                // Finish with the old setting while it still owns the editable host suffix.
+                if (!hostTransactionFailed) commitPendingComposition();
+                simplifiedChineseOutput = enabled;
+            }
+            if (key != null) return;
+        }
         if (UserDataNotifications.KEY_CHANGED.equals(key)) {
             if (engine != null) apply(engine.refreshUserData());
             return;
@@ -962,7 +974,7 @@ public final class BopomofoImeService extends InputMethodService
         try {
             if (result.deleteBeforeCursor()) accepted &= deletePreviousGrapheme(connection);
             if (committedText) {
-                accepted &= connection.commitText(result.committedText(), 1);
+                accepted &= connection.commitText(convertOutput(result.committedText()), 1);
                 composingRegionStart = -1;
             }
             if (result.discardComposingText()) {
@@ -1018,17 +1030,26 @@ public final class BopomofoImeService extends InputMethodService
         return accepted;
     }
 
+    private String convertOutput(String text) {
+        if (!simplifiedChineseOutput || text.isEmpty()) return text;
+        if (simplifiedChineseConverter == null) {
+            simplifiedChineseConverter = SimplifiedChineseOutput.load(getAssets());
+        }
+        return simplifiedChineseConverter.convert(text);
+    }
+
     private boolean applyTouchSmart(InputConnection connection, InputEngine.Result result,
                                     boolean softEnter) {
         boolean accepted = true;
+        String committedText = convertOutput(result.committedText());
         TouchSmartHostTextState.Edit edit;
         if (engine.isTouchSmartComposition() && engine.hasComposition()) {
-            edit = touchHostText.update(engine.completedSmartText(), result.committedText());
-        } else if (engine.isTouchSmartComposition() && result.committedText().isEmpty()
+            edit = touchHostText.update(convertOutput(engine.completedSmartText()), committedText);
+        } else if (engine.isTouchSmartComposition() && committedText.isEmpty()
                 && !result.deleteBeforeCursor() && !result.sendEnter()) {
             edit = touchHostText.cancel();
         } else {
-            edit = touchHostText.finish(result.committedText());
+            edit = touchHostText.finish(committedText);
         }
 
         String rawReading = engine.usesTouchPhoneticGrid() && engine.hasPendingPhoneticReading()
