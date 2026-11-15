@@ -72,7 +72,7 @@ class WholePhraseTests(unittest.TestCase):
     def test_post_training_alternate_reading_preserves_existing_reading_and_edges(self):
         header = self.path.read_text(encoding="utf-8").splitlines()[0]
         self.path.write_text(f"{header}\tstage\n"
-                             "不想\t10\tㄅㄨˊ ㄒㄧㄤˇ\t4\t3\treviewed reading\tpost-training\n",
+                             "不想\t0.01\tㄅㄨˊ ㄒㄧㄤˇ\t4\t3\treviewed reading\tpost-training\n",
                              encoding="utf-8")
         final = query_for_reading("ㄒㄧㄤˇ")
         canonical = query_for_reading("ㄅㄨˋ") + final
@@ -85,7 +85,7 @@ class WholePhraseTests(unittest.TestCase):
         apply(self.db, self.path, 1000, stage=POST_TRAINING)
         verify_post_training(self.db, self.path, 1000, 1)
         self.assertCountEqual(self.db.execute("SELECT * FROM unigrams WHERE current='不想'").fetchall(),
-                              [canonical_row, (alternate, "不想", -2., 0.)])
+                              [canonical_row, (alternate, "不想", math.log10(0.01 / 1000), 0.)])
         self.assertEqual(self.db.execute("SELECT * FROM bigrams WHERE current='不想'").fetchall(),
                          [canonical_edge])
         for edge in [(f"! {alternate}", "", "不想", -.4),

@@ -149,3 +149,1188 @@ word	target_count	reading	training_occurrences	training_documents	reason	stage	a
 蔡先生	7	ㄘㄞˋ ㄒㄧㄢ ㄕㄥ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
 蔡小姐	2	ㄘㄞˋ ㄒㄧㄠˇ ㄐㄧㄝˇ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
 蔡女士	1	ㄘㄞˋ ㄋㄩˇ ㄕˋ	0	0	人工複核指定補詞，採可直接組字的詞頻	post-training	add
+另一位	153	ㄌㄧㄥˋ ㄧˊ ㄨㄟˋ	0	0	補「一」的二聲讀音，採原讀音的一半詞頻	post-training	add
+一丁目	1	ㄧˋ ㄉㄧㄥ ㄇㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一丁點兒	1	ㄧˋ ㄉㄧㄥ ㄉㄧㄢˇ ㄦˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一下子轉涼	1	ㄧˊ ㄒㄧㄚˋ ㄗ˙ ㄓㄨㄢˇ ㄌㄧㄤˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一不	5	ㄧˋ ㄅㄨˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一不做二不休	1	ㄧˊ ㄅㄨˋ ㄗㄨㄛˋ ㄦˋ ㄅㄨˋ ㄒㄧㄡ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一不做二不休	1	ㄧˋ ㄅㄨˊ ㄗㄨㄛˋ ㄦˋ ㄅㄨˋ ㄒㄧㄡ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一不注意	1	ㄧˋ ㄅㄨˊ ㄓㄨˋ ㄧˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一丙	1	ㄧˋ ㄅㄧㄥˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一中一台	2	ㄧˋ ㄓㄨㄥ ㄧˋ ㄊㄞˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一之七	1	ㄧˋ ㄓ ㄑㄧ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一之瀨四季	0.01	ㄧˋ ㄓ ㄌㄞˋ ㄙˋ ㄐㄧˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一之瀨琴美	0.01	ㄧˋ ㄓ ㄌㄞˋ ㄑㄧㄣˊ ㄇㄟˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一些事	8	ㄧˋ ㄒㄧㄝ ㄕˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一人	8	ㄧˋ ㄖㄣˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一人出局	0.01	ㄧˋ ㄖㄣˊ ㄔㄨ ㄐㄩˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一休和尚	1	ㄧˋ ㄒㄧㄡ ㄏㄜˊ ㄕㄤˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一位數	1	ㄧˊ ㄨㄟˋ ㄕㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一併處理	1	ㄧˊ ㄅㄧㄥˋ ㄔㄨˇ ㄌㄧˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一來一往	1	ㄧˋ ㄌㄞˊ ㄧˋ ㄨㄤˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一信	8	ㄧˊ ㄒㄧㄣˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一個	1	ㄧˊ ㄍㄜˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一個中國政策	1	ㄧˊ ㄍㄜˋ ㄓㄨㄥ ㄍㄨㄛˊ ㄓㄥˋ ㄘㄜˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一個半	4	ㄧˊ ㄍㄜˋ ㄅㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一個小時後	1	ㄧˊ ㄍㄜˋ ㄒㄧㄠˇ ㄕˊ ㄏㄡˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一傳十	1	ㄧˋ ㄔㄨㄢˊ ㄕˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一傳十十傳百	1	ㄧˋ ㄔㄨㄢˊ ㄕˊ ㄕˊ ㄔㄨㄢˊ ㄅㄞˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一償宿願	1	ㄧˋ ㄔㄤˊ ㄙㄨˋ ㄩㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一公克	1	ㄧˋ ㄍㄨㄥ ㄎㄜˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一公分	1	ㄧˋ ㄍㄨㄥ ㄈㄣ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一公升	1	ㄧˋ ㄍㄨㄥ ㄕㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一公尺	1	ㄧˋ ㄍㄨㄥ ㄔˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一公斤	1	ㄧˋ ㄍㄨㄥ ㄐㄧㄣ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一公里	1	ㄧˋ ㄍㄨㄥ ㄌㄧˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一兵一卒	1	ㄧˋ ㄅㄧㄥ ㄧˋ ㄗㄨˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一分	8	ㄧ ㄈㄣˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一分一秒	1	ㄧˋ ㄈㄣ ㄧˋ ㄇㄧㄠˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一分子	1	ㄧˋ ㄈㄣ ㄗˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一分糖	2	ㄧˋ ㄈㄣ ㄊㄤˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一分錢一分貨	1	ㄧ ㄈㄣ ㄑㄧㄢˊ ㄧ ㄈㄣ ㄏㄨㄛˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一券	1	ㄧˊ ㄑㄩㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一刻館	0.01	ㄧˊ ㄎㄜˋ ㄍㄨㄢˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一前一後	1	ㄧˋ ㄑㄧㄢˊ ㄧˊ ㄏㄡˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一加手機	1	ㄧˋ ㄐㄧㄚ ㄕㄡˇ ㄐㄧ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一匹	1	ㄧˋ ㄆㄧˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一卡通	1	ㄧˋ ㄎㄚˇ ㄊㄨㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一去不復返	1	ㄧ ㄑㄩˋ ㄅㄨˋ ㄈㄨˋ ㄈㄢˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+一去不復返	1	ㄧˊ ㄑㄩˋ ㄅㄨˋ ㄈㄨˋ ㄈㄢˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+一古腦	1	ㄧˋ ㄍㄨˇ ㄋㄠˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一哥	2	ㄧˋ ㄍㄜ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一問三不知	1	ㄧ ㄨㄣˋ ㄙㄢ ㄅㄨˋ ㄓ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一回生二回熟	1	ㄧ ㄏㄨㄟˊ ㄕㄥ ㄦˋ ㄏㄨㄟˊ ㄕㄡˊ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一回生兩回熟	1	ㄧ ㄏㄨㄟˊ ㄕㄥ ㄌㄧㄤˇ ㄏㄨㄟˊ ㄕㄡˊ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一國兩府	1	ㄧˋ ㄍㄨㄛˊ ㄌㄧㄤˇ ㄈㄨˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一坪	1	ㄧˋ ㄆㄧㄥˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一報還一報	1	ㄧ ㄅㄠˋ ㄏㄨㄢˊ ㄧ ㄅㄠˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一場	8	ㄧˋ ㄔㄤˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一場空	1	ㄧˋ ㄔㄤˇ ㄎㄨㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一塌糊塗	1	ㄧ ㄊㄚˋ ㄏㄨˊ ㄊㄨˊ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一塌糊塗	1	ㄧˋ ㄊㄚ ㄏㄨˊ ㄊㄨˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一大半	4	ㄧˊ ㄉㄚˋ ㄅㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一夫一妻	1	ㄧˋ ㄈㄨ ㄧˋ ㄑㄧ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一夫一妻制	1	ㄧˋ ㄈㄨ ㄧˋ ㄑㄧ ㄓˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一夫多妻制	1	ㄧˋ ㄈㄨ ㄉㄨㄛ ㄑㄧ ㄓˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一女中	2	ㄧˋ ㄋㄩˇ ㄓㄨㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一如往常地	1	ㄧˋ ㄖㄨˊ ㄨㄤˇ ㄔㄤˊ ㄉㄧˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一子一女	1	ㄧˋ ㄗˇ ㄧˋ ㄋㄩˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一字一句	1	ㄧˊ ㄗˋ ㄧˊ ㄐㄩˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一字不識	1	ㄧ ㄗˋ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+一字不識	1	ㄧˊ ㄗˋ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+一定要	8	ㄧ ㄉㄧㄥˋ ㄧㄠˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一室	1	ㄧˊ ㄕˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一家老小	1	ㄧˋ ㄐㄧㄚ ㄌㄠˇ ㄒㄧㄠˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一對一	5	ㄧˊ ㄉㄨㄟˋ ㄧ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一小時後	1	ㄧˋ ㄒㄧㄠˇ ㄕˊ ㄏㄡˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一山不容二虎	1	ㄧˋ ㄕㄢ ㄅㄨˋ ㄖㄨㄥˊ ㄦˋ ㄏㄨˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一左一右	1	ㄧˋ ㄗㄨㄛˇ ㄧˊ ㄧㄡˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一巷	2	ㄧˊ ㄒㄧㄤˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一幢	4	ㄧˋ ㄔㄨㄤˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一平方公尺	1	ㄧˋ ㄆㄧㄥˊ ㄈㄤ ㄍㄨㄥ ㄔˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一平方公里	1	ㄧˋ ㄆㄧㄥˊ ㄈㄤ ㄍㄨㄥ ㄌㄧˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一年一度	8	ㄧ ㄋㄧㄢˊ ㄧ ㄉㄨˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一年期	2	ㄧˋ ㄋㄧㄢˊ ㄑㄧˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一床難求	1	ㄧˋ ㄔㄨㄤˊ ㄋㄢˊ ㄑㄧㄡˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一弄	1	ㄧˊ ㄋㄨㄥˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一成不變	2	ㄧˋ ㄔㄥˊ ㄅㄨˋ ㄅㄧㄢˋ	0	0	補收完整詞讀音（「一」變調、「不」本調）	post-training	add
+一戰成名	1	ㄧˊ ㄓㄢˋ ㄔㄥˊ ㄇㄧㄥˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一手史料	1	ㄧˋ ㄕㄡˇ ㄕˇ ㄌㄧㄠˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一手好書法	1	ㄧˋ ㄕㄡˇ ㄏㄠˇ ㄕㄨ ㄈㄚˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一手好琴	1	ㄧˋ ㄕㄡˇ ㄏㄠˇ ㄑㄧㄣˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一手好鼓	1	ㄧˋ ㄕㄡˇ ㄏㄠˇ ㄍㄨˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一打	5	ㄧˋ ㄉㄚˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一打	5	ㄧˋ ㄉㄚˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一技在身	1	ㄧˊ ㄐㄧˋ ㄗㄞˋ ㄕㄣ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一拳超人	0.01	ㄧˋ ㄑㄩㄢˊ ㄔㄠ ㄖㄣˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一捲	2	ㄧˋ ㄐㄩㄢˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一搖一擺	1	ㄧˋ ㄧㄠˊ ㄧˋ ㄅㄞˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一搭一唱	1	ㄧˋ ㄉㄚ ㄧˊ ㄔㄤˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一撮	1	ㄧˊ ㄘㄨㄛˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一方通行	0.01	ㄧˋ ㄈㄤ ㄊㄨㄥ ㄒㄧㄥˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一昧	3	ㄧˊ ㄇㄟˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一時不察	1	ㄧˋ ㄕˊ ㄅㄨˋ ㄔㄚˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一時瑜亮	1	ㄧ ㄕˊ ㄩˊ ㄌㄧㄤˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一晃	1	ㄧˊ ㄏㄨㄤˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一晃	1	ㄧˋ ㄏㄨㄤˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一晃眼	1	ㄧˊ ㄏㄨㄤˋ ㄧㄢˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一晃眼	1	ㄧˋ ㄏㄨㄤˇ ㄧㄢˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一會再說	1	ㄧˊ ㄏㄨㄟˋ ㄗㄞˋ ㄕㄨㄛ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一月	1	ㄧˊ ㄩㄝˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一月份	1	ㄧˊ ㄩㄝˋ ㄈㄣˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一朝被蛇咬	1	ㄧ ㄓㄠ ㄅㄟˋ ㄕㄜˊ ㄧㄠˇ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一杯酒	1	ㄧˋ ㄅㄟ ㄐㄧㄡˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一條拓麻	0.01	ㄧˋ ㄊㄧㄠˊ ㄊㄨㄛˋ ㄇㄚˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一條船	1	ㄧˋ ㄊㄧㄠˊ ㄔㄨㄢˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一條螢	0.01	ㄧˋ ㄊㄧㄠˊ ㄧㄥˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一次性密碼	1	ㄧˊ ㄘˋ ㄒㄧㄥˋ ㄇㄧˋ ㄇㄚˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一死一傷	1	ㄧˋ ㄙˇ ㄧˋ ㄕㄤ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一毫升	1	ㄧˋ ㄏㄠˊ ㄕㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一毫米	1	ㄧˋ ㄏㄠˊ ㄇㄧˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一汽集團	1	ㄧˊ ㄑㄧˋ ㄐㄧˊ ㄊㄨㄢˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一泊二食	1	ㄧˋ ㄅㄛˊ ㄦˋ ㄕˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一流學科	1	ㄧˋ ㄌㄧㄡˊ ㄒㄩㄝˊ ㄎㄜ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一溜煙	1	ㄧˊ ㄌㄧㄡˋ ㄧㄢ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一溜煙	1	ㄧˋ ㄌㄧㄡ ㄧㄢ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一溜煙兒	1	ㄧˋ ㄌㄧㄡ ㄧㄢ ㄦˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一片漆黑	1	ㄧ ㄆㄧㄢˋ ㄑㄩˋ ㄏㄟ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一生一世	1	ㄧˋ ㄕㄥ ㄧˊ ㄕˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一生受用不盡	1	ㄧ ㄕㄥ ㄕㄡˋ ㄩㄥˋ ㄅㄨˋ ㄐㄧㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+一生受用不盡	1	ㄧˋ ㄕㄥ ㄕㄡˋ ㄩㄥˋ ㄅㄨˋ ㄐㄧㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+一田百貨	1	ㄧˋ ㄊㄧㄢˊ ㄅㄞˇ ㄏㄨㄛˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一男一女	1	ㄧˋ ㄋㄢˊ ㄧˋ ㄋㄩˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一瘸一拐	1	ㄧˋ ㄑㄩㄝˊ ㄧˋ ㄍㄨㄞˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一白遮三醜	1	ㄧ ㄅㄞˊ ㄓㄜ ㄙㄢ ㄔㄡˇ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一盡棉薄	1	ㄧˊ ㄐㄧㄣˋ ㄇㄧㄢˊ ㄅㄛˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一目連	0.01	ㄧˊ ㄇㄨˋ ㄌㄧㄢˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一直走	4	ㄧˋ ㄓˊ ㄗㄡˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一睹為快	1	ㄧˋ ㄉㄨˇ ㄨㄟˊ ㄎㄨㄞˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一碗飯	2	ㄧˋ ㄨㄢˇ ㄈㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一碧如洗	1	ㄧˊ ㄅㄧˋ ㄖㄨˊ ㄒㄧˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一秉初衷	1	ㄧˋ ㄅㄧㄥˇ ㄔㄨ ㄓㄨㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一稿多投	1	ㄧˋ ㄍㄠˇ ㄉㄨㄛ ㄊㄡˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一筆不苟	1	ㄧˋ ㄅㄧˇ ㄅㄨˋ ㄍㄡˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一等座	3	ㄧˋ ㄉㄥˇ ㄗㄨㄛˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一簍簍	1	ㄧ ㄌㄡˇ ㄌㄡˇ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一級主管	6	ㄧˋ ㄐㄧˊ ㄓㄨˇ ㄍㄨㄢˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一級棒	1	ㄧˋ ㄐㄧˊ ㄅㄤˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一絲一毫	1	ㄧˋ ㄙ ㄧˋ ㄏㄠˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一絲不掛	1	ㄧ ㄙ ㄅㄨˋ ㄍㄨㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+一絲不掛	1	ㄧˋ ㄙ ㄅㄨˋ ㄍㄨㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+一綱一本	1	ㄧ ㄍㄤ ㄧ ㄅㄣˇ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一網通辦	1	ㄧˋ ㄨㄤˇ ㄊㄨㄥ ㄅㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一翻兩瞪眼	1	ㄧ ㄈㄢ ㄌㄧㄤˇ ㄉㄥˋ ㄧㄢˇ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一而再再而三	1	ㄧˋ ㄦˊ ㄗㄞˋ ㄗㄞˋ ㄦˊ ㄙㄢ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一而十	1	ㄧˋ ㄦˊ ㄕˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一臂	1	ㄧˊ ㄅㄟˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一臂	1	ㄧˊ ㄅㄧˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一臂之力	1	ㄧˊ ㄅㄟˋ ㄓ ㄌㄧˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一臂之力	1	ㄧˊ ㄅㄧˋ ㄓ ㄌㄧˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一致性原則	1	ㄧˊ ㄓˋ ㄒㄧㄥˋ ㄩㄢˊ ㄗㄜˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一臺斤	1	ㄧˋ ㄊㄞˊ ㄐㄧㄣ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一舉一動	4	ㄧ ㄐㄩˇ ㄧ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一舉手一投足	1	ㄧˋ ㄐㄩˇ ㄕㄡˇ ㄧˋ ㄊㄡˊ ㄗㄨˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一般廢棄物	1	ㄧˋ ㄅㄢ ㄈㄟˋ ㄑㄧˋ ㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一色彩羽	0.01	ㄧˊ ㄙㄜˋ ㄘㄞˇ ㄩˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一色慧	0.01	ㄧˊ ㄙㄜˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一草一木	1	ㄧˋ ㄘㄠˇ ㄧˊ ㄇㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一葉蘭	2	ㄧˊ ㄧㄝˋ ㄌㄢˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一蘭拉麵	1	ㄧˋ ㄌㄢˊ ㄌㄚ ㄇㄧㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一覺睡到天亮	1	ㄧ ㄐㄧㄠˋ ㄕㄨㄟˋ ㄉㄠˋ ㄊㄧㄢ ㄌㄧㄤˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一覺醒來	2	ㄧˊ ㄐㄧㄠˋ ㄒㄧㄥˇ ㄌㄞˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一言一行	1	ㄧˋ ㄧㄢˊ ㄧˋ ㄒㄧㄥˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一言以蔽之	2	ㄧ ㄧㄢˊ ㄧˇ ㄅㄧˋ ㄓ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一語道盡	1	ㄧˋ ㄩˇ ㄉㄠˋ ㄐㄧㄣˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一起唄	2	ㄧˋ ㄑㄧˇ ㄅㄟ˙	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一蹴而幾	1	ㄧˊ ㄘㄨˋ ㄦˊ ㄐㄧ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一蹶不振	1	ㄧˋ ㄐㄩㄝˊ ㄅㄨˋ ㄓㄣˋ	0	0	補收完整詞讀音（「一」變調、「不」本調）	post-training	add
+一躍而下	1	ㄧˊ ㄩㄝˋ ㄦˊ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一部份	8	ㄧˊ ㄅㄨˋ ㄈㄣˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一門課	2	ㄧˋ ㄇㄣˊ ㄎㄜˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一閃一閃	2	ㄧˋ ㄕㄢˇ ㄧ ㄕㄢˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一開始	8	ㄧ ㄎㄞ ㄕˇ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一關關	1	ㄧˋ ㄍㄨㄢ ㄍㄨㄢ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一陣見	1	ㄧˊ ㄓㄣˋ ㄐㄧㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一陣青一陣白	1	ㄧˊ ㄓㄣˋ ㄑㄧㄥ ㄧˊ ㄓㄣˋ ㄅㄞˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一階電路	1	ㄧˋ ㄐㄧㄝ ㄉㄧㄢˋ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一隻豬	1	ㄧˋ ㄓ ㄓㄨ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一隻雞	1	ㄧˋ ㄓ ㄐㄧ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一青窈	1	ㄧˋ ㄑㄧㄥ ㄧㄠˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一顰一笑	1	ㄧ ㄆㄧㄣˊ ㄧ ㄒㄧㄠˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一骨碌	1	ㄧˋ ㄍㄨ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一骨碌	1	ㄧˋ ㄍㄨˇ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一骨碌	1	ㄧˋ ㄍㄨˊ ㄌㄨ˙	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一體成型	1	ㄧˋ ㄊㄧˇ ㄔㄥˊ ㄒㄧㄥˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一鳴真鮮	1	ㄧˋ ㄇㄧㄥˊ ㄓㄣ ㄒㄧㄢ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一點一滴	1	ㄧ ㄉㄧㄢˇ ㄧ ㄉㄧ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一點五	1	ㄧˋ ㄉㄧㄢˇ ㄨˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一點擬燈蛾	1	ㄧˋ ㄉㄧㄢˇ ㄋㄧˇ ㄉㄥ ㄜˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一點靈	1	ㄧˋ ㄉㄧㄢˇ ㄌㄧㄥˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一點點兒	1	ㄧˋ ㄉㄧㄢˇ ㄉㄧㄢˇ ㄦˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一黨專制	1	ㄧˋ ㄉㄤˇ ㄓㄨㄢ ㄓˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一黨專政	1	ㄧˋ ㄉㄤˇ ㄓㄨㄢ ㄓㄥˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一鼻孔出氣	1	ㄧ ㄅㄧˊ ㄎㄨㄥˇ ㄔㄨ ㄑㄧˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+一齊去	3	ㄧˋ ㄑㄧˊ ㄑㄩˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一齊食	3	ㄧˋ ㄑㄧˊ ㄕˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+七賢一路	1	ㄑㄧ ㄒㄧㄢˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+三不政策	4	ㄙㄢ ㄅㄨˊ ㄓㄥˋ ㄘㄜˋ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+三宅一生	1	ㄙㄢ ㄓㄞˊ ㄧˋ ㄕㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+三寸不爛	1	ㄙㄢ ㄘㄨㄣˋ ㄅㄨˋ ㄌㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+三餐不繼	1	ㄙㄢ ㄘㄢ ㄅㄨˋ ㄐㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+上一場	3	ㄕㄤˋ ㄧˋ ㄔㄤˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+上一層	7	ㄕㄤˋ ㄧˋ ㄘㄥˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+下一頁	2	ㄒㄧㄚˋ ㄧ ㄧㄝˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+下載	1	ㄒㄧㄚˋ ㄗㄞˋ	0	0	補收完整詞讀音（phrase.china.tsv:2174）	post-training	add
+不一定啦	1	ㄅㄨˋ ㄧ ㄉㄧㄥˋ ㄌㄚ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+不一會	4	ㄅㄨˋ ㄧˋ ㄏㄨㄟˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+不一會兒	1	ㄅㄨˋ ㄧˋ ㄏㄨㄟˇ ㄦ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+不一會兒	1	ㄅㄨˋ ㄧˋ ㄏㄨㄟˇ ㄦˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+不一而足	2	ㄅㄨˋ ㄧˋ ㄦˊ ㄗㄨˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+不上	8	ㄅㄨˋ ㄕㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不上來	3	ㄅㄨˋ ㄕㄤˋ ㄌㄞˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不上去	3	ㄅㄨˋ ㄕㄤˋ ㄑㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不上道	1	ㄅㄨˋ ㄕㄤˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不下來	6	ㄅㄨˋ ㄒㄧㄚˋ ㄌㄞˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不下去	8	ㄅㄨˋ ㄒㄧㄚˋ ㄑㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不下於	3	ㄅㄨˋ ㄒㄧㄚˋ ㄩˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不世出	1	ㄅㄨˋ ㄕˋ ㄔㄨ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不中	6	ㄅㄨˋ ㄓㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不事生產	1	ㄅㄨˋ ㄕˋ ㄕㄥ ㄔㄢˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不二	8	ㄅㄨˋ ㄦˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不二價	1	ㄅㄨˋ ㄦˋ ㄐㄧㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不二周助	0.01	ㄅㄨˋ ㄦˋ ㄓㄡ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不亢不卑	1	ㄅㄨˋ ㄎㄤˋ ㄅㄨˋ ㄅㄟ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不亦	8	ㄅㄨˋ ㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不似	1	ㄅㄨˋ ㄙˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不但	8	ㄅㄨˋ ㄉㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不但是	8	ㄅㄨˋ ㄉㄢˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不住	8	ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不佔	1	ㄅㄨˋ ㄓㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不作為犯	1	ㄅㄨˋ ㄗㄨㄛˋ ㄨㄟˋ ㄈㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不便	8	ㄅㄨˋ ㄅㄧㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不信	8	ㄅㄨˋ ㄒㄧㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不信任	8	ㄅㄨˋ ㄒㄧㄣˋ ㄖㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不信任投票	1	ㄅㄨˋ ㄒㄧㄣˋ ㄖㄣˋ ㄊㄡˊ ㄆㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不信邪	1	ㄅㄨˋ ㄒㄧㄣˋ ㄒㄧㄝˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不做	8	ㄅㄨˋ ㄗㄨㄛˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不做聲	1	ㄅㄨˋ ㄗㄨㄛˋ ㄕㄥ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不像	8	ㄅㄨˋ ㄒㄧㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不像樣	1	ㄅㄨˋ ㄒㄧㄤˋ ㄧㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不像話	4	ㄅㄨˋ ㄒㄧㄤˋ ㄏㄨㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不入	8	ㄅㄨˋ ㄖㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不入流	1	ㄅㄨˋ ㄖㄨˋ ㄌㄧㄡˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不公不義	2	ㄅㄨˋ ㄍㄨㄥ ㄅㄨˋ ㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不共戴天之仇	1	ㄅㄨˋ ㄍㄨㄥˋ ㄉㄞˋ ㄊㄧㄢ ㄓ ㄔㄡˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不具	8	ㄅㄨˋ ㄐㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不再	8	ㄅㄨˋ ㄗㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不再出版	1	ㄅㄨˋ ㄗㄞˋ ㄔㄨ ㄅㄢˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不再是	8	ㄅㄨˋ ㄗㄞˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不再需要	7	ㄅㄨˋ ㄗㄞˋ ㄒㄩ ㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不冒	1	ㄅㄨˋ ㄇㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不切	8	ㄅㄨˋ ㄑㄧㄝˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不利	8	ㄅㄨˋ ㄌㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不利於	5	ㄅㄨˋ ㄌㄧˋ ㄩˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不到	8	ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不力	8	ㄅㄨˋ ㄌㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不動	8	ㄅㄨˋ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不動明	0.01	ㄅㄨˋ ㄉㄨㄥˋ ㄇㄧㄥˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不動明王	1	ㄅㄨˋ ㄉㄨㄥˋ ㄇㄧㄥˊ ㄨㄤˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不動產	8	ㄅㄨˋ ㄉㄨㄥˋ ㄔㄢˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不動產役權	1	ㄅㄨˋ ㄉㄨㄥˋ ㄔㄢˇ ㄧˋ ㄑㄩㄢˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不動產證	1	ㄅㄨˊ ㄉㄨㄥˋ ㄔㄢˇ ㄓㄥˋ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+不務正業	2	ㄅㄨˋ ㄨˋ ㄓㄥˋ ㄧㄝˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不勝唏噓	1	ㄅㄨˋ ㄕㄥˋ ㄒㄧ ㄒㄩ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不卑不亢	1	ㄅㄨˋ ㄅㄟ ㄅㄨˋ ㄎㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不受	8	ㄅㄨˋ ㄕㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不受歡迎	4	ㄅㄨˋ ㄕㄡˋ ㄏㄨㄢ ㄧㄥˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不另	1	ㄅㄨˋ ㄌㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不吊	1	ㄅㄨˋ ㄉㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不吐不快	1	ㄅㄨˋ ㄊㄨˇ ㄅㄨˋ ㄎㄨㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不向	2	ㄅㄨˋ ㄒㄧㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不吝	7	ㄅㄨˋ ㄌㄧㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不吝指教	1	ㄅㄨˋ ㄌㄧㄣˋ ㄓˇ ㄐㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不吝指正	1	ㄅㄨˋ ㄌㄧㄣˋ ㄓˇ ㄓㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不告而別	1	ㄅㄨˋ ㄍㄠˋ ㄦˊ ㄅㄧㄝˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不咋地	1	ㄅㄨˊ ㄓㄚˋ ㄉㄧˋ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+不問	8	ㄅㄨˋ ㄨㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不啻	6	ㄅㄨˋ ㄔˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不善	8	ㄅㄨˋ ㄕㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不善於	1	ㄅㄨˋ ㄕㄢˋ ㄩˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不在	8	ㄅㄨˋ ㄗㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不在乎	8	ㄅㄨˋ ㄗㄞˋ ㄏㄨ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不在了	3	ㄅㄨˋ ㄗㄞˋ ㄌㄜ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不在其位	1	ㄅㄨˋ ㄗㄞˋ ㄑㄧˊ ㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不在場	8	ㄅㄨˋ ㄗㄞˋ ㄔㄤˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不在家	2	ㄅㄨˋ ㄗㄞˋ ㄐㄧㄚ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不在少數	5	ㄅㄨˋ ㄗㄞˋ ㄕㄠˇ ㄕㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不在此限	2	ㄅㄨˋ ㄗㄞˋ ㄘˇ ㄒㄧㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不墜	1	ㄅㄨˋ ㄓㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不壞	4	ㄅㄨˋ ㄏㄨㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不外	8	ㄅㄨˋ ㄨㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不外乎	8	ㄅㄨˋ ㄨㄞˋ ㄏㄨ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不外是	1	ㄅㄨˋ ㄨㄞˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不夜城	3	ㄅㄨˋ ㄧㄝˋ ㄔㄥˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不夠	8	ㄅㄨˋ ㄍㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不夠看	1	ㄅㄨˋ ㄍㄡˋ ㄎㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不大	8	ㄅㄨˋ ㄉㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不大好	1	ㄅㄨˋ ㄉㄚˋ ㄏㄠˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不大想	1	ㄅㄨˋ ㄉㄚˋ ㄒㄧㄤˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不太	8	ㄅㄨˋ ㄊㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不太好	8	ㄅㄨˋ ㄊㄞˋ ㄏㄠˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不太妙	1	ㄅㄨˋ ㄊㄞˋ ㄇㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不太想	3	ㄅㄨˋ ㄊㄞˋ ㄒㄧㄤˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不太會	8	ㄅㄨˋ ㄊㄞˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不太能	8	ㄅㄨˋ ㄊㄞˋ ㄋㄥˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不奈	1	ㄅㄨˋ ㄋㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不妙	7	ㄅㄨˋ ㄇㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不孕	8	ㄅㄨˋ ㄩㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不孕症	7	ㄅㄨˋ ㄩㄣˋ ㄓㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不孝	5	ㄅㄨˋ ㄒㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不孝有三	1	ㄅㄨˋ ㄒㄧㄠˋ ㄧㄡˇ ㄙㄢ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不定	8	ㄅㄨˋ ㄉㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不定時炸彈	3	ㄅㄨˋ ㄉㄧㄥˋ ㄕˊ ㄓㄚˋ ㄉㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不定期	8	ㄅㄨˋ ㄉㄧㄥˋ ㄑㄧˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不客氣	4	ㄅㄨˋ ㄎㄜˋ ㄑㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不對	8	ㄅㄨˋ ㄉㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不對味	1	ㄅㄨˋ ㄉㄨㄟˋ ㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不對頭	1	ㄅㄨˋ ㄉㄨㄟˋ ㄊㄡˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不就	8	ㄅㄨˋ ㄐㄧㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不就是	8	ㄅㄨˋ ㄐㄧㄡˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不就這樣	1	ㄅㄨˋ ㄐㄧㄡˋ ㄓㄜˋ ㄧㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不屑	8	ㄅㄨˋ ㄒㄧㄝˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不屑一顧	1	ㄅㄨˋ ㄒㄧㄝˋ ㄧ ㄍㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不屑一顧	1	ㄅㄨˋ ㄒㄧㄝˋ ㄧˊ ㄍㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不屑於	1	ㄅㄨˋ ㄒㄧㄝˋ ㄩˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不左不右	1	ㄅㄨˋ ㄗㄨㄛˇ ㄅㄨˊ ㄧㄡˋ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+不帶	8	ㄅㄨˋ ㄉㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不幸	8	ㄅㄨˋ ㄒㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不幸中的大幸	1	ㄅㄨˋ ㄒㄧㄥˋ ㄓㄨㄥ ㄉㄜ˙ ㄉㄚˋ ㄒㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不弱	1	ㄅㄨˋ ㄖㄨㄛˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不待	1	ㄅㄨˋ ㄉㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不復	8	ㄅㄨˋ ㄈㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不必	8	ㄅㄨˋ ㄅㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不必要	8	ㄅㄨˋ ㄅㄧˋ ㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不忘	8	ㄅㄨˋ ㄨㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不忘本	1	ㄅㄨˋ ㄨㄤˋ ㄅㄣˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不快	8	ㄅㄨˋ ㄎㄨㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不忮不求	1	ㄅㄨˋ ㄓˋ ㄅㄨˋ ㄑㄧㄡˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不念	3	ㄅㄨˋ ㄋㄧㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不怕	8	ㄅㄨˋ ㄆㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不怕死	2	ㄅㄨˋ ㄆㄚˋ ㄙˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不怕沒柴燒	1	ㄅㄨˋ ㄆㄚˋ ㄇㄟˊ ㄔㄞˊ ㄕㄠ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不怕苦	1	ㄅㄨˋ ㄆㄚˋ ㄎㄨˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不怕難	1	ㄅㄨˋ ㄆㄚˋ ㄋㄢˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不悅	6	ㄅㄨˋ ㄩㄝˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不情不願	1	ㄅㄨˋ ㄑㄧㄥˊ ㄅㄨˋ ㄩㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不惑	6	ㄅㄨˋ ㄏㄨㄛˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不惑之年	1	ㄅㄨˋ ㄏㄨㄛˋ ㄓ ㄋㄧㄢˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不惡	1	ㄅㄨˋ ㄜˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不愧	8	ㄅㄨˋ ㄎㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不愧是	3	ㄅㄨˋ ㄎㄨㄟˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不愧為	1	ㄅㄨˋ ㄎㄨㄟˋ ㄨㄟˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不慍不火	1	ㄅㄨˋ ㄩㄣˋ ㄅㄨˋ ㄏㄨㄛˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不慎	8	ㄅㄨˋ ㄕㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不慢	1	ㄅㄨˋ ㄇㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不慣	5	ㄅㄨˋ ㄍㄨㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不懈	8	ㄅㄨˋ ㄒㄧㄝˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不應	8	ㄅㄨˋ ㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不懼	2	ㄅㄨˋ ㄐㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不戰	1	ㄅㄨˋ ㄓㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不按牌理	1	ㄅㄨˋ ㄢˋ ㄆㄞˊ ㄌㄧˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不按牌理出牌	1	ㄅㄨˋ ㄢˋ ㄆㄞˊ ㄌㄧˇ ㄔㄨ ㄆㄞˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不振	8	ㄅㄨˋ ㄓㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不掉	8	ㄅㄨˋ ㄉㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不掛	2	ㄅㄨˋ ㄍㄨㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不換	4	ㄅㄨˋ ㄏㄨㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不擅	3	ㄅㄨˋ ㄕㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不放	8	ㄅㄨˋ ㄈㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不放過	3	ㄅㄨˋ ㄈㄤˋ ㄍㄨㄛˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不放過我	0.01	ㄅㄨˋ ㄈㄤˋ ㄍㄨㄛˋ ㄨㄛˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不敗	2	ㄅㄨˋ ㄅㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不散	2	ㄅㄨˋ ㄙㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不敬	6	ㄅㄨˋ ㄐㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不料	8	ㄅㄨˋ ㄌㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不斷	8	ㄅㄨˋ ㄉㄨㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不斷地	8	ㄅㄨˋ ㄉㄨㄢˋ ㄉㄜ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不斷地	8	ㄅㄨˋ ㄉㄨㄢˋ ㄉㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不斷的	8	ㄅㄨˋ ㄉㄨㄢˋ ㄉㄜ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不日	1	ㄅㄨˋ ㄖˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不易	8	ㄅㄨˋ ㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不是	8	ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不智	2	ㄅㄨˋ ㄓˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不智之舉	1	ㄅㄨˋ ㄓˋ ㄓ ㄐㄩˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不替	1	ㄅㄨˋ ㄊㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不會不	2	ㄅㄨˋ ㄏㄨㄟˋ ㄅㄨˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不會不	2	ㄅㄨˋ ㄏㄨㄟˋ ㄅㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不會吧	1	ㄅㄨˋ ㄏㄨㄟˋ ㄅㄚ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不會啦	3	ㄅㄨˋ ㄏㄨㄟˋ ㄌㄚ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不會喔	1	ㄅㄨˋ ㄏㄨㄟˋ ㄛ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不會在	8	ㄅㄨˋ ㄏㄨㄟˋ ㄗㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不會是	8	ㄅㄨˋ ㄏㄨㄟˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不會有	8	ㄅㄨˋ ㄏㄨㄟˋ ㄧㄡˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不會欸	1	ㄅㄨˋ ㄏㄨㄟˋ ㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不會耶	1	ㄅㄨˋ ㄏㄨㄟˋ ㄧㄝ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不欲	6	ㄅㄨˋ ㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不正	8	ㄅㄨˋ ㄓㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不正常	8	ㄅㄨˋ ㄓㄥˋ ㄔㄤˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不正當	4	ㄅㄨˋ ㄓㄥˋ ㄉㄤ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不死不運	0.01	ㄅㄨˋ ㄙˇ ㄅㄨˊ ㄩㄣˋ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+不氣	1	ㄅㄨˋ ㄑㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不治	8	ㄅㄨˋ ㄓˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不治之症	1	ㄅㄨˋ ㄓˋ ㄓ ㄓㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不測	1	ㄅㄨˋ ㄘㄜˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不溯及既往	1	ㄅㄨˊ ㄙㄨˋ ㄐㄧˊ ㄐㄧˋ ㄨㄤˇ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+不滅	2	ㄅㄨˋ ㄇㄧㄝˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不澀	1	ㄅㄨˋ ㄙㄜˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不濟	1	ㄅㄨˋ ㄐㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不濟事	1	ㄅㄨˋ ㄐㄧˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不為	8	ㄅㄨˋ ㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不爆雷	1	ㄅㄨˋ ㄅㄠˋ ㄌㄟˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不特	5	ㄅㄨˋ ㄊㄜˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不犯	1	ㄅㄨˋ ㄈㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不甚	8	ㄅㄨˋ ㄕㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不用了	1	ㄅㄨˋ ㄩㄥˋ ㄌㄜ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不用了吧	1	ㄅㄨˋ ㄩㄥˋ ㄌㄜ˙ ㄅㄚ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不用了啦	1	ㄅㄨˋ ㄩㄥˋ ㄌㄜ˙ ㄌㄚ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不用啦	3	ㄅㄨˊ ㄩㄥˋ ㄌㄚ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+不用的	2	ㄅㄨˋ ㄩㄥˋ ㄉㄜ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不用說	8	ㄅㄨˋ ㄩㄥˋ ㄕㄨㄛ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不用錢	4	ㄅㄨˋ ㄩㄥˋ ㄑㄧㄢˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不畏	8	ㄅㄨˋ ㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不畏強權	1	ㄅㄨˋ ㄨㄟˋ ㄑㄧㄤˊ ㄑㄩㄢˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不畏艱險	1	ㄅㄨˋ ㄨㄟˋ ㄐㄧㄢ ㄒㄧㄢˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不畏艱難	1	ㄅㄨˋ ㄨㄟˋ ㄐㄧㄢ ㄋㄢˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不當得利	1	ㄅㄨˋ ㄉㄤˋ ㄉㄜˊ ㄌㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不痛	6	ㄅㄨˋ ㄊㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不痛不癢	1	ㄅㄨˋ ㄊㄨㄥˋ ㄅㄨˋ ㄧㄤˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不發一語	1	ㄅㄨˋ ㄈㄚ ㄧˋ ㄩˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+不盡	8	ㄅㄨˋ ㄐㄧㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不盡然	8	ㄅㄨˋ ㄐㄧㄣˋ ㄖㄢˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不看	8	ㄅㄨˋ ㄎㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不確定	1	ㄅㄨˊ ㄑㄩㄝˋ ㄉㄧㄥˋ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+不礙	2	ㄅㄨˋ ㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不第	1	ㄅㄨˋ ㄉㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不算	8	ㄅㄨˋ ㄙㄨㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不算什麼	1	ㄅㄨˋ ㄙㄨㄢˋ ㄕㄜˊ ㄇㄛ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不算什麼	1	ㄅㄨˋ ㄙㄨㄢˋ ㄕㄜˊ ㄇㄜ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不算什麼	1	ㄅㄨˋ ㄙㄨㄢˋ ㄕㄣˊ ㄇㄛ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不算什麼	1	ㄅㄨˋ ㄙㄨㄢˋ ㄕㄣˊ ㄇㄜ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不算數	1	ㄅㄨˋ ㄙㄨㄢˋ ㄕㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不置	2	ㄅㄨˋ ㄓˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不義	8	ㄅㄨˋ ㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不義之財	1	ㄅㄨˋ ㄧˋ ㄓ ㄘㄞˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不耐	8	ㄅㄨˋ ㄋㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不耐煩	8	ㄅㄨˋ ㄋㄞˋ ㄈㄢˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不聞不問	4	ㄅㄨˋ ㄨㄣˊ ㄅㄨˋ ㄨㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不肖	8	ㄅㄨˋ ㄒㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不肖子	1	ㄅㄨˋ ㄒㄧㄠˋ ㄗˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不肖子孫	1	ㄅㄨˋ ㄒㄧㄠˋ ㄗˇ ㄙㄨㄣ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不自	8	ㄅㄨˋ ㄗˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不自主	3	ㄅㄨˋ ㄗˋ ㄓㄨˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不自在	2	ㄅㄨˋ ㄗˋ ㄗㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不自由	2	ㄅㄨˋ ㄗˋ ㄧㄡˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不自禁	3	ㄅㄨˋ ㄗˋ ㄐㄧㄣ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不自禁	3	ㄅㄨˋ ㄗˋ ㄐㄧㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不自覺	8	ㄅㄨˋ ㄗˋ ㄐㄩㄝˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不自證己罪	1	ㄅㄨˋ ㄗˋ ㄓㄥˋ ㄐㄧˇ ㄗㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不自量力	1	ㄅㄨˋ ㄗˋ ㄌㄧㄤˋ ㄌㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不臭	1	ㄅㄨˋ ㄔㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不至於	8	ㄅㄨˋ ㄓˋ ㄩˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不致	8	ㄅㄨˋ ㄓˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不致於	8	ㄅㄨˋ ㄓˋ ㄩˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不若	7	ㄅㄨˋ ㄖㄨㄛˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不落	8	ㄅㄨˋ ㄌㄨㄛˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不落人後	5	ㄅㄨˋ ㄌㄨㄛˋ ㄖㄣˊ ㄏㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不落俗套	1	ㄅㄨˋ ㄌㄨㄛˋ ㄙㄨˊ ㄊㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不落窠臼	1	ㄅㄨˋ ㄌㄨㄛˋ ㄎㄜ ㄐㄧㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不藥而癒	1	ㄅㄨˋ ㄧㄠˋ ㄦˊ ㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不被	4	ㄅㄨˋ ㄅㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不要	1	ㄅㄨˋ ㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不要再	8	ㄅㄨˋ ㄧㄠˋ ㄗㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不要啦	1	ㄅㄨˋ ㄧㄠˋ ㄌㄚ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不要回頭	0.01	ㄅㄨˋ ㄧㄠˋ ㄏㄨㄟˊ ㄊㄡˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不要在	8	ㄅㄨˋ ㄧㄠˋ ㄗㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不要緊	4	ㄅㄨˋ ㄧㄠˋ ㄐㄧㄣˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不要臉	3	ㄅㄨˋ ㄧㄠˋ ㄌㄧㄢˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不要這樣	1	ㄅㄨˋ ㄧㄠˋ ㄓㄜˋ ㄧㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不要這樣啦	1	ㄅㄨˋ ㄧㄠˋ ㄓㄜˋ ㄧㄤˋ ㄌㄚ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不要錢	2	ㄅㄨˋ ㄧㄠˋ ㄑㄧㄢˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不要鬧啦	1	ㄅㄨˋ ㄧㄠˋ ㄋㄠˋ ㄌㄚ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不計	1	ㄅㄨˋ ㄐㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不計其數	5	ㄅㄨˋ ㄐㄧˋ ㄑㄧˊ ㄕㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不計成本	1	ㄅㄨˋ ㄐㄧˋ ㄔㄥˊ ㄅㄣˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不記名投票	1	ㄅㄨˋ ㄐㄧˋ ㄇㄧㄥˊ ㄊㄡˊ ㄆㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不認	8	ㄅㄨˋ ㄖㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不認帳	1	ㄅㄨˋ ㄖㄣˋ ㄓㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不論	8	ㄅㄨˋ ㄌㄨㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不論什麼	1	ㄅㄨˋ ㄌㄨㄣˋ ㄕㄜˊ ㄇㄛ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不論什麼	1	ㄅㄨˋ ㄌㄨㄣˋ ㄕㄜˊ ㄇㄜ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不論什麼	1	ㄅㄨˋ ㄌㄨㄣˋ ㄕㄣˊ ㄇㄛ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不論什麼	1	ㄅㄨˋ ㄌㄨㄣˋ ㄕㄣˊ ㄇㄜ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不論如何	2	ㄅㄨˋ ㄌㄨㄣˋ ㄖㄨˊ ㄏㄜˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不論怎麼	1	ㄅㄨˋ ㄌㄨㄣˋ ㄗㄜˇ ㄇㄛ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不論怎麼	1	ㄅㄨˋ ㄌㄨㄣˋ ㄗㄜˇ ㄇㄜ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不論怎麼	1	ㄅㄨˋ ㄌㄨㄣˋ ㄗㄣˇ ㄇㄛ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不論怎麼	1	ㄅㄨˋ ㄌㄨㄣˋ ㄗㄣˇ ㄇㄜ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不論是	8	ㄅㄨˋ ㄌㄨㄣˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不論是誰	1	ㄅㄨˋ ㄌㄨㄣˋ ㄕˋ ㄕㄟˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不諱	8	ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不諱言	7	ㄅㄨˋ ㄏㄨㄟˋ ㄧㄢˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不謂	1	ㄅㄨˋ ㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不識泰山	1	ㄅㄨˋ ㄕˋ ㄊㄞˋ ㄕㄢ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不識相	1	ㄅㄨˋ ㄕˋ ㄒㄧㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不變	8	ㄅㄨˋ ㄅㄧㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不讓	8	ㄅㄨˋ ㄖㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不讓人	3	ㄅㄨˋ ㄖㄤˋ ㄖㄣˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不讓鬚眉	1	ㄅㄨˋ ㄖㄤˋ ㄒㄩ ㄇㄟˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不負	8	ㄅㄨˋ ㄈㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不負眾望	3	ㄅㄨˋ ㄈㄨˋ ㄓㄨㄥˋ ㄨㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不貳	1	ㄅㄨˋ ㄦˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不貳過	1	ㄅㄨˋ ㄦˋ ㄍㄨㄛˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不貴	3	ㄅㄨˋ ㄍㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不費	4	ㄅㄨˋ ㄈㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不費吹灰之力	1	ㄅㄨˋ ㄈㄟˋ ㄔㄨㄟ ㄏㄨㄟ ㄓ ㄌㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不賴	7	ㄅㄨˋ ㄌㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不跳	1	ㄅㄨˋ ㄊㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不輕不重	1	ㄅㄨˋ ㄑㄧㄥ ㄅㄨˋ ㄓㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不近人情	1	ㄅㄨˋ ㄐㄧㄣˋ ㄖㄣˊ ㄑㄧㄥˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不退	5	ㄅㄨˋ ㄊㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不送	2	ㄅㄨˋ ㄙㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不透	8	ㄅㄨˋ ㄊㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不透明	3	ㄅㄨˋ ㄊㄡˋ ㄇㄧㄥˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不透水	1	ㄅㄨˋ ㄊㄡˋ ㄕㄨㄟˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不進	8	ㄅㄨˋ ㄐㄧㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不進來	1	ㄅㄨˋ ㄐㄧㄣˋ ㄌㄞˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不進則退	1	ㄅㄨˋ ㄐㄧㄣˋ ㄗㄜˊ ㄊㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不進去	7	ㄅㄨˋ ㄐㄧㄣˋ ㄑㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不進反退	1	ㄅㄨˋ ㄐㄧㄣˋ ㄈㄢˇ ㄊㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不遂	2	ㄅㄨˋ ㄙㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不道德	8	ㄅㄨˋ ㄉㄠˋ ㄉㄜˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不遜	8	ㄅㄨˋ ㄒㄩㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不遜於	1	ㄅㄨˋ ㄒㄩㄣˋ ㄩˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不適	8	ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不適合	8	ㄅㄨˋ ㄕˋ ㄏㄜˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不避	3	ㄅㄨˋ ㄅㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不配	6	ㄅㄨˋ ㄆㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不量力	1	ㄅㄨˋ ㄌㄧㄤˋ ㄌㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不錯	8	ㄅㄨˋ ㄘㄨㄛˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不錯喔	3	ㄅㄨˋ ㄘㄨㄛˋ ㄛ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不錯欸	3	ㄅㄨˋ ㄘㄨㄛˋ ㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不錯的	8	ㄅㄨˋ ㄘㄨㄛˋ ㄉㄜ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不錯耶	2	ㄅㄨˋ ㄘㄨㄛˋ ㄧㄝ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不鏽鋼	8	ㄅㄨˋ ㄒㄧㄡˋ ㄍㄤ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不鏽鋼釘	1	ㄅㄨˋ ㄒㄧㄡˋ ㄍㄤ ㄉㄧㄥ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不降	3	ㄅㄨˋ ㄐㄧㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不降反升	1	ㄅㄨˋ ㄐㄧㄤˋ ㄈㄢˇ ㄕㄥ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不限	7	ㄅㄨˋ ㄒㄧㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不限於	6	ㄅㄨˋ ㄒㄧㄢˋ ㄩˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不靠譜	1	ㄅㄨˊ ㄎㄠˋ ㄆㄨˇ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+不願	1	ㄅㄨˋ ㄩㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不願意	8	ㄅㄨˋ ㄩㄢˋ ㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不顧	8	ㄅㄨˋ ㄍㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+不顧一切	1	ㄅㄨˋ ㄍㄨˋ ㄧˊ ㄑㄧㄝˋ	0	0	補收完整詞讀音（「一」變調、「不」本調）	post-training	add
+不餓	1	ㄅㄨˋ ㄜˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+並不在	8	ㄅㄧㄥˋ ㄅㄨˋ ㄗㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+並不是	8	ㄅㄧㄥˋ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+並不會	8	ㄅㄧㄥˋ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+中國一汽	1	ㄓㄨㄥ ㄍㄨㄛˊ ㄧˊ ㄑㄧˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+中山一路	1	ㄓㄨㄥ ㄕㄢ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+中新一號	1	ㄓㄨㄥ ㄒㄧㄣ ㄧˊ ㄏㄠˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+中正一路	1	ㄓㄨㄥ ㄓㄥˋ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+中華一番	0.01	ㄓㄨㄥ ㄏㄨㄚˊ ㄧˋ ㄈㄢ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+中華一路	1	ㄓㄨㄥ ㄏㄨㄚˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+中華衛星一號	2	ㄓㄨㄥ ㄏㄨㄚˊ ㄨㄟˋ ㄒㄧㄥ ㄧˊ ㄏㄠˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+中野一花	0.01	ㄓㄨㄥ ㄧㄝˇ ㄧˋ ㄏㄨㄚ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+久城一彌	0.01	ㄐㄧㄡˇ ㄔㄥˊ ㄧˋ ㄇㄧˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+九如一路	1	ㄐㄧㄡˇ ㄖㄨˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+九年一貫	8	ㄐㄧㄡˇ ㄋㄧㄢˊ ㄧ ㄍㄨㄢˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+九年一貫課程	8	ㄐㄧㄡˇ ㄋㄧㄢˊ ㄧ ㄍㄨㄢˋ ㄎㄜˋ ㄔㄥˊ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+九牛之一毛	1	ㄐㄧㄡˇ ㄋㄧㄡˊ ㄓ ㄧˋ ㄇㄠˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+乳糖不耐症	1	ㄖㄨˇ ㄊㄤˊ ㄅㄨˋ ㄋㄞˋ ㄓㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+亂成一團	1	ㄌㄨㄢˋ ㄔㄥˊ ㄧ ㄊㄨㄢˊ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+五福一路	1	ㄨˇ ㄈㄨˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+五險一金	1	ㄨˇ ㄒㄧㄢˇ ㄧˋ ㄐㄧㄣ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+井水不犯河水	1	ㄐㄧㄥˇ ㄕㄨㄟˇ ㄅㄨˋ ㄈㄢˋ ㄏㄜˊ ㄕㄨㄟˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+交友不慎	1	ㄐㄧㄠ ㄧㄡˇ ㄅㄨˋ ㄕㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+人不像人	1	ㄖㄣˊ ㄅㄨˋ ㄒㄧㄤˋ ㄖㄣˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+人衣一體	0.01	ㄖㄣˊ ㄧ ㄧˋ ㄊㄧˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+仁一路	1	ㄖㄣˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+他不是	8	ㄊㄚ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+他不會	8	ㄊㄚ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+低迷不振	1	ㄉㄧ ㄇㄧˊ ㄅㄨˋ ㄓㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+住商不動產	1	ㄓㄨˋ ㄕㄤ ㄅㄨˋ ㄉㄨㄥˋ ㄔㄢˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+來之不易	1	ㄌㄞˊ ㄓ ㄅㄨˋ ㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+來者不拒	2	ㄌㄞˊ ㄓㄜˇ ㄅㄨˋ ㄐㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+供不應求	8	ㄍㄨㄥ ㄅㄨˋ ㄧㄥˋ ㄑㄧㄡˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+供品	1	ㄍㄨㄥ ㄆㄧㄣˇ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2581）	post-training	add
+保一總隊	1	ㄅㄠˇ ㄧˋ ㄗㄨㄥˇ ㄉㄨㄟˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+保不住	1	ㄅㄠˇ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+信一路	1	ㄒㄧㄣˋ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+倒也不是	1	ㄉㄠˋ ㄧㄝˇ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+倒也不會	1	ㄉㄠˋ ㄧㄝˇ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+倒垃圾	1	ㄉㄠˋ ㄌㄚ ㄐㄧ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2287）	post-training	add
+借看一下	1	ㄐㄧㄝˋ ㄎㄢˋ ㄧ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+值得一提的是	5	ㄓˊ ㄉㄜˊ ㄧ ㄊㄧˊ ㄉㄜ˙ ㄕˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+做不到	8	ㄗㄨㄛˋ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+停不下	1	ㄊㄧㄥˊ ㄅㄨˋ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+停不下來	1	ㄊㄧㄥˊ ㄅㄨˋ ㄒㄧㄚˋ ㄌㄞˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+停不住	1	ㄊㄧㄥˊ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+偵一組長	1	ㄓㄣ ㄧˋ ㄗㄨˇ ㄓㄤˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+偶一為之	1	ㄡˇ ㄧˋ ㄨㄟˊ ㄓ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+備而不用	1	ㄅㄟˋ ㄦˊ ㄅㄨˋ ㄩㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+傳不到	1	ㄔㄨㄢˊ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+僵持不下	4	ㄐㄧㄤ ㄔˊ ㄅㄨˋ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+先不要	1	ㄒㄧㄢ ㄅㄨˋ ㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+先不要啦	1	ㄒㄧㄢ ㄅㄨˋ ㄧㄠˋ ㄌㄚ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+光說不練	1	ㄍㄨㄤ ㄕㄨㄛ ㄅㄨˋ ㄌㄧㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+內舉不避親	1	ㄋㄟˋ ㄐㄩˇ ㄅㄨˋ ㄅㄧˋ ㄑㄧㄣ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+全不是	4	ㄑㄩㄢˊ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+全不會	1	ㄑㄩㄢˊ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+六合一路	1	ㄌㄧㄡˋ ㄏㄜˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+六親不認	1	ㄌㄧㄡˋ ㄑㄧㄣ ㄅㄨˋ ㄖㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+再也不是	1	ㄗㄞˋ ㄧㄝˇ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+再也不會	1	ㄗㄞˋ ㄧㄝˇ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+再多一點點	1	ㄗㄞˋ ㄉㄨㄛ ㄧˋ ㄉㄧㄢˇ ㄉㄧㄢˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+凱旋一路	1	ㄎㄞˇ ㄒㄩㄢˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+出前一丁	1	ㄔㄨ ㄑㄧㄢˊ ㄧˋ ㄉㄧㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+分一杯羹	1	ㄈㄣ ㄧˋ ㄅㄟ ㄍㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+分享一下	1	ㄈㄣ ㄒㄧㄤˇ ㄧ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+切仔麵	1	ㄑㄧㄝˋ ㄗˇ ㄇㄧㄢˋ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2117）	post-training	add
+刨冰	1	ㄆㄠˊ ㄅㄧㄥ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2052）	post-training	add
+到此一遊	2	ㄉㄠˋ ㄘˇ ㄧˋ ㄧㄡˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+前一陣子	8	ㄑㄧㄢˊ ㄧˊ ㄓㄣˋ ㄗ˙	0	0	補收完整詞讀音（「一」變調）	post-training	add
+前言不對後語	1	ㄑㄧㄢˊ ㄧㄢˊ ㄅㄨˋ ㄉㄨㄟˋ ㄏㄡˋ ㄩˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+割捨不下	1	ㄍㄜ ㄕㄜˇ ㄅㄨˋ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+努力不懈	1	ㄋㄨˇ ㄌㄧˋ ㄅㄨˋ ㄒㄧㄝˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+勇者不懼	1	ㄩㄥˇ ㄓㄜˇ ㄅㄨˋ ㄐㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+勝利一路	1	ㄕㄥˋ ㄌㄧˋ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+北一女	1	ㄅㄟˇ ㄧˋ ㄋㄩˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+北一女中	1	ㄅㄟˇ ㄧˋ ㄋㄩˇ ㄓㄨㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+十全一路	1	ㄕˊ ㄑㄩㄢˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+半身不遂	1	ㄅㄢˋ ㄕㄣ ㄅㄨˋ ㄙㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+南一中	1	ㄋㄢˊ ㄧˋ ㄓㄨㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+南崗一路	1	ㄋㄢˊ ㄍㄤ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+博愛一路	1	ㄅㄛˊ ㄞˋ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+卷不動	2	ㄐㄩㄢˇ ㄅㄨˊ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+卷子	1	ㄐㄩㄢˇ ㄗˇ	0	0	補收完整詞讀音（phrase.china.tsv:1786）	post-training	add
+卻不是	8	ㄑㄩㄝˋ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+卻不會	3	ㄑㄩㄝˋ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+原封不動	4	ㄩㄢˊ ㄈㄥ ㄅㄨˋ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+又一村	1	ㄧㄡˋ ㄧˋ ㄘㄨㄣ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+取之不盡	1	ㄑㄩˇ ㄓ ㄅㄨˋ ㄐㄧㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+取捨不定	1	ㄑㄩˇ ㄕㄜˇ ㄅㄨˋ ㄉㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+受用不盡	1	ㄕㄡˋ ㄩㄥˋ ㄅㄨˋ ㄐㄧㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+古泉一樹	0.01	ㄍㄨˇ ㄑㄩㄢˊ ㄧˊ ㄕㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+另外一回事	5	ㄌㄧㄥˋ ㄨㄞˋ ㄧˋ ㄏㄨㄟˊ ㄕˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+只租不賣	1	ㄓˇ ㄗㄨ ㄅㄨˋ ㄇㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+只說不做	1	ㄓˇ ㄕㄨㄛ ㄅㄨˋ ㄗㄨㄛˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+只送不賣	1	ㄓˇ ㄙㄨㄥˋ ㄅㄨˋ ㄇㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+可不咋地	1	ㄎㄜˇ ㄅㄨˊ ㄓㄚˋ ㄉㄧˋ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+可不是	1	ㄎㄜˇ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+可不會	1	ㄎㄜˇ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+台一線	1	ㄊㄞˊ ㄧˊ ㄒㄧㄢˋ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2173、「一」變調）	post-training	add
+台廿一線	1	ㄊㄞˊ ㄋㄧㄢˋ ㄧˊ ㄒㄧㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+吃不下去	1	ㄔ ㄅㄨˋ ㄒㄧㄚˋ ㄑㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+吃不到	5	ㄔ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+吃了一驚	1	ㄔ ㄌㄜ˙ ㄧˋ ㄐㄧㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+吉田一美	0.01	ㄐㄧˊ ㄊㄧㄢˊ ㄧˋ ㄇㄟˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+同一性	1	ㄊㄨㄥˊ ㄧˊ ㄒㄧㄥˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+吸一口氣	1	ㄒㄧ ㄧˋ ㄎㄡˇ ㄑㄧˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+吾道一以貫之	1	ㄨˊ ㄉㄠˋ ㄧˋ ㄧˇ ㄍㄨㄢˋ ㄓ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+和泉一織	0.01	ㄏㄜˊ ㄑㄩㄢˊ ㄧˋ ㄓ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+咕嚕一聲	1	ㄍㄨ ㄌㄨ ㄧ ㄕㄥ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+咱家	1	ㄗㄢˊ ㄐㄧㄚ	0	0	補收完整詞讀音（phrase.china.tsv:1357）	post-training	add
+啊不就	1	ㄚ ㄅㄨˋ ㄐㄧㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+啊就不是	1	ㄚ ㄐㄧㄡˋ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+問一下	2	ㄨㄣˋ ㄧˊ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+啥子	1	ㄕㄚˊ ㄗˇ	0	0	補收完整詞讀音（phrase.china.tsv:1368）	post-training	add
+喊你一聲	1	ㄏㄢˇ ㄋㄧˇ ㄧˋ ㄕㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+喜不自勝	1	ㄒㄧˇ ㄅㄨˋ ㄗˋ ㄕㄥ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+單一化	1	ㄉㄢ ㄧˊ ㄏㄨㄚˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+單一性	1	ㄉㄢ ㄧˊ ㄒㄧㄥˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+單一登入	1	ㄉㄢ ㄧˋ ㄉㄥ ㄖㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+單一鹼基	1	ㄉㄢ ㄧˋ ㄐㄧㄢˇ ㄐㄧ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+嗆聲	1	ㄑㄧㄤ ㄕㄥ	0	0	補收完整詞讀音（phrase.taiwan.tsv:1741）	post-training	add
+嚇一跳	7	ㄒㄧㄚˋ ㄧ ㄊㄧㄠˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+嚇了一大跳	1	ㄒㄧㄚˋ ㄌㄜ˙ ㄧ ㄉㄚˋ ㄊㄧㄠˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+嚇了一跳	2	ㄒㄧㄚˋ ㄌㄜ˙ ㄧ ㄊㄧㄠˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+嚥不下	1	ㄧㄢˋ ㄅㄨˋ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+四不像	2	ㄙˋ ㄅㄨˋ ㄒㄧㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+四維一路	1	ㄙˋ ㄨㄟˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+國一上	1	ㄍㄨㄛˊ ㄧˊ ㄕㄤˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+國一下	1	ㄍㄨㄛˊ ㄧˊ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+國一生	1	ㄍㄨㄛˊ ㄧˋ ㄕㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+國聯一路	1	ㄍㄨㄛˊ ㄌㄧㄢˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+國道一號	2	ㄍㄨㄛˊ ㄉㄠˋ ㄧ ㄏㄠˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+園區一路	1	ㄩㄢˊ ㄑㄩ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+團結一致	2	ㄊㄨㄢˊ ㄐㄧㄝˊ ㄧ ㄓˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+在一塊	8	ㄗㄞˋ ㄧˊ ㄎㄨㄞˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+在水一方	1	ㄗㄞˋ ㄕㄨㄟˇ ㄧ ㄈㄤ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+均一化	1	ㄐㄩㄣ ㄧˊ ㄏㄨㄚˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+坐不住	4	ㄗㄨㄛˋ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+垃圾車	1	ㄌㄚ ㄐㄧ ㄔㄜ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2283）	post-training	add
+基金一路	1	ㄐㄧ ㄐㄧㄣ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+報喜不報憂	1	ㄅㄠˋ ㄒㄧˇ ㄅㄨˋ ㄅㄠˋ ㄧㄡ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+壓不住	1	ㄧㄚ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+多一點	8	ㄉㄨㄛ ㄧˋ ㄉㄧㄢˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+夜櫻凶一郎	0.01	ㄧㄝˋ ㄧㄥ ㄒㄩㄥ ㄧˋ ㄌㄤˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+大不敬	1	ㄉㄚˋ ㄅㄨˋ ㄐㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+大中一路	1	ㄉㄚˋ ㄓㄨㄥ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+大可不必	3	ㄉㄚˋ ㄎㄜˇ ㄅㄨˋ ㄅㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+大唐不夜城	1	ㄉㄚˋ ㄊㄤˊ ㄅㄨˊ ㄧㄝˋ ㄔㄥˊ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+大幹一場	1	ㄉㄚˋ ㄍㄢˋ ㄧ ㄔㄤˇ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+大筆一揮	1	ㄉㄚˋ ㄅㄧˇ ㄧˋ ㄏㄨㄟ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+大順一路	1	ㄉㄚˋ ㄕㄨㄣˋ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+天不怕	1	ㄊㄧㄢ ㄅㄨˋ ㄆㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+天不怕地不怕	1	ㄊㄧㄢ ㄅㄨˋ ㄆㄚˋ ㄉㄧˋ ㄅㄨˋ ㄆㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+天啊	1	ㄊㄧㄢ ㄚ	0	0	補收完整詞讀音（phrase.taiwan.tsv:1529）	post-training	add
+天地一沙鷗	1	ㄊㄧㄢ ㄉㄧˋ ㄧˋ ㄕㄚ ㄡ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+天外飛來一筆	1	ㄊㄧㄢ ㄨㄞˋ ㄈㄟ ㄌㄞˊ ㄧˋ ㄅㄧˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+天有不測風雲	1	ㄊㄧㄢ ㄧㄡˇ ㄅㄨˋ ㄘㄜˋ ㄈㄥ ㄩㄣˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+太不像話	1	ㄊㄞˋ ㄅㄨˋ ㄒㄧㄤˋ ㄏㄨㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+奮戰不懈	1	ㄈㄣˋ ㄓㄢˋ ㄅㄨˋ ㄒㄧㄝˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+女一分舍	1	ㄋㄩˇ ㄧˋ ㄈㄣ ㄕㄜˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+女一舍	1	ㄋㄩˇ ㄧˊ ㄕㄜˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+她不是	4	ㄊㄚ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+她不會	2	ㄊㄚ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+好一會	5	ㄏㄠˇ ㄧˋ ㄏㄨㄟˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+好一會兒	1	ㄏㄠˇ ㄧ ㄏㄨㄟˇ ㄦ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+好不快活	1	ㄏㄠˇ ㄅㄨˋ ㄎㄨㄞˋ ㄏㄨㄛˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+好不熱鬧	1	ㄏㄠˇ ㄅㄨˋ ㄖㄜˋ ㄋㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+好不自在	1	ㄏㄠˇ ㄅㄨˋ ㄗˋ ㄗㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+好啊	1	ㄏㄠˇ ㄚ	0	0	補收完整詞讀音（phrase.taiwan.tsv:1388）	post-training	add
+始終不變	1	ㄕˇ ㄓㄨㄥ ㄅㄨˋ ㄅㄧㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+委靡不振	1	ㄨㄟˇ ㄇㄧˇ ㄅㄨˋ ㄓㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+嫣然一笑	1	ㄧㄢ ㄖㄢˊ ㄧ ㄒㄧㄠˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+孝一路	1	ㄒㄧㄠˋ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+學不會	1	ㄒㄩㄝˊ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+守成不易	1	ㄕㄡˇ ㄔㄥˊ ㄅㄨˋ ㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+安一路	1	ㄢ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+定於一尊	1	ㄉㄧㄥˋ ㄩˊ ㄧˋ ㄗㄨㄣ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+宮內一穗	0.01	ㄍㄨㄥ ㄋㄟˋ ㄧˊ ㄙㄨㄟˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+宮田一郎	0.01	ㄍㄨㄥ ㄊㄧㄢˊ ㄧˋ ㄌㄤˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+富甲一方	1	ㄈㄨˋ ㄐㄧㄚˇ ㄧˋ ㄈㄤ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+專一性	1	ㄓㄨㄢ ㄧˊ ㄒㄧㄥˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+對不住	1	ㄉㄨㄟˋ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+對事不對人	1	ㄉㄨㄟˋ ㄕˋ ㄅㄨˋ ㄉㄨㄟˋ ㄖㄣˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+對人不對事	1	ㄉㄨㄟˋ ㄖㄣˊ ㄅㄨˋ ㄉㄨㄟˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+小一派位	1	ㄒㄧㄠˇ ㄧˊ ㄆㄞˋ ㄨㄟˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+少一點	7	ㄕㄠˇ ㄧˋ ㄉㄧㄢˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+就不是	8	ㄐㄧㄡˋ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+就不用	8	ㄐㄧㄡˋ ㄅㄨˋ ㄩㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+山下一夫	0.01	ㄕㄢ ㄒㄧㄚˋ ㄧˋ ㄈㄨ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+屹立不動	1	ㄧˋ ㄌㄧˋ ㄅㄨˋ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+差一點	8	ㄔㄚ ㄧ ㄉㄧㄢˇ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+己所不欲	1	ㄐㄧˇ ㄙㄨㄛˇ ㄅㄨˋ ㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+巾幗不讓鬚眉	1	ㄐㄧㄣ ㄍㄨㄛˊ ㄅㄨˋ ㄖㄤˋ ㄒㄩ ㄇㄟˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+幕之內一步	0.01	ㄇㄨˋ ㄓ ㄋㄟˋ ㄧˊ ㄅㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+幸村祥一郎	0.01	ㄒㄧㄥˋ ㄘㄨㄣ ㄒㄧㄤˊ ㄧˋ ㄌㄤˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+幹什麼	1	ㄍㄢˋ ㄕˊ ㄇㄜ˙	0	0	補收完整詞讀音（phrase.china.tsv:1400）	post-training	add
+建國一路	1	ㄐㄧㄢˋ ㄍㄨㄛˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+廿一世紀	8	ㄋㄧㄢˋ ㄧˊ ㄕˋ ㄐㄧˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+彼一時	1	ㄅㄧˇ ㄧˋ ㄕˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+待不住	1	ㄉㄞ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+後藤一里	0.01	ㄏㄡˋ ㄊㄥˊ ㄧˋ ㄌㄧˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+得不到	8	ㄉㄜˊ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+得來不易	2	ㄉㄜˊ ㄌㄞˊ ㄅㄨˋ ㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+從一而終	1	ㄘㄨㄥˊ ㄧˋ ㄦˊ ㄓㄨㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+御幸一也	0.01	ㄩˋ ㄒㄧㄥˋ ㄧˋ ㄧㄝˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+心不甘情不願	1	ㄒㄧㄣ ㄅㄨˋ ㄍㄢ ㄑㄧㄥˊ ㄅㄨˋ ㄩㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+心神不定	1	ㄒㄧㄣ ㄕㄣˊ ㄅㄨˋ ㄉㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+心術不正	1	ㄒㄧㄣ ㄕㄨˋ ㄅㄨˋ ㄓㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+忍不住	8	ㄖㄣˇ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+忘不掉	1	ㄨㄤˋ ㄅㄨˋ ㄉㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+忠一路	1	ㄓㄨㄥ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+快一點啦	2	ㄎㄨㄞˋ ㄧ ㄉㄧㄢˇ ㄌㄚ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+念念不忘	6	ㄋㄧㄢˋ ㄋㄧㄢˋ ㄅㄨˋ ㄨㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+惠而不費	1	ㄏㄨㄟˋ ㄦˊ ㄅㄨˋ ㄈㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+想不到	8	ㄒㄧㄤˇ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+想不透	4	ㄒㄧㄤˇ ㄅㄨˋ ㄊㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+意想不到	8	ㄧˋ ㄒㄧㄤˇ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+意料不到	1	ㄧˋ ㄌㄧㄠˋ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+愛一路	1	ㄞˋ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+愛不釋手	3	ㄞˋ ㄅㄨˋ ㄕˋ ㄕㄡˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+感恩不盡	1	ㄍㄢˇ ㄣ ㄅㄨˋ ㄐㄧㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+成一家言	1	ㄔㄥˊ ㄧˋ ㄐㄧㄚ ㄧㄢˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+我不在	3	ㄨㄛˇ ㄅㄨˋ ㄗㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+我不是	8	ㄨㄛˇ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+我不會	8	ㄨㄛˇ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+我不餓	1	ㄨㄛˇ ㄅㄨˋ ㄜˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+我們這一家	0.01	ㄨㄛˇ ㄇㄣˊ ㄓㄜˋ ㄧˋ ㄐㄧㄚ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+我們這一班	1	ㄨㄛˇ ㄇㄣˊ ㄓㄜˋ ㄧˋ ㄅㄢ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+我又不是	4	ㄨㄛˇ ㄧㄡˋ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+才不是	1	ㄘㄞˊ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+才不會	8	ㄘㄞˊ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+扛不住	2	ㄎㄤˊ ㄅㄨˊ ㄓㄨˋ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+扳回一城	1	ㄅㄢ ㄏㄨㄟˊ ㄧˋ ㄔㄥˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+找不到	8	ㄓㄠˇ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+技高一籌	1	ㄐㄧˋ ㄍㄠ ㄧˋ ㄔㄡˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+把不到	1	ㄅㄚˇ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+投不到	1	ㄊㄡˊ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+折不斷	1	ㄓㄜˊ ㄅㄨˋ ㄉㄨㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+抵不住	1	ㄉㄧˇ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+抵擋不住	1	ㄉㄧˇ ㄉㄤˇ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+拉不動	1	ㄌㄚ ㄅㄨˋ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+招架不住	1	ㄓㄠ ㄐㄧㄚˋ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+拿不住	1	ㄋㄚˊ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+拿不到	8	ㄋㄚˊ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+拿不定	1	ㄋㄚˊ ㄅㄨˋ ㄉㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+挪不動	1	ㄋㄨㄛˊ ㄅㄨˋ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+挺不錯	1	ㄊㄧㄥˇ ㄅㄨˋ ㄘㄨㄛˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+捉摸不定	2	ㄓㄨㄛ ㄇㄛ ㄅㄨˋ ㄉㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+捏一把汗	1	ㄋㄧㄝ ㄧˋ ㄅㄚˇ ㄏㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+捏了一把冷汗	1	ㄋㄧㄝ ㄌㄜ˙ ㄧˋ ㄅㄚˇ ㄌㄥˇ ㄏㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+捨不下	1	ㄕㄜˇ ㄅㄨˋ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+掛一漏萬	1	ㄍㄨㄚˋ ㄧˊ ㄌㄡˋ ㄨㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+掛不上	1	ㄍㄨㄚˋ ㄅㄨˋ ㄕㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+掛不下	1	ㄍㄨㄚˋ ㄅㄨˋ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+掛不住	1	ㄍㄨㄚˋ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+探究與實作	1	ㄊㄢˋ ㄐㄧㄡ ㄩˇ ㄕˊ ㄗㄨㄛˋ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2415）	post-training	add
+接連不斷	1	ㄐㄧㄝ ㄌㄧㄢˊ ㄅㄨˋ ㄉㄨㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+掩不住	2	ㄧㄢˇ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+換湯不換藥	1	ㄏㄨㄢˋ ㄊㄤ ㄅㄨˋ ㄏㄨㄢˋ ㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+搖了一下	1	ㄧㄠˊ ㄌㄜ˙ ㄧ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+搖擺不定	1	ㄧㄠˊ ㄅㄞˇ ㄅㄨˋ ㄉㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+搖身一變	8	ㄧㄠˊ ㄕㄣ ㄧ ㄅㄧㄢˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+搶購一空	1	ㄑㄧㄤˇ ㄍㄡˋ ㄧˋ ㄎㄨㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+摸不透	1	ㄇㄛ ㄅㄨˋ ㄊㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+撈一票	1	ㄌㄠ ㄧ ㄆㄧㄠˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+撐一下	1	ㄔㄥ ㄧˊ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+撐不下去	2	ㄔㄥ ㄅㄨˋ ㄒㄧㄚˋ ㄑㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+撐不住	1	ㄔㄥ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+撲通一聲	1	ㄆㄨ ㄊㄨㄥ ㄧˋ ㄕㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+擋不住	6	ㄉㄤˇ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+擲筊	1	ㄓˋ ㄐㄧㄠˇ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2562）	post-training	add
+擺不下	1	ㄅㄞˇ ㄅㄨˋ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+攔不住	1	ㄌㄢˊ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+攻無不克	1	ㄍㄨㄥ ㄨˊ ㄅㄨˋ ㄎㄜˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+放不下	5	ㄈㄤˋ ㄅㄨˋ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+放他一馬	1	ㄈㄤˋ ㄊㄚ ㄧˋ ㄇㄚˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+放心不下	2	ㄈㄤˋ ㄒㄧㄣ ㄅㄨˋ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+放手一搏	1	ㄈㄤˋ ㄕㄡˇ ㄧˋ ㄅㄛˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+救急不救窮	1	ㄐㄧㄡˋ ㄐㄧˊ ㄅㄨˋ ㄐㄧㄡˋ ㄑㄩㄥˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+敬自己一杯	1	ㄐㄧㄥˋ ㄗˋ ㄐㄧˇ ㄧˋ ㄅㄟ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+數不到	1	ㄕㄨˇ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+數不盡	3	ㄕㄨˇ ㄅㄨˋ ㄐㄧㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+文一路	1	ㄨㄣˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+文心一言	1	ㄨㄣˊ ㄒㄧㄣ ㄧˋ ㄧㄢˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+文武一街	1	ㄨㄣˊ ㄨˇ ㄧˋ ㄐㄧㄝ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+文風不動	1	ㄨㄣˊ ㄈㄥ ㄅㄨˋ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+斟酌一下	1	ㄓㄣ ㄓㄨㄛˊ ㄧˊ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+新一代	8	ㄒㄧㄣ ㄧ ㄉㄞˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+新一季	2	ㄒㄧㄣ ㄧ ㄐㄧˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+既不是	3	ㄐㄧˋ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+明德一路	1	ㄇㄧㄥˊ ㄉㄜˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+明誠一路	1	ㄇㄧㄥˊ ㄔㄥˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+是另外一回事	4	ㄕˋ ㄌㄧㄥˋ ㄨㄞˋ ㄧˋ ㄏㄨㄟˊ ㄕˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+時運不濟	1	ㄕˊ ㄩㄣˋ ㄅㄨˋ ㄐㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+更不是	4	ㄍㄥˋ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+更不會	2	ㄍㄥˋ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+最不會	1	ㄗㄨㄟˋ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+最後一哩	1	ㄗㄨㄟˋ ㄏㄡˋ ㄧˋ ㄌㄧ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+會心一笑	3	ㄏㄨㄟˋ ㄒㄧㄣ ㄧ ㄒㄧㄠˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+有一搭沒一搭	1	ㄧㄡˇ ㄧˋ ㄉㄚ ㄇㄟˊ ㄧˋ ㄉㄚ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+有一說	1	ㄧㄡˇ ㄧˋ ㄕㄨㄛ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+有眼不識	1	ㄧㄡˇ ㄧㄢˇ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+有眼不識泰山	1	ㄧㄡˇ ㄧㄢˇ ㄅㄨˋ ㄕˋ ㄊㄞˋ ㄕㄢ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+期中考	1	ㄑㄧ ㄓㄨㄥ ㄎㄠˇ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2401）	post-training	add
+期末考	1	ㄑㄧ ㄇㄛˋ ㄎㄠˇ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2402）	post-training	add
+朱一貴事件	1	ㄓㄨ ㄧˊ ㄍㄨㄟˋ ㄕˋ ㄐㄧㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+朴子一路	1	ㄆㄨˊ ㄗˇ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+架不住	1	ㄐㄧㄚˋ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+查不到	5	ㄔㄚˊ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+核一廠	3	ㄏㄜˊ ㄧˋ ㄔㄤˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+欸不是	1	ㄟˋ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+欸等一下	1	ㄟˋ ㄉㄥˇ ㄧ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+歡聚一堂	1	ㄏㄨㄢ ㄐㄩˋ ㄧ ㄊㄤˊ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+止不住	1	ㄓˇ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+正一教	1	ㄓㄥˋ ㄧˊ ㄐㄧㄠˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+此一時	1	ㄘˇ ㄧˋ ㄕˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+死不帶去	1	ㄙˇ ㄅㄨˋ ㄉㄞˋ ㄑㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+死不認錯	1	ㄙˇ ㄅㄨˋ ㄖㄣˋ ㄘㄨㄛˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+殘而不廢	2	ㄘㄢˊ ㄦˊ ㄅㄨˋ ㄈㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+毀於一旦	1	ㄏㄨㄟˇ ㄩˊ ㄧˊ ㄉㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+比不上	8	ㄅㄧˇ ㄅㄨˋ ㄕㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+毫不在乎	1	ㄏㄠˊ ㄅㄨˋ ㄗㄞˋ ㄏㄨ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+毫不遜色	2	ㄏㄠˊ ㄅㄨˋ ㄒㄩㄣˋ ㄙㄜˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+民族一路	1	ㄇㄧㄣˊ ㄗㄨˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+決不是	3	ㄐㄩㄝˊ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+決不會	2	ㄐㄩㄝˊ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+沈不住氣	1	ㄔㄣˊ ㄅㄨˋ ㄓㄨˋ ㄑㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+沉不住氣	1	ㄔㄣˊ ㄅㄨˋ ㄓㄨˋ ㄑㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+沾不上邊	1	ㄓㄢ ㄅㄨˋ ㄕㄤˋ ㄅㄧㄢ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+洗手不幹	1	ㄒㄧˇ ㄕㄡˇ ㄅㄨˋ ㄍㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+洪一中	1	ㄏㄨㄥˊ ㄧˋ ㄓㄨㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+活不下去	3	ㄏㄨㄛˊ ㄅㄨˋ ㄒㄧㄚˋ ㄑㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+流年不利	1	ㄌㄧㄡˊ ㄋㄧㄢˊ ㄅㄨˋ ㄌㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+海天一色	1	ㄏㄞˇ ㄊㄧㄢ ㄧ ㄙㄜˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+深太空一號	1	ㄕㄣ ㄊㄞˋ ㄎㄨㄥ ㄧˊ ㄏㄠˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+混凝土	1	ㄏㄨㄣˇ ㄋㄧㄥˊ ㄊㄨˇ	0	0	補收完整詞讀音（phrase.civil-engineering.tsv:152）	post-training	add
+混為一談	4	ㄏㄨㄣˋ ㄨㄟˊ ㄧˋ ㄊㄢˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+清一色	8	ㄑㄧㄥ ㄧˊ ㄙㄜˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+湊在一起	1	ㄘㄡˋ ㄗㄞˋ ㄧˋ ㄑㄧˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+源源不斷	2	ㄩㄢˊ ㄩㄢˊ ㄅㄨˋ ㄉㄨㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+滴水不漏	1	ㄉㄧ ㄕㄨㄟˇ ㄅㄨˋ ㄌㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+滿不在意	1	ㄇㄢˇ ㄅㄨˋ ㄗㄞˋ ㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+滿不是	1	ㄇㄢˇ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+為之一亮	2	ㄨㄟˊ ㄓ ㄧ ㄌㄧㄤˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+為之一新	1	ㄨㄟˋ ㄓ ㄧˋ ㄒㄧㄣ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+為善不欲人知	1	ㄨㄟˊ ㄕㄢˋ ㄅㄨˋ ㄩˋ ㄖㄣˊ ㄓ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+無一不精	1	ㄨˊ ㄧˊ ㄅㄨˋ ㄐㄧㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+無往不利	3	ㄨˊ ㄨㄤˇ ㄅㄨˋ ㄌㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+無所不用其極	3	ㄨˊ ㄙㄨㄛˇ ㄅㄨˋ ㄩㄥˋ ㄑㄧˊ ㄐㄧˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+無時不刻	1	ㄨˊ ㄕˊ ㄅㄨˋ ㄎㄜˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+焢肉飯	1	ㄏㄨㄥ ㄖㄡˋ ㄈㄢˋ	0	0	補收完整詞讀音（phrase.taiwan.tsv:1942）	post-training	add
+煥然一新	4	ㄏㄨㄢˋ ㄖㄢˊ ㄧˋ ㄒㄧㄣ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+照不到	1	ㄓㄠˋ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+煮一鍋	1	ㄓㄨˇ ㄧˋ ㄍㄨㄛ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+熬不住	1	ㄠˊ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+爬不動	1	ㄆㄚˊ ㄅㄨˋ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+牛頭不對馬嘴	1	ㄋㄧㄡˊ ㄊㄡˊ ㄅㄨˋ ㄉㄨㄟˋ ㄇㄚˇ ㄗㄨㄟˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+牽一髮動全身	1	ㄑㄧㄢ ㄧ ㄈㄚˇ ㄉㄨㄥˋ ㄑㄩㄢˊ ㄕㄣ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+犯不上	1	ㄈㄢˋ ㄅㄨˋ ㄕㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+猜不透	1	ㄘㄞ ㄅㄨˋ ㄊㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+獅子頭	1	ㄕ ㄗˇ ㄊㄡˊ	0	0	補收完整詞讀音（phrase.china.tsv:2502）	post-training	add
+獨一無二	8	ㄉㄨˊ ㄧˋ ㄨˊ ㄦˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+獨具一格	1	ㄉㄨˊ ㄐㄩˋ ㄧˋ ㄍㄜˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+獨樹一幟	2	ㄉㄨˊ ㄕㄨˋ ㄧ ㄓˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+玩一下	2	ㄨㄢˊ ㄧˊ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+甜不辣	1	ㄊㄧㄢˊ ㄅㄨˋ ㄌㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+甜而不膩	1	ㄊㄧㄢˊ ㄦˊ ㄅㄨˋ ㄋㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+生不帶來	1	ㄕㄥ ㄅㄨˋ ㄉㄞˋ ㄌㄞˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+用不到	7	ㄩㄥˋ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+用不盡	2	ㄩㄥˋ ㄅㄨˋ ㄐㄧㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+用詞不當	1	ㄩㄥˋ ㄘˊ ㄅㄨˋ ㄉㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+田島悠一郎	0.01	ㄊㄧㄢˊ ㄉㄠˇ ㄧㄡ ㄧˋ ㄌㄤˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+申不害	1	ㄕㄣ ㄅㄨˋ ㄏㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+男一舍	3	ㄋㄢˊ ㄧˊ ㄕㄜˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+留一手	1	ㄌㄧㄡˊ ㄧ ㄕㄡˇ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+留不住	3	ㄌㄧㄡˊ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+略高一籌	1	ㄌㄩㄝˋ ㄍㄠ ㄧˋ ㄔㄡˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+當一回事	1	ㄉㄤ ㄧˋ ㄏㄨㄟˊ ㄕˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+疏而不漏	1	ㄕㄨ ㄦˊ ㄅㄨˋ ㄌㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+痛不欲生	2	ㄊㄨㄥˋ ㄅㄨˋ ㄩˋ ㄕㄥ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+登高一呼	2	ㄉㄥ ㄍㄠ ㄧ ㄏㄨ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+直言不諱	1	ㄓˊ ㄧㄢˊ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+相聚一刻	0.01	ㄒㄧㄤ ㄐㄩˋ ㄧˊ ㄎㄜˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+看一下	8	ㄎㄢˋ ㄧ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+看不上眼	1	ㄎㄢˋ ㄅㄨˋ ㄕㄤˋ ㄧㄢˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+看不下去	8	ㄎㄢˋ ㄅㄨˋ ㄒㄧㄚˋ ㄑㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+看不順眼	1	ㄎㄢˋ ㄅㄨˋ ㄕㄨㄣˋ ㄧㄢˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+看也不看	1	ㄎㄢˋ ㄧㄝˇ ㄅㄨˋ ㄎㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+真不愧是	1	ㄓㄣ ㄅㄨˋ ㄎㄨㄟˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+真不是	2	ㄓㄣ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+眼前一亮	1	ㄧㄢˇ ㄑㄧㄢˊ ㄧ ㄌㄧㄤˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+睜一隻眼	1	ㄓㄥ ㄧˋ ㄓ ㄧㄢˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+瞅一眼	1	ㄔㄡˇ ㄧˋ ㄧㄢˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+瞞不住	1	ㄇㄢˊ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+知情不報	1	ㄓ ㄑㄧㄥˊ ㄅㄨˋ ㄅㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+矮人一截	1	ㄞˇ ㄖㄣˊ ㄧˋ ㄐㄧㄝˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+神之一手	0.01	ㄕㄣˊ ㄓ ㄧˋ ㄕㄡˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+神魂不定	1	ㄕㄣˊ ㄏㄨㄣˊ ㄅㄨˋ ㄉㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+祥和一路	1	ㄒㄧㄤˊ ㄏㄜˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+禁不住	6	ㄐㄧㄣ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+科專一路	1	ㄎㄜ ㄓㄨㄢ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+稍等一下	1	ㄕㄠ ㄉㄥˇ ㄧ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+穀子	1	ㄍㄨˇ ㄗˇ	0	0	補收完整詞讀音（phrase.china.tsv:1650）	post-training	add
+積弱不振	2	ㄐㄧ ㄖㄨㄛˋ ㄅㄨˋ ㄓㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+空調	1	ㄎㄨㄥ ㄉㄧㄠˋ	0	0	補收完整詞讀音（phrase.china.tsv:1931）	post-training	add
+穿不下	1	ㄔㄨㄢ ㄅㄨˋ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+站不住	4	ㄓㄢˋ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+站不住腳	3	ㄓㄢˋ ㄅㄨˋ ㄓㄨˋ ㄐㄧㄠˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+站著不動	1	ㄓㄢˋ ㄓㄜ˙ ㄅㄨˋ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+竟不是	2	ㄐㄧㄥˋ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+等一下啦	1	ㄉㄥˇ ㄧ ㄒㄧㄚˋ ㄌㄚ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+等一下喔	1	ㄉㄥˇ ㄧ ㄒㄧㄚˋ ㄛ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+等一會	1	ㄉㄥˇ ㄧˋ ㄏㄨㄟˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+等我一下	1	ㄉㄥˇ ㄨㄛˇ ㄧ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+等我一下啦	1	ㄉㄥˇ ㄨㄛˇ ㄧ ㄒㄧㄚˋ ㄌㄚ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+筒仔米糕	1	ㄊㄨㄥˇ ㄗˇ ㄇㄧˇ ㄍㄠ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2092）	post-training	add
+算不上	3	ㄙㄨㄢˋ ㄅㄨˋ ㄕㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+管不住	1	ㄍㄨㄢˇ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+管不到	1	ㄍㄨㄢˇ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+範疇一排放	1	ㄈㄢˋ ㄔㄡˊ ㄧˋ ㄆㄞˊ ㄈㄤˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+精神不濟	1	ㄐㄧㄥ ㄕㄣˊ ㄅㄨˋ ㄐㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+紅不讓	1	ㄏㄨㄥˊ ㄅㄨˋ ㄖㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+紅極一時	1	ㄏㄨㄥˊ ㄐㄧˊ ㄧ ㄕˊ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+紋絲不動	1	ㄨㄣˊ ㄙ ㄅㄨˋ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+紋風不動	1	ㄨㄣˊ ㄈㄥ ㄅㄨˋ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+純一郎	2	ㄔㄨㄣˊ ㄧˋ ㄌㄤˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+紙包不住	1	ㄓˇ ㄅㄠ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+紙包不住火	1	ㄓˇ ㄅㄠ ㄅㄨˋ ㄓㄨˋ ㄏㄨㄛˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+紫禁城	1	ㄗˇ ㄐㄧㄣˋ ㄔㄥˊ	0	0	補收完整詞讀音（phrase.china.tsv:201）	post-training	add
+終其一生	4	ㄓㄨㄥ ㄑㄧˊ ㄧ ㄕㄥ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+絃歌不輟	1	ㄒㄧㄢˊ ㄍㄜ ㄅㄨˋ ㄔㄨㄛˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+結為一體	1	ㄐㄧㄝˊ ㄨㄟˊ ㄧˋ ㄊㄧˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+絕不會	5	ㄐㄩㄝˊ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+統一事權	1	ㄊㄨㄥˇ ㄧˊ ㄕˋ ㄑㄩㄢˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一企業	1	ㄊㄨㄥˇ ㄧˋ ㄑㄧˇ ㄧㄝˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一化	1	ㄊㄨㄥˇ ㄧˊ ㄏㄨㄚˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一大市場	1	ㄊㄨㄥˇ ㄧˊ ㄉㄚˋ ㄕˋ ㄔㄤˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一天下	1	ㄊㄨㄥˇ ㄧˋ ㄊㄧㄢ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一性	1	ㄊㄨㄥˇ ㄧˊ ㄒㄧㄥˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一教	1	ㄊㄨㄥˇ ㄧˊ ㄐㄧㄠˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一派位	1	ㄊㄨㄥˇ ㄧˊ ㄆㄞˋ ㄨㄟˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一獅	8	ㄊㄨㄥˇ ㄧˋ ㄕ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一獅隊	2	ㄊㄨㄥˇ ㄧˋ ㄕ ㄉㄨㄟˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一發票	4	ㄊㄨㄥˇ ㄧˋ ㄈㄚ ㄆㄧㄠˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一編號	1	ㄊㄨㄥˇ ㄧˋ ㄅㄧㄢ ㄏㄠˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一肉燥米粉	1	ㄊㄨㄥˇ ㄧˊ ㄖㄡˋ ㄗㄠˋ ㄇㄧˇ ㄈㄣˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一超	1	ㄊㄨㄥˇ ㄧˋ ㄔㄠ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一隊	2	ㄊㄨㄥˇ ㄧˊ ㄉㄨㄟˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+統一麵	1	ㄊㄨㄥˇ ㄧˊ ㄇㄧㄢˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+經營不善	2	ㄐㄧㄥ ㄧㄥˊ ㄅㄨˋ ㄕㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+總歸一句	1	ㄗㄨㄥˇ ㄍㄨㄟ ㄧ ㄐㄩˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+總歸一句話	1	ㄗㄨㄥˇ ㄍㄨㄟ ㄧ ㄐㄩˋ ㄏㄨㄚˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+繼續不斷	5	ㄐㄧˋ ㄒㄩˋ ㄅㄨˋ ㄉㄨㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+缺一不可	1	ㄑㄩㄝ ㄧˊ ㄅㄨˋ ㄎㄜˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+罩不住	1	ㄓㄠˋ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+羅一鈞	1	ㄌㄨㄛˊ ㄧˋ ㄐㄩㄣ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+義一路	1	ㄧˋ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+老一輩	8	ㄌㄠˇ ㄧ ㄅㄟˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+而不是	8	ㄦˊ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+而不會	6	ㄦˊ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+耐不住	1	ㄋㄞˋ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+聊備一格	1	ㄌㄧㄠˊ ㄅㄟˋ ㄧ ㄍㄜˊ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+聞一知十	1	ㄨㄣˊ ㄧˋ ㄓ ㄕˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+聰明一世	1	ㄘㄨㄥ ㄇㄧㄥˊ ㄧˊ ㄕˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+膩在一起	1	ㄋㄧˋ ㄗㄞˋ ㄧˋ ㄑㄧˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+臨危不亂	1	ㄌㄧㄣˊ ㄨㄟˊ ㄅㄨˋ ㄌㄨㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+臨門一腳	1	ㄌㄧㄣˊ ㄇㄣˊ ㄧˋ ㄐㄧㄠˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+自不待言	1	ㄗˋ ㄅㄨˋ ㄉㄞˋ ㄧㄢˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+自不量力	1	ㄗˋ ㄅㄨˋ ㄌㄧㄤˋ ㄌㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+自由一路	1	ㄗˋ ㄧㄡˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+興趣不大	1	ㄒㄧㄥˋ ㄑㄩˋ ㄅㄨˋ ㄉㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+舉一反三	1	ㄐㄩˇ ㄧˋ ㄈㄢˇ ㄙㄢ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+船一到埠	1	ㄔㄨㄢˊ ㄧˊ ㄉㄠˋ ㄅㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+若不是	2	ㄖㄨㄛˋ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+草仔粿	1	ㄘㄠˇ ㄗˇ ㄍㄨㄛˇ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2087）	post-training	add
+莫不是	1	ㄇㄛˋ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+菜脯	1	ㄘㄞˋ ㄆㄨˊ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2072）	post-training	add
+萎靡不振	1	ㄨㄟˇ ㄇㄧˊ ㄅㄨˋ ㄓㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+萬無一失	2	ㄨㄢˋ ㄨˊ ㄧˋ ㄕ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+萬眾一心	1	ㄨㄢˋ ㄓㄨㄥˋ ㄧˋ ㄒㄧㄣ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+藏不住	1	ㄘㄤˊ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+蘿蔔糕	1	ㄌㄨㄛˊ ㄅㄛˊ ㄍㄠ	0	0	補收完整詞讀音（phrase.hongkong-macao.tsv:976、phrase.taiwan.tsv:1980）	post-training	add
+虛晃一招	1	ㄒㄩ ㄏㄨㄤˇ ㄧˋ ㄓㄠ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+虛驚一場	1	ㄒㄩ ㄐㄧㄥ ㄧˋ ㄔㄤˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+蚵仔煎	1	ㄏㄜˊ ㄗˇ ㄐㄧㄢ	0	0	補收完整詞讀音（phrase.taiwan.tsv:1952）	post-training	add
+蚵仔煎	1	ㄏㄜˊ ㄗㄞˇ ㄐㄧㄢ	0	0	補收完整詞讀音（phrase.china.tsv:2546）	post-training	add
+蚵仔麵線	1	ㄏㄜˊ ㄗˇ ㄇㄧㄢˋ ㄒㄧㄢˋ	0	0	補收完整詞讀音（phrase.taiwan.tsv:1951）	post-training	add
+蛇鼠一窩	1	ㄕㄜˊ ㄕㄨˇ ㄧ ㄨㄛ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+蛤不是吧	2	ㄏㄚˊ ㄅㄨˋ ㄕˋ ㄅㄚ˙	0	0	補收完整詞讀音（「不」本調）	post-training	add
+血腸	1	ㄒㄩㄝˋ ㄔㄤˊ	0	0	補收完整詞讀音（phrase.china.tsv:2552）	post-training	add
+行動不便	4	ㄒㄧㄥˊ ㄉㄨㄥˋ ㄅㄨˋ ㄅㄧㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+行政長官	1	ㄒㄧㄥˊ ㄓㄥˋ ㄔㄤˊ ㄍㄨㄢ	0	0	補收完整詞讀音（phrase.hongkong-macao.tsv:1497）	post-training	add
+衝一波	1	ㄔㄨㄥ ㄧˋ ㄅㄛ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+衣不蔽體	1	ㄧ ㄅㄨˋ ㄅㄧˋ ㄊㄧˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+裝不下	2	ㄓㄨㄤ ㄅㄨˋ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+要不是	8	ㄧㄠˋ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+見不到	1	ㄐㄧㄢˋ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+見死不救	1	ㄐㄧㄢˋ ㄙˇ ㄅㄨˋ ㄐㄧㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+言不盡意	1	ㄧㄢˊ ㄅㄨˋ ㄐㄧㄣˋ ㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+記不住	1	ㄐㄧˋ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+試用期	1	ㄕˋ ㄩㄥˋ ㄑㄧ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2615）	post-training	add
+話鋒一轉	1	ㄏㄨㄚˋ ㄈㄥ ㄧˋ ㄓㄨㄢˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+說一套做一套	1	ㄕㄨㄛ ㄧ ㄊㄠˋ ㄗㄨㄛˋ ㄧ ㄊㄠˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+說一是一	1	ㄕㄨㄛ ㄧˊ ㄕˋ ㄧ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+說不上	5	ㄕㄨㄛ ㄅㄨˋ ㄕㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+說不上來	2	ㄕㄨㄛ ㄅㄨˋ ㄕㄤˋ ㄌㄞˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+說不定	8	ㄕㄨㄛ ㄅㄨˋ ㄉㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+調景嶺	1	ㄊㄧㄠˊ ㄐㄧㄥˇ ㄌㄧㄥˇ	0	0	補收完整詞讀音（phrase.hongkong-macao.tsv:423）	post-training	add
+談不上	8	ㄊㄢˊ ㄅㄨˋ ㄕㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+請不到	1	ㄑㄧㄥˇ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+謀生不易	1	ㄇㄡˊ ㄕㄥ ㄅㄨˋ ㄧˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+謔而不虐	1	ㄋㄩㄝˋ ㄦˊ ㄅㄨˋ ㄋㄩㄝˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+識貨	1	ㄕˊ ㄏㄨㄛˋ	0	0	補收完整詞讀音（phrase.hongkong-macao.tsv:831）	post-training	add
+豈不是	8	ㄑㄧˇ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+豐田章一郎	1	ㄈㄥ ㄊㄧㄢˊ ㄓㄤ ㄧˋ ㄌㄤˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+豬血糕	1	ㄓㄨ ㄒㄩㄝˋ ㄍㄠ	0	0	補收完整詞讀音（phrase.taiwan.tsv:1966）	post-training	add
+買一送一	1	ㄇㄞˇ ㄧˊ ㄙㄨㄥˋ ㄧ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2233、「一」變調）	post-training	add
+買不到	8	ㄇㄞˇ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+賠不是	1	ㄆㄟˊ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+賣不掉	1	ㄇㄞˋ ㄅㄨˋ ㄉㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+賺不到	2	ㄓㄨㄢˋ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+走一步算一步	1	ㄗㄡˇ ㄧˊ ㄅㄨˋ ㄙㄨㄢˋ ㄧˊ ㄅㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+走不到	1	ㄗㄡˇ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+走不動	3	ㄗㄡˇ ㄅㄨˋ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+起伏不定	1	ㄑㄧˇ ㄈㄨˊ ㄅㄨˋ ㄉㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+超人一等	1	ㄔㄠ ㄖㄣˊ ㄧ ㄉㄥˇ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+趕不上	4	ㄍㄢˇ ㄅㄨˋ ㄕㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+趕不到	1	ㄍㄢˇ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+跌價	1	ㄉㄧㄝ ㄐㄧㄚˋ	0	0	補收完整詞讀音（phrase.hongkong-macao.tsv:1141）	post-training	add
+跑不動	2	ㄆㄠˇ ㄅㄨˋ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+跑不掉	4	ㄆㄠˇ ㄅㄨˋ ㄉㄧㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+跟不上	5	ㄍㄣ ㄅㄨˋ ㄕㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+身體不適	2	ㄕㄣ ㄊㄧˇ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+輸一分	1	ㄕㄨ ㄧ ㄈㄣ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+轟動一時	3	ㄏㄨㄥ ㄉㄨㄥˋ ㄧ ㄕˊ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+辦不到	3	ㄅㄢˋ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+追不上	1	ㄓㄨㄟ ㄅㄨˋ ㄕㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+透一口氣	1	ㄊㄡˋ ㄧ ㄎㄡˇ ㄑㄧˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+這一下	4	ㄓㄜˋ ㄧ ㄒㄧㄚˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+這一些	8	ㄓㄜˋ ㄧ ㄒㄧㄝ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+這一來	4	ㄓㄜˋ ㄧ ㄌㄞˊ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+這一生	4	ㄓㄜˋ ㄧ ㄕㄥ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+這一行	5	ㄓㄜˋ ㄧˋ ㄏㄤˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+這一陣子	2	ㄓㄜˋ ㄧ ㄓㄣˋ ㄗ˙	0	0	補收完整詞讀音（「一」本調）	post-training	add
+這一點	8	ㄓㄜˋ ㄧ ㄉㄧㄢˇ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+這樣一來	8	ㄓㄜˋ ㄧㄤˋ ㄧ ㄌㄞˊ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+這樣子	1	ㄓㄜˋ ㄧㄤˋ ㄗˇ	0	0	補收完整詞讀音（phrase.taiwan.tsv:1470）	post-training	add
+通識	1	ㄊㄨㄥ ㄕˊ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2474）	post-training	add
+通識課	1	ㄊㄨㄥ ㄕˊ ㄎㄜˋ	0	0	補收完整詞讀音（phrase.taiwan.tsv:2475）	post-training	add
+連不上	6	ㄌㄧㄢˊ ㄅㄨˋ ㄕㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+連在一起	4	ㄌㄧㄢˊ ㄗㄞˋ ㄧ ㄑㄧˇ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+連綿不斷	1	ㄌㄧㄢˊ ㄇㄧㄢˊ ㄅㄨˋ ㄉㄨㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+連續不斷	1	ㄌㄧㄢˊ ㄒㄩˋ ㄅㄨˋ ㄉㄨㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+進一步	8	ㄐㄧㄣˋ ㄧ ㄅㄨˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+進一步地	2	ㄐㄧㄣˋ ㄧˊ ㄅㄨˋ ㄉㄧˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+進一步地	2	ㄐㄧㄣˋ ㄧˊ ㄅㄨˋ ㄉㄧ˙	0	0	補收完整詞讀音（「一」變調）	post-training	add
+過不下去	1	ㄍㄨㄛˋ ㄅㄨˋ ㄒㄧㄚˋ ㄑㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+過日子	1	ㄍㄨㄛˋ ㄖˋ ㄗˇ	0	0	補收完整詞讀音（phrase.china.tsv:1495）	post-training	add
+過目不忘	1	ㄍㄨㄛˋ ㄇㄨˋ ㄅㄨˋ ㄨㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+遭不住	2	ㄗㄠ ㄅㄨˊ ㄓㄨˋ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+還不是	8	ㄏㄞˊ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+還不是你	1	ㄏㄞˊ ㄅㄨˋ ㄕˋ ㄋㄧˇ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+還不是咧	1	ㄏㄞˊ ㄅㄨˋ ㄕˋ ㄌㄧㄝ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+還不錯	8	ㄏㄞˊ ㄅㄨˋ ㄘㄨㄛˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+那不勒斯	1	ㄋㄚˋ ㄅㄨˋ ㄌㄜˋ ㄙ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+邪不勝正	1	ㄒㄧㄝˊ ㄅㄨˋ ㄕㄥˋ ㄓㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+都不在	6	ㄉㄡ ㄅㄨˋ ㄗㄞˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+都不對	1	ㄉㄡ ㄅㄨˋ ㄉㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+都不是	8	ㄉㄡ ㄅㄨˋ ㄕˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+都不會	8	ㄉㄡ ㄅㄨˋ ㄏㄨㄟˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+配不上	1	ㄆㄟˋ ㄅㄨˋ ㄕㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+重大	1	ㄔㄨㄥˊ ㄉㄚˋ	0	0	補收完整詞讀音（phrase.china.tsv:421）	post-training	add
+重質不重量	1	ㄓㄨㄥˋ ㄓˊ ㄅㄨˋ ㄓㄨㄥˋ ㄌㄧㄤˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+金不換	1	ㄐㄧㄣ ㄅㄨˋ ㄏㄨㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+鈴木一朗	1	ㄌㄧㄥˊ ㄇㄨˋ ㄧˋ ㄌㄤˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+銷售一空	2	ㄒㄧㄠ ㄕㄡˋ ㄧˋ ㄎㄨㄥ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+鏡泊湖	1	ㄐㄧㄥˋ ㄆㄛ ㄏㄨˊ	0	0	補收完整詞讀音（phrase.china.tsv:1277）	post-training	add
+閒不住	1	ㄒㄧㄢˊ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+閒置不用	1	ㄒㄧㄢˊ ㄓˋ ㄅㄨˋ ㄩㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+防不勝防	1	ㄈㄤˊ ㄅㄨˋ ㄕㄥˋ ㄈㄤˊ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+除不盡	1	ㄔㄨˊ ㄅㄨˋ ㄐㄧㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+陰晴不定	1	ㄧㄣ ㄑㄧㄥˊ ㄅㄨˋ ㄉㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+陰魂不散	1	ㄧㄣ ㄏㄨㄣˊ ㄅㄨˋ ㄙㄢˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+雄霸一方	1	ㄒㄩㄥˊ ㄅㄚˋ ㄧ ㄈㄤ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+集於一身	1	ㄐㄧˊ ㄩˊ ㄧˋ ㄕㄣ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+雙一流	2	ㄕㄨㄤ ㄧˋ ㄌㄧㄡˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+難得一見	6	ㄋㄢˊ ㄉㄜˊ ㄧ ㄐㄧㄢˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+難逃一死	1	ㄋㄢˊ ㄊㄠˊ ㄧ ㄙˇ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+露一手	1	ㄌㄡˋ ㄧˋ ㄕㄡˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+靈機一動	5	ㄌㄧㄥˊ ㄐㄧ ㄧˊ ㄉㄨㄥˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+青年一路	1	ㄑㄧㄥ ㄋㄧㄢˊ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+靠不住	3	ㄎㄠˋ ㄅㄨˋ ㄓㄨˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+面子	1	ㄇㄧㄢˋ ㄗˇ	0	0	補收完整詞讀音（phrase.china.tsv:1500）	post-training	add
+頂不住	2	ㄉㄧㄥˇ ㄅㄨˊ ㄓㄨˋ	0	0	補收完整詞讀音（「不」變調）	post-training	add
+順道一提	1	ㄕㄨㄣˋ ㄉㄠˋ ㄧˋ ㄊㄧˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+顧不到	1	ㄍㄨˋ ㄅㄨˋ ㄉㄠˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+飄忽不定	1	ㄆㄧㄠ ㄏㄨ ㄅㄨˋ ㄉㄧㄥˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+飛不上去	1	ㄈㄟ ㄅㄨˋ ㄕㄤˋ ㄑㄩˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+食慾不振	2	ㄕˊ ㄩˋ ㄅㄨˋ ㄓㄣˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+飽餐一頓	2	ㄅㄠˇ ㄘㄢ ㄧ ㄉㄨㄣˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+駒場一郎	0.01	ㄐㄩ ㄔㄤˇ ㄧˋ ㄌㄤˊ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+驚鴻一瞥	1	ㄐㄧㄥ ㄏㄨㄥˊ ㄧˋ ㄆㄧㄝ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+高不成低不就	1	ㄍㄠ ㄅㄨˋ ㄔㄥˊ ㄉㄧ ㄅㄨˋ ㄐㄧㄡˋ	0	0	補收完整詞讀音（「不」本調）	post-training	add
+鬆一口氣	1	ㄙㄨㄥ ㄧˋ ㄎㄡˇ ㄑㄧˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+魔高一丈	1	ㄇㄛˊ ㄍㄠ ㄧ ㄓㄤˋ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+鳶一折紙	0.01	ㄩㄢ ㄧˋ ㄓㄜˊ ㄓˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+黑崎一護	0.01	ㄏㄟ ㄑㄧˊ ㄧˊ ㄏㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+鼓山一路	1	ㄍㄨˇ ㄕㄢ ㄧˊ ㄌㄨˋ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+齊聚一堂	8	ㄑㄧˊ ㄐㄩˋ ㄧ ㄊㄤˊ	0	0	補收完整詞讀音（「一」本調）	post-training	add
+龍崎憲一朗	0.01	ㄌㄨㄥˊ ㄑㄧˊ ㄒㄧㄢˋ ㄧˋ ㄌㄤˇ	0	0	補收完整詞讀音（「一」變調）	post-training	add
+一不做二不休	1	ㄧˊ ㄅㄨˊ ㄗㄨㄛˋ ㄦˋ ㄅㄨˋ ㄒㄧㄡ	0	0	「一／不」混用本調與變調的輸入相容	post-training	add
+一不做二不休	1	ㄧˋ ㄅㄨˋ ㄗㄨㄛˋ ㄦˋ ㄅㄨˋ ㄒㄧㄡ	0	0	「一／不」混用本調與變調的輸入相容	post-training	add
+一不注意	1	ㄧˋ ㄅㄨˋ ㄓㄨˋ ㄧˋ	0	0	「一／不」混用本調與變調的輸入相容	post-training	add
+不一會	1	ㄅㄨˊ ㄧ ㄏㄨㄟˇ	0	0	「一／不」混用本調與變調的輸入相容	post-training	add
+不一會	1	ㄅㄨˊ ㄧˋ ㄏㄨㄟˇ	0	0	「一／不」混用本調與變調的輸入相容	post-training	add
+不一會兒	1	ㄅㄨˊ ㄧ ㄏㄨㄟˇ ㄦ	0	0	「一／不」混用本調與變調的輸入相容	post-training	add
+不一會兒	1	ㄅㄨˊ ㄧ ㄏㄨㄟˇ ㄦˊ	0	0	「一／不」混用本調與變調的輸入相容	post-training	add
+不一會兒	1	ㄅㄨˊ ㄧˋ ㄏㄨㄟˇ ㄦ	0	0	「一／不」混用本調與變調的輸入相容	post-training	add
+不一會兒	1	ㄅㄨˊ ㄧˋ ㄏㄨㄟˇ ㄦˊ	0	0	「一／不」混用本調與變調的輸入相容	post-training	add
+不一而足	1	ㄅㄨˊ ㄧ ㄦˊ ㄗㄨˊ	0	0	「一／不」混用本調與變調的輸入相容	post-training	add
+不一而足	1	ㄅㄨˊ ㄧˋ ㄦˊ ㄗㄨˊ	0	0	「一／不」混用本調與變調的輸入相容	post-training	add
+進一步地	0.1	ㄐㄧㄣˋ ㄧ ㄅㄨˋ ㄉㄜ˙	0	0	補「地」的助詞輕聲讀音，保留既有讀音	post-training	add
+進一步地	0.1	ㄐㄧㄣˋ ㄧˊ ㄅㄨˋ ㄉㄜ˙	0	0	補「地」的助詞輕聲讀音和「一」二聲，保留既有讀音	post-training	add

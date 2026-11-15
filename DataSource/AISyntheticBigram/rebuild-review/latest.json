@@ -1,9 +1,9 @@
 {
-  "before_sha256": "e8e1376cf3a141550191608242bd348448d4b8ce76d24b29a2e52e1a76c9a2ef",
-  "candidate_semantic_sha256": "f1364e6965be4e5ccf23ba70e7597f1604287566d2edeaf657c293d7f8b06d5a",
-  "candidate_sha256": "bac8d0bb526ca41a1280b6799218be815d785899258b738547a1da80a634f589",
+  "before_sha256": "bac8d0bb526ca41a1280b6799218be815d785899258b738547a1da80a634f589",
+  "candidate_semantic_sha256": "9d12ee2564c37d5978d0f2158987fe7ad66b4a2c959d07094c911f470171d57c",
+  "candidate_sha256": "9c5443cc5a03b3f7fbe2adfa5f8ae26a2becb1b4b750ba195a40b02946a9ea1b",
   "decision": "adopted",
-  "delta_actions": -1421,
+  "delta_actions": 2,
   "inputs": {
     "DataSource/AISyntheticArticles/typing-articles-v2.jsonl": "460a136690046afee2f98824717613a84b7aa2e4df2534bcd1f5491619fdd132",
     "DataSource/AISyntheticArticles/typing-articles-v3.jsonl": "e1f39e99f721b12d05c97b538abf5ce91736f4031a9ef7929dd66d539bfdf790",
@@ -141,7 +141,7 @@
     "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0131.md": "0bbbf1b6471dba74ccd2650e2f40a99080b2d6d2253fe15f868469da7f49421e",
     "DataSource/AISyntheticBigram/basic-bigram-protected-characters.txt": "54c2a5eaa78b69d77b64ccffefe14c6da7cf6c20a2875c3fef9f60093f8d0cda",
     "DataSource/AISyntheticBigram/collection-unigram-overrides.tsv": "e904d8db9d8f6f71e336fca9ee5daa3a7f990bd97e01d897d246e336c3b37550",
-    "DataSource/AISyntheticBigram/common-phrase-unigram.tsv": "70fcefda1d0aa7fb5027022a5e811e28407bf6500291de4c5de0683662658b71",
+    "DataSource/AISyntheticBigram/common-phrase-unigram.tsv": "4410d421e16cea13db4edafc0b49f7425aadfa30c50b1518b561c850de1983d2",
     "DataSource/AISyntheticBigram/common-unigram-supplement.tsv": "b1bcff76f1551de638847680465113809579638d5794b256697a31ff6bba82ad",
     "DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv": "6da32f4960d909763c987986cef1f2a6d9aaf38c0c88386dc732bf37944a97f9",
     "DataSource/AISyntheticBigram/search-trend-reading-overrides.tsv": "1a2f9b2ab4b73aadb3ac12dbdce3da56495ac64fb576682359071a76f89afc8f",
@@ -189,449 +189,449 @@
     "Source/DataTables/bpmf-ext.cin": "2283c5c217effece97d79918f01da219a39d6bb94390ec9f1cfb2e4959840bff"
   },
   "maximum_regression_actions": 30,
-  "reason": "排除人名及「她、他、時、十」後，總動作差 -1421 次，未超過 30 次門檻",
+  "reason": "排除人名及「她、他、時、十」後，總動作差 2 次，未超過 30 次門檻",
   "regression": {
-    "added_actions": 0,
-    "after": 317005,
+    "added_actions": 4,
+    "after": 317007,
     "articles": [
       {
-        "delta": -14,
+        "delta": 0,
         "id": "tw-corpus-0001"
       },
       {
-        "delta": -14,
+        "delta": 0,
         "id": "tw-corpus-0002"
       },
       {
-        "delta": -14,
+        "delta": 0,
         "id": "tw-corpus-0003"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0004"
       },
       {
-        "delta": -22,
+        "delta": 0,
         "id": "tw-corpus-0005"
       },
       {
-        "delta": -44,
+        "delta": 0,
         "id": "tw-corpus-0006"
       },
       {
-        "delta": -14,
+        "delta": 0,
         "id": "tw-corpus-0007"
       },
       {
-        "delta": -18,
+        "delta": 0,
         "id": "tw-corpus-0008"
       },
       {
-        "delta": -8,
+        "delta": 0,
         "id": "tw-corpus-0009"
       },
       {
-        "delta": -24,
+        "delta": 0,
         "id": "tw-corpus-0010"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0011"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0012"
       },
       {
-        "delta": -16,
+        "delta": 0,
         "id": "tw-corpus-0013"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0014"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0015"
       },
       {
-        "delta": -18,
+        "delta": 0,
         "id": "tw-corpus-0016"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0017"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0018"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0019"
       },
       {
-        "delta": -14,
+        "delta": 0,
         "id": "tw-corpus-0020"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0021"
       },
       {
-        "delta": -18,
+        "delta": 0,
         "id": "tw-corpus-0022"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0023"
       },
       {
-        "delta": -16,
+        "delta": 0,
         "id": "tw-corpus-0024"
       },
       {
-        "delta": -2,
+        "delta": 0,
         "id": "tw-corpus-0025"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0026"
       },
       {
-        "delta": -16,
+        "delta": 0,
         "id": "tw-corpus-0027"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0028"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0029"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0030"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0031"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0032"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0033"
       },
       {
-        "delta": -16,
+        "delta": 0,
         "id": "tw-corpus-0034"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0035"
       },
       {
-        "delta": -25,
+        "delta": 0,
         "id": "tw-corpus-0036"
       },
       {
-        "delta": -24,
+        "delta": 0,
         "id": "tw-corpus-0037"
       },
       {
-        "delta": -18,
+        "delta": 1,
         "id": "tw-corpus-0038"
       },
       {
-        "delta": -18,
+        "delta": 0,
         "id": "tw-corpus-0039"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0040"
       },
       {
-        "delta": -8,
+        "delta": 0,
         "id": "tw-corpus-0041"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0042"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0043"
       },
       {
-        "delta": -8,
+        "delta": 0,
         "id": "tw-corpus-0044"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0045"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0046"
       },
       {
-        "delta": -8,
+        "delta": 0,
         "id": "tw-corpus-0047"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0048"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0049"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0050"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0051"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0052"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0053"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0054"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0055"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0056"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0057"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0058"
       },
       {
-        "delta": -26,
+        "delta": 0,
         "id": "tw-corpus-0059"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0060"
       },
       {
-        "delta": -8,
+        "delta": 3,
         "id": "tw-corpus-0061"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0062"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0063"
       },
       {
-        "delta": -2,
+        "delta": 0,
         "id": "tw-corpus-0064"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0065"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0066"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0067"
       },
       {
-        "delta": -16,
+        "delta": 0,
         "id": "tw-corpus-0068"
       },
       {
-        "delta": -24,
+        "delta": 0,
         "id": "tw-corpus-0069"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0070"
       },
       {
-        "delta": -2,
+        "delta": 0,
         "id": "tw-corpus-0071"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0072"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0073"
       },
       {
-        "delta": -2,
+        "delta": 0,
         "id": "tw-corpus-0074"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0075"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0076"
       },
       {
-        "delta": -8,
+        "delta": 0,
         "id": "tw-corpus-0077"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0078"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0079"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0080"
       },
       {
-        "delta": -28,
+        "delta": 0,
         "id": "tw-corpus-0081"
       },
       {
-        "delta": -14,
+        "delta": 0,
         "id": "tw-corpus-0082"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0083"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0084"
       },
       {
-        "delta": -20,
+        "delta": 0,
         "id": "tw-corpus-0085"
       },
       {
-        "delta": -22,
+        "delta": 0,
         "id": "tw-corpus-0086"
       },
       {
-        "delta": -20,
+        "delta": 0,
         "id": "tw-corpus-0087"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0088"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0089"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0090"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0091"
       },
       {
-        "delta": -20,
+        "delta": 0,
         "id": "tw-corpus-0092"
       },
       {
-        "delta": -8,
+        "delta": 0,
         "id": "tw-corpus-0093"
       },
       {
-        "delta": -14,
+        "delta": 0,
         "id": "tw-corpus-0094"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0095"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0096"
       },
       {
-        "delta": -8,
+        "delta": 0,
         "id": "tw-corpus-0097"
       },
       {
-        "delta": -18,
+        "delta": 0,
         "id": "tw-corpus-0098"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0099"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0100"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0101"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0102"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0103"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0104"
       },
       {
-        "delta": -8,
+        "delta": 0,
         "id": "tw-corpus-0105"
       },
       {
-        "delta": -14,
+        "delta": -2,
         "id": "tw-corpus-0106"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0107"
       },
       {
-        "delta": -20,
+        "delta": 0,
         "id": "tw-corpus-0108"
       },
       {
-        "delta": -14,
+        "delta": 0,
         "id": "tw-corpus-0109"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0110"
       },
       {
@@ -639,844 +639,218 @@
         "id": "tw-corpus-0111"
       },
       {
-        "delta": -24,
+        "delta": 0,
         "id": "tw-corpus-0112"
       },
       {
-        "delta": -2,
+        "delta": 0,
         "id": "tw-corpus-0113"
       },
       {
-        "delta": -22,
+        "delta": 0,
         "id": "tw-corpus-0114"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0115"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0116"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0117"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0118"
       },
       {
-        "delta": -16,
+        "delta": 0,
         "id": "tw-corpus-0119"
       },
       {
-        "delta": -14,
+        "delta": 0,
         "id": "tw-corpus-0120"
       },
       {
-        "delta": -2,
+        "delta": 0,
         "id": "tw-corpus-0121"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0122"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0123"
       },
       {
-        "delta": -12,
+        "delta": 0,
         "id": "tw-corpus-0124"
       },
       {
-        "delta": -8,
+        "delta": 0,
         "id": "tw-corpus-0125"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0126"
       },
       {
-        "delta": -4,
+        "delta": 0,
         "id": "tw-corpus-0127"
       },
       {
-        "delta": -8,
+        "delta": 0,
         "id": "tw-corpus-0128"
       },
       {
-        "delta": -10,
+        "delta": 0,
         "id": "tw-corpus-0129"
       },
       {
-        "delta": -2,
+        "delta": 0,
         "id": "tw-corpus-0130"
       },
       {
-        "delta": -6,
+        "delta": 0,
         "id": "tw-corpus-0131"
       }
     ],
-    "before": 318426,
-    "character_corrections_after": 3302,
-    "character_corrections_before": 4047,
+    "before": 317005,
+    "character_corrections_after": 3303,
+    "character_corrections_before": 3302,
     "corrections_after": 2914,
-    "corrections_before": 3625,
-    "delta": -1421,
-    "improved_articles": 130,
+    "corrections_before": 2914,
+    "delta": 2,
+    "improved_articles": 1,
     "maximum_regression_actions": 30,
     "passes": true,
-    "passes_strict_diagnostic": true,
-    "reduction_percent": 0.44625752922186,
-    "regressed_articles": 0,
-    "saved_actions": 1421,
+    "passes_strict_diagnostic": false,
+    "reduction_percent": -0.0006309048753174241,
+    "regressed_articles": 2,
+    "saved_actions": 2,
     "syllables": 93630,
     "tiers": {
       "basic100": {
         "after": 462,
-        "before": 655,
-        "character_changes": [
-          {
-            "after": 6,
-            "before": 88,
-            "character": "裡",
-            "delta": -82
-          },
-          {
-            "after": 14,
-            "before": 59,
-            "character": "已",
-            "delta": -45
-          },
-          {
-            "after": 4,
-            "before": 39,
-            "character": "嗎",
-            "delta": -35
-          },
-          {
-            "after": 5,
-            "before": 32,
-            "character": "新",
-            "delta": -27
-          },
-          {
-            "after": 0,
-            "before": 7,
-            "character": "而",
-            "delta": -7
-          },
-          {
-            "after": 7,
-            "before": 8,
-            "character": "只",
-            "delta": -1
-          },
-          {
-            "after": 17,
-            "before": 18,
-            "character": "得",
-            "delta": -1
-          },
-          {
-            "after": 10,
-            "before": 11,
-            "character": "第",
-            "delta": -1
-          },
-          {
-            "after": 15,
-            "before": 14,
-            "character": "的",
-            "delta": 1
-          },
-          {
-            "after": 5,
-            "before": 0,
-            "character": "那",
-            "delta": 5
-          }
-        ],
-        "delta": -193
+        "before": 462,
+        "character_changes": [],
+        "delta": 0
       },
       "core83": {
         "after": 450,
-        "before": 534,
-        "character_changes": [
-          {
-            "after": 4,
-            "before": 39,
-            "character": "嗎",
-            "delta": -35
-          },
-          {
-            "after": 16,
-            "before": 41,
-            "character": "哪",
-            "delta": -25
-          },
-          {
-            "after": 6,
-            "before": 26,
-            "character": "每",
-            "delta": -20
-          },
-          {
-            "after": 0,
-            "before": 7,
-            "character": "而",
-            "delta": -7
-          },
-          {
-            "after": 7,
-            "before": 8,
-            "character": "只",
-            "delta": -1
-          },
-          {
-            "after": 17,
-            "before": 18,
-            "character": "得",
-            "delta": -1
-          },
-          {
-            "after": 8,
-            "before": 9,
-            "character": "進",
-            "delta": -1
-          },
-          {
-            "after": 15,
-            "before": 14,
-            "character": "的",
-            "delta": 1
-          },
-          {
-            "after": 5,
-            "before": 0,
-            "character": "那",
-            "delta": 5
-          }
-        ],
-        "delta": -84
+        "before": 450,
+        "character_changes": [],
+        "delta": 0
       },
       "general101_1000": {
-        "after": 1887,
-        "before": 2281,
+        "after": 1888,
+        "before": 1887,
         "character_changes": [
           {
             "after": 10,
-            "before": 37,
-            "character": "線",
-            "delta": -27
-          },
-          {
-            "after": 16,
-            "before": 41,
-            "character": "哪",
-            "delta": -25
-          },
-          {
-            "after": 7,
-            "before": 32,
-            "character": "常",
-            "delta": -25
-          },
-          {
-            "after": 15,
-            "before": 37,
-            "character": "店",
-            "delta": -22
-          },
-          {
-            "after": 6,
-            "before": 26,
-            "character": "每",
-            "delta": -20
-          },
-          {
-            "after": 5,
-            "before": 24,
-            "character": "叫",
-            "delta": -19
-          },
-          {
-            "after": 0,
-            "before": 19,
-            "character": "洗",
-            "delta": -19
-          },
-          {
-            "after": 14,
-            "before": 32,
-            "character": "帶",
-            "delta": -18
-          },
-          {
-            "after": 3,
-            "before": 19,
-            "character": "站",
-            "delta": -16
-          },
-          {
-            "after": 0,
-            "before": 15,
-            "character": "菜",
-            "delta": -15
-          },
-          {
-            "after": 1,
-            "before": 15,
-            "character": "歌",
-            "delta": -14
-          },
-          {
-            "after": 1,
-            "before": 14,
-            "character": "按",
-            "delta": -13
-          },
-          {
-            "after": 1,
-            "before": 13,
-            "character": "正",
-            "delta": -12
-          },
-          {
-            "after": 1,
-            "before": 13,
-            "character": "留",
-            "delta": -12
-          },
-          {
-            "after": 2,
-            "before": 13,
-            "character": "版",
-            "delta": -11
-          },
-          {
-            "after": 1,
-            "before": 12,
-            "character": "頁",
-            "delta": -11
-          },
-          {
-            "after": 4,
-            "before": 15,
-            "character": "題",
-            "delta": -11
-          },
-          {
-            "after": 1,
-            "before": 11,
-            "character": "課",
-            "delta": -10
-          },
-          {
-            "after": 4,
-            "before": 14,
-            "character": "飯",
-            "delta": -10
-          },
-          {
-            "after": 2,
-            "before": 11,
-            "character": "借",
-            "delta": -9
-          },
-          {
-            "after": 0,
-            "before": 8,
-            "character": "啦",
-            "delta": -8
-          },
-          {
-            "after": 19,
-            "before": 26,
-            "character": "句",
-            "delta": -7
-          },
-          {
-            "after": 0,
-            "before": 7,
-            "character": "另",
-            "delta": -7
-          },
-          {
-            "after": 2,
             "before": 9,
-            "character": "硬",
-            "delta": -7
-          },
-          {
-            "after": 0,
-            "before": 7,
-            "character": "費",
-            "delta": -7
-          },
-          {
-            "after": 20,
-            "before": 26,
-            "character": "記",
-            "delta": -6
-          },
-          {
-            "after": 0,
-            "before": 5,
-            "character": "蓋",
-            "delta": -5
-          },
-          {
-            "after": 2,
-            "before": 7,
-            "character": "解",
-            "delta": -5
-          },
-          {
-            "after": 1,
-            "before": 5,
-            "character": "壓",
-            "delta": -4
-          },
-          {
-            "after": 3,
-            "before": 7,
-            "character": "期",
-            "delta": -4
-          },
-          {
-            "after": 0,
-            "before": 4,
-            "character": "氣",
-            "delta": -4
-          },
-          {
-            "after": 1,
-            "before": 5,
-            "character": "演",
-            "delta": -4
-          },
-          {
-            "after": 3,
-            "before": 7,
-            "character": "睡",
-            "delta": -4
-          },
-          {
-            "after": 14,
-            "before": 18,
-            "character": "集",
-            "delta": -4
-          },
-          {
-            "after": 6,
-            "before": 10,
-            "character": "館",
-            "delta": -4
-          },
-          {
-            "after": 0,
-            "before": 3,
-            "character": "戶",
-            "delta": -3
-          },
-          {
-            "after": 1,
-            "before": 4,
-            "character": "拖",
-            "delta": -3
-          },
-          {
-            "after": 0,
-            "before": 3,
-            "character": "招",
-            "delta": -3
-          },
-          {
-            "after": 21,
-            "before": 24,
-            "character": "畫",
-            "delta": -3
-          },
-          {
-            "after": 0,
-            "before": 3,
-            "character": "臨",
-            "delta": -3
-          },
-          {
-            "after": 0,
-            "before": 3,
-            "character": "證",
-            "delta": -3
-          },
-          {
-            "after": 13,
-            "before": 15,
-            "character": "交",
-            "delta": -2
-          },
-          {
-            "after": 15,
-            "before": 17,
-            "character": "員",
-            "delta": -2
-          },
-          {
-            "after": 5,
-            "before": 7,
-            "character": "擺",
-            "delta": -2
-          },
-          {
-            "after": 19,
-            "before": 21,
-            "character": "步",
-            "delta": -2
-          },
-          {
-            "after": 2,
-            "before": 4,
-            "character": "網",
-            "delta": -2
-          },
-          {
-            "after": 1,
-            "before": 3,
-            "character": "購",
-            "delta": -2
-          },
-          {
-            "after": 11,
-            "before": 13,
-            "character": "首",
-            "delta": -2
-          },
-          {
-            "after": 6,
-            "before": 7,
-            "character": "公",
-            "delta": -1
-          },
-          {
-            "after": 31,
-            "before": 32,
-            "character": "加",
-            "delta": -1
-          },
-          {
-            "after": 4,
-            "before": 5,
-            "character": "名",
-            "delta": -1
-          },
-          {
-            "after": 8,
-            "before": 9,
-            "character": "型",
-            "delta": -1
-          },
-          {
-            "after": 12,
-            "before": 13,
-            "character": "寄",
-            "delta": -1
-          },
-          {
-            "after": 2,
-            "before": 3,
-            "character": "寫",
-            "delta": -1
-          },
-          {
-            "after": 16,
-            "before": 17,
-            "character": "式",
-            "delta": -1
-          },
-          {
-            "after": 2,
-            "before": 3,
-            "character": "張",
-            "delta": -1
-          },
-          {
-            "after": 12,
-            "before": 13,
-            "character": "掉",
-            "delta": -1
-          },
-          {
-            "after": 4,
-            "before": 5,
-            "character": "案",
-            "delta": -1
-          },
-          {
-            "after": 29,
-            "before": 30,
-            "character": "聲",
-            "delta": -1
-          },
-          {
-            "after": 5,
-            "before": 6,
-            "character": "藍",
-            "delta": -1
-          },
-          {
-            "after": 2,
-            "before": 3,
-            "character": "藥",
-            "delta": -1
-          },
-          {
-            "after": 19,
-            "before": 20,
-            "character": "變",
-            "delta": -1
-          },
-          {
-            "after": 2,
-            "before": 3,
-            "character": "超",
-            "delta": -1
-          },
-          {
-            "after": 21,
-            "before": 22,
-            "character": "越",
-            "delta": -1
-          },
-          {
-            "after": 2,
-            "before": 3,
-            "character": "趕",
-            "delta": -1
-          },
-          {
-            "after": 3,
-            "before": 4,
-            "character": "辦",
-            "delta": -1
-          },
-          {
-            "after": 8,
-            "before": 9,
-            "character": "進",
-            "delta": -1
-          },
-          {
-            "after": 37,
-            "before": 38,
-            "character": "道",
-            "delta": -1
-          },
-          {
-            "after": 4,
-            "before": 5,
-            "character": "面",
-            "delta": -1
-          },
-          {
-            "after": 3,
-            "before": 2,
-            "character": "代",
+            "character": "核",
             "delta": 1
-          },
-          {
-            "after": 2,
-            "before": 1,
-            "character": "應",
-            "delta": 1
-          },
-          {
-            "after": 1,
-            "before": 0,
-            "character": "李",
-            "delta": 1
-          },
-          {
-            "after": 1,
-            "before": 0,
-            "character": "腳",
-            "delta": 1
-          },
-          {
-            "after": 3,
-            "before": 2,
-            "character": "計",
-            "delta": 1
-          },
-          {
-            "after": 3,
-            "before": 1,
-            "character": "定",
-            "delta": 2
-          },
-          {
-            "after": 2,
-            "before": 0,
-            "character": "紅",
-            "delta": 2
-          },
-          {
-            "after": 2,
-            "before": 0,
-            "character": "考",
-            "delta": 2
-          },
-          {
-            "after": 3,
-            "before": 0,
-            "character": "冊",
-            "delta": 3
-          },
-          {
-            "after": 3,
-            "before": 0,
-            "character": "據",
-            "delta": 3
-          },
-          {
-            "after": 10,
-            "before": 6,
-            "character": "教",
-            "delta": 4
-          },
-          {
-            "after": 5,
-            "before": 1,
-            "character": "長",
-            "delta": 4
-          },
-          {
-            "after": 5,
-            "before": 0,
-            "character": "板",
-            "delta": 5
-          },
-          {
-            "after": 7,
-            "before": 2,
-            "character": "電",
-            "delta": 5
-          },
-          {
-            "after": 6,
-            "before": 0,
-            "character": "眼",
-            "delta": 6
-          },
-          {
-            "after": 11,
-            "before": 3,
-            "character": "媽",
-            "delta": 8
-          },
-          {
-            "after": 9,
-            "before": 0,
-            "character": "提",
-            "delta": 9
           }
         ],
-        "delta": -394
+        "delta": 1
       }
     },
-    "unchanged_articles": 1,
+    "unchanged_articles": 128,
     "unfiltered": {
-      "added_actions": 22,
+      "added_actions": 4,
       "after": 333018,
       "articles": [
         {
-          "delta": -14,
+          "delta": 0,
           "id": "tw-corpus-0001"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0002"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0003"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0004"
         },
         {
-          "delta": -24,
+          "delta": 0,
           "id": "tw-corpus-0005"
         },
         {
-          "delta": -44,
+          "delta": 0,
           "id": "tw-corpus-0006"
         },
         {
-          "delta": -14,
+          "delta": 0,
           "id": "tw-corpus-0007"
         },
         {
-          "delta": -18,
+          "delta": 0,
           "id": "tw-corpus-0008"
         },
         {
-          "delta": -8,
+          "delta": 0,
           "id": "tw-corpus-0009"
         },
         {
-          "delta": -24,
+          "delta": 0,
           "id": "tw-corpus-0010"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0011"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0012"
         },
         {
-          "delta": -16,
+          "delta": 0,
           "id": "tw-corpus-0013"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0014"
         },
         {
-          "delta": -10,
+          "delta": -2,
           "id": "tw-corpus-0015"
         },
         {
-          "delta": -18,
+          "delta": 0,
           "id": "tw-corpus-0016"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0017"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0018"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0019"
         },
         {
-          "delta": -14,
+          "delta": 0,
           "id": "tw-corpus-0020"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0021"
         },
         {
-          "delta": -18,
+          "delta": 0,
           "id": "tw-corpus-0022"
         },
         {
@@ -1484,7 +858,7 @@
           "id": "tw-corpus-0023"
         },
         {
-          "delta": -16,
+          "delta": 0,
           "id": "tw-corpus-0024"
         },
         {
@@ -1492,183 +866,183 @@
           "id": "tw-corpus-0025"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0026"
         },
         {
-          "delta": -16,
+          "delta": 0,
           "id": "tw-corpus-0027"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0028"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0029"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0030"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0031"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0032"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0033"
         },
         {
-          "delta": -16,
+          "delta": 0,
           "id": "tw-corpus-0034"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0035"
         },
         {
-          "delta": -25,
+          "delta": 0,
           "id": "tw-corpus-0036"
         },
         {
-          "delta": -24,
+          "delta": 0,
           "id": "tw-corpus-0037"
         },
         {
-          "delta": -18,
+          "delta": 1,
           "id": "tw-corpus-0038"
         },
         {
-          "delta": -18,
+          "delta": 0,
           "id": "tw-corpus-0039"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0040"
         },
         {
-          "delta": -8,
+          "delta": 0,
           "id": "tw-corpus-0041"
         },
         {
-          "delta": 6,
+          "delta": 0,
           "id": "tw-corpus-0042"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0043"
         },
         {
-          "delta": -8,
+          "delta": 0,
           "id": "tw-corpus-0044"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0045"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0046"
         },
         {
-          "delta": -8,
+          "delta": 0,
           "id": "tw-corpus-0047"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0048"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0049"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0050"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0051"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0052"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0053"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0054"
         },
         {
-          "delta": -8,
+          "delta": 0,
           "id": "tw-corpus-0055"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0056"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0057"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0058"
         },
         {
-          "delta": -26,
+          "delta": 0,
           "id": "tw-corpus-0059"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0060"
         },
         {
-          "delta": -8,
+          "delta": 3,
           "id": "tw-corpus-0061"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0062"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0063"
         },
         {
-          "delta": -2,
+          "delta": 0,
           "id": "tw-corpus-0064"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0065"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0066"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0067"
         },
         {
-          "delta": -16,
+          "delta": 0,
           "id": "tw-corpus-0068"
         },
         {
-          "delta": -20,
+          "delta": 0,
           "id": "tw-corpus-0069"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0070"
         },
         {
@@ -1676,159 +1050,159 @@
           "id": "tw-corpus-0071"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0072"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0073"
         },
         {
-          "delta": -2,
+          "delta": 0,
           "id": "tw-corpus-0074"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0075"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0076"
         },
         {
-          "delta": -8,
+          "delta": 0,
           "id": "tw-corpus-0077"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0078"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0079"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0080"
         },
         {
-          "delta": -28,
+          "delta": 0,
           "id": "tw-corpus-0081"
         },
         {
-          "delta": -14,
+          "delta": 0,
           "id": "tw-corpus-0082"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0083"
         },
         {
-          "delta": -8,
+          "delta": 0,
           "id": "tw-corpus-0084"
         },
         {
-          "delta": -20,
+          "delta": 0,
           "id": "tw-corpus-0085"
         },
         {
-          "delta": -22,
+          "delta": 0,
           "id": "tw-corpus-0086"
         },
         {
-          "delta": -20,
+          "delta": 0,
           "id": "tw-corpus-0087"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0088"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0089"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0090"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0091"
         },
         {
-          "delta": -20,
+          "delta": 0,
           "id": "tw-corpus-0092"
         },
         {
-          "delta": -8,
+          "delta": 0,
           "id": "tw-corpus-0093"
         },
         {
-          "delta": -14,
+          "delta": 0,
           "id": "tw-corpus-0094"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0095"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0096"
         },
         {
-          "delta": -8,
+          "delta": 0,
           "id": "tw-corpus-0097"
         },
         {
-          "delta": -18,
+          "delta": 0,
           "id": "tw-corpus-0098"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0099"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0100"
         },
         {
-          "delta": -2,
+          "delta": 0,
           "id": "tw-corpus-0101"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0102"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0103"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0104"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0105"
         },
         {
-          "delta": -12,
+          "delta": -2,
           "id": "tw-corpus-0106"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0107"
         },
         {
-          "delta": -20,
+          "delta": 0,
           "id": "tw-corpus-0108"
         },
         {
-          "delta": -14,
+          "delta": 0,
           "id": "tw-corpus-0109"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0110"
         },
         {
@@ -1836,39 +1210,39 @@
           "id": "tw-corpus-0111"
         },
         {
-          "delta": -22,
+          "delta": 0,
           "id": "tw-corpus-0112"
         },
         {
-          "delta": -2,
+          "delta": 0,
           "id": "tw-corpus-0113"
         },
         {
-          "delta": -22,
+          "delta": 0,
           "id": "tw-corpus-0114"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0115"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0116"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0117"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0118"
         },
         {
-          "delta": -16,
+          "delta": 0,
           "id": "tw-corpus-0119"
         },
         {
-          "delta": -14,
+          "delta": 0,
           "id": "tw-corpus-0120"
         },
         {
@@ -1876,66 +1250,66 @@
           "id": "tw-corpus-0121"
         },
         {
-          "delta": 8,
+          "delta": 0,
           "id": "tw-corpus-0122"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0123"
         },
         {
-          "delta": -12,
+          "delta": 0,
           "id": "tw-corpus-0124"
         },
         {
-          "delta": -8,
+          "delta": 0,
           "id": "tw-corpus-0125"
         },
         {
-          "delta": 8,
+          "delta": 0,
           "id": "tw-corpus-0126"
         },
         {
-          "delta": -4,
+          "delta": 0,
           "id": "tw-corpus-0127"
         },
         {
-          "delta": -8,
+          "delta": 0,
           "id": "tw-corpus-0128"
         },
         {
-          "delta": -10,
+          "delta": 0,
           "id": "tw-corpus-0129"
         },
         {
-          "delta": -2,
+          "delta": 0,
           "id": "tw-corpus-0130"
         },
         {
-          "delta": -6,
+          "delta": 0,
           "id": "tw-corpus-0131"
         }
       ],
-      "before": 334365,
+      "before": 333018,
       "character_corrections_after": 5262,
-      "character_corrections_before": 5944,
-      "correction_action_delta": -1347,
-      "corrections_after": 4713,
-      "corrections_before": 5387,
-      "delta": -1347,
-      "improved_articles": 123,
+      "character_corrections_before": 5262,
+      "correction_action_delta": 0,
+      "corrections_after": 4712,
+      "corrections_before": 4713,
+      "delta": 0,
+      "improved_articles": 2,
       "passes": false,
-      "reduction_percent": 0.4028531694405814,
-      "regressed_articles": 3,
-      "saved_actions": 1369,
+      "reduction_percent": 0.0,
+      "regressed_articles": 2,
+      "saved_actions": 4,
       "syllables": 93630,
-      "unchanged_articles": 5,
-      "worst_regression": 8
+      "unchanged_articles": 127,
+      "worst_regression": 3
     },
-    "worst_regression": 0
+    "worst_regression": 3
   },
   "rows": [
-    125008,
+    126193,
     871383
   ],
   "source_totals": {

@@ -63,10 +63,11 @@ def load(path, total_count, stage):
     for entry in entries:
         word = entry["word"]
         syllables = entry["reading"].split()
-        count = int(entry["target_count"])
         occurrences, documents = int(entry["training_occurrences"]), int(entry["training_documents"])
         entry_stage = entry.get("stage", PRE_TRAINING)
         action = entry.pop("action", "") or "add"
+        count = (float(entry["target_count"]) if entry_stage == POST_TRAINING and action == "add"
+                 else int(entry["target_count"]))
         if not 2 <= len(word) <= 7 or len(syllables) != len(word):
             raise ValueError(f"invalid phrase: {word}")
         if entry_stage not in (PRE_TRAINING, POST_TRAINING):
@@ -148,3 +149,4 @@ def verify_post_training(database, path, total_count, expected_entries):
             left, _, right = query.partition(" ")
             if (left, previous) in added_readings or (right, current) in added_readings:
                 raise ValueError(f"post-training phrase has a Bigram edge: {(query, previous, current)}")
+    return added_readings

@@ -1,7 +1,7 @@
 {
   "base_database_sha256": "71dc14bc36e04169411e035de638ff0739d0156e734c16de44e600984a2793c1",
   "bigram_rows": 871383,
-  "canonical_database_sha256": "bac8d0bb526ca41a1280b6799218be815d785899258b738547a1da80a634f589",
+  "canonical_database_sha256": "9c5443cc5a03b3f7fbe2adfa5f8ae26a2becb1b4b750ba195a40b02946a9ea1b",
   "description": "McBopomofo with deduplicated custom Unigrams; source-cooked document-frequency Bigram; personal names, anime and homophone additions inserted after training",
   "format": 1,
   "rebuild": {
@@ -18,7 +18,7 @@
     "seed_database_sha256": "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252",
     "validation": "collection-unigram-validation.json"
   },
-  "semantic_sha256": "f1364e6965be4e5ccf23ba70e7597f1604287566d2edeaf657c293d7f8b06d5a",
+  "semantic_sha256": "9d12ee2564c37d5978d0f2158987fe7ad66b4a2c959d07094c911f470171d57c",
   "single_syllable_readings": 1347,
   "sources": {
     "cin_reading_frequencies": {
@@ -174,9 +174,9 @@
       "overrides_sha256": "e904d8db9d8f6f71e336fca9ee5daa3a7f990bd97e01d897d246e336c3b37550",
       "rejected": 0,
       "report_file": "collection-unigram-import.json",
-      "report_sha256": "34f975b994e01665626a608b344f0aaa9bce9cd0658512ca39fe4cd58c053550",
+      "report_sha256": "d8797721a85bdd478a21ca5b6dfad411c93f4158c94d5b7e718763445fbbbd17",
       "search_presence_file": "search-trend-unigram-presence.tsv",
-      "search_presence_sha256": "0e398aa45a4bb4f1b5d5ce09d99c80e84f8337ed5a60e9ed4e21b4819ec5a88a",
+      "search_presence_sha256": "e6790cf7b60cedc9207832f1ae3e37bfc41d483ede1003f1357ae3fdbc873549",
       "skipped_file": "collection-unigram-skipped.tsv",
       "skipped_sha256": "0324a060267908c3bf969ea1a7db7e2a47ad27f1f2f9e0a79b1cc420ee7872d1",
       "source_frequency_files": [
@@ -186,18 +186,18 @@
       ],
       "source_rows": 13997,
       "validation_file": "collection-unigram-validation.json",
-      "validation_sha256": "e8ef0626cb65b99cca3fb288782858729de4a56f8aa4fcf90173bc9f3b9f3dfe"
+      "validation_sha256": "259c7c5b15ce8cbb47edbf75d8def7487834dec46a792b992c7f9337953def17"
     },
     "phrase_unigram_supplement": {
-      "entries": 150,
+      "entries": 1335,
       "file": "common-phrase-unigram.tsv",
-      "inserted": 126,
+      "inserted": 1311,
       "policy": "Pre-training reviewed phrases use the minimum score above same-reading tokenizations and retain existing probabilities. Post-training reviewed phrases use explicit counts and preserve existing backoffs and Bigram edges without adding new edges.",
-      "post_training_entries": 148,
+      "post_training_entries": 1333,
       "pre_training_entries": 2,
       "retained": 1,
       "reweighted": 23,
-      "sha256": "70fcefda1d0aa7fb5027022a5e811e28407bf6500291de4c5de0683662658b71",
+      "sha256": "4410d421e16cea13db4edafc0b49f7425aadfa30c50b1518b561c850de1983d2",
       "validation_file": "whole-phrase-unigram-validation.json",
       "validation_sha256": "8ce428d08f9fc9fa626eff1d0c40ff10df812672bb2b4bfdbf6a16ede431151e"
     },
@@ -458,7 +458,7 @@
     }
   },
   "training_articles": 2300,
-  "unigram_rows": 125008,
+  "unigram_rows": 126193,
   "unigram_total_count": 22634075.0,
   "validation_articles": 131
 }
