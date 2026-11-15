@@ -6,6 +6,8 @@
 不因純文件或核心局部修改要求六台 AVD 全套。明確進入完整發布驗收時，再依下列裝置矩陣執行並保存
 同一最終來源 APK 的證據，交付條件見 [1.5.0 發布準備](CROSS_PLATFORM_V1_5_0_RELEASE.md)。
 
+Pixel 11 開啟「整合底部控制鍵」一段時間後的第一排遮擋症狀與待蒐集資料，見 [Android 直式鍵盤第一排遮擋調查](ANDROID_IME_TOP_ROW_CLIPPING_INVESTIGATION.md)。
+
 ## 完成條件
 
 測試完成必須同時符合以下條件：
