@@ -378,6 +378,9 @@ private final class InputMethodSettingsViewController: UIViewController {
     private lazy var modeSettings = ChineseInputMethodSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
+    private lazy var simplifiedOutputSettings = SimplifiedChineseOutputSettings(
+        sharedDefaults: sharedDefaults, writesShared: true
+    )
     private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults)
     private lazy var toneOmissionSettings = SmartMandarinToneOmissionSettings(
         sharedDefaults: sharedDefaults, writesShared: true
@@ -435,6 +438,20 @@ private final class InputMethodSettingsViewController: UIViewController {
         modeControl.accessibilityIdentifier = "app-settings.composition-mode"
         modeControl.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(modeControl)
+
+        let simplifiedOutputLabel = label(SimplifiedChineseOutputSettings.displayName, size: 18)
+        simplifiedOutputLabel.isAccessibilityElement = false
+        let simplifiedOutput = UISwitch()
+        simplifiedOutput.isOn = simplifiedOutputSettings.enabled
+        simplifiedOutput.accessibilityLabel = SimplifiedChineseOutputSettings.displayName
+        simplifiedOutput.accessibilityIdentifier = "app-settings.simplified-chinese-output"
+        simplifiedOutput.setContentHuggingPriority(.required, for: .horizontal)
+        simplifiedOutput.setContentCompressionResistancePriority(.required, for: .horizontal)
+        simplifiedOutput.addTarget(self, action: #selector(simplifiedOutputChanged(_:)), for: .valueChanged)
+        let simplifiedOutputRow = UIStackView(arrangedSubviews: [simplifiedOutputLabel, simplifiedOutput])
+        simplifiedOutputRow.alignment = .center
+        simplifiedOutputRow.spacing = 8
+        stack.addArrangedSubview(simplifiedOutputRow)
 
         let toneOmission = UISwitch()
         toneOmission.isOn = toneOmissionSettings.enabled
@@ -654,6 +671,10 @@ private final class InputMethodSettingsViewController: UIViewController {
 
     @objc private func modeChanged(_ sender: UISegmentedControl) {
         modeSettings.setMethod(ChineseInputMethod.allCases[sender.selectedSegmentIndex])
+    }
+
+    @objc private func simplifiedOutputChanged(_ sender: UISwitch) {
+        simplifiedOutputSettings.setEnabled(sender.isOn)
     }
 
     @objc private func spaceSelectionChanged(_ sender: UISwitch) {

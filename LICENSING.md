@@ -109,6 +109,8 @@ data, or separately licensed collections such as `DataSource/chichi77Collection`
 - `Source/Loaders/Linux-IME/data/tc2sc.cin` is generated from the read-only
   OpenVanilla `VXHCTC2SCTable.c` mapping and retains that table's BSD 3-Clause
   terms and attribution, including its recorded Encode::HanConvert origin.
+  Android and iOS also bundle this generated table and include its notice
+  in their runtime component catalogs.
 - `Source/Loaders/Linux-IME/gnome-panel/` contains inspected GNOME Input
   Method Panel source, the placement patch, and its packaging tools under
   GPL-2.0. The license text is in `gnome-panel/COPYING`. This directory builds

@@ -65,8 +65,9 @@ and its traditional/simplified character tables. The implementation retains
 the OpenVanilla Project's MIT notice; the tables retain its BSD 3-Clause notice
 and recorded origin in Perl Encode::HanConvert 0.31 by Autrijus Tang.
 The complete notices are in `LICENSES/OpenVanilla-HanConvert.txt`, copied into
-the Windows package's `LICENSES` directory. Conversion uses the existing
-character mapping only at document output boundaries.
+the Windows package's `LICENSES` directory. Android and iOS reuse the
+generated `Source/Loaders/Linux-IME/data/tc2sc.cin` table, include its
+notice in the in-app license catalog, and apply it when committing text.
 
 ## McBopomofo data
 

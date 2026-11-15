@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 
 final class ChineseInputMethodSettings {
     static final String KEY_METHOD = "chinese_input_method";
+    static final String KEY_SIMPLIFIED_CHINESE_OUTPUT = "simplified_chinese_output";
     static ChineseInputMethod method(Context context) {
         String raw = preferences(context).getString(KEY_METHOD, "");
         try { return ChineseInputMethod.valueOf(raw); }
@@ -20,6 +21,12 @@ final class ChineseInputMethodSettings {
         if (!method.isTable()) editor.putString(BopomofoCompositionModeSettings.KEY_MODE,
                 method == ChineseInputMethod.SMART ? "smart" : "traditional");
         editor.apply();
+    }
+    static boolean simplifiedChineseOutput(Context context) {
+        return preferences(context).getBoolean(KEY_SIMPLIFIED_CHINESE_OUTPUT, false);
+    }
+    static void setSimplifiedChineseOutput(Context context, boolean enabled) {
+        preferences(context).edit().putBoolean(KEY_SIMPLIFIED_CHINESE_OUTPUT, enabled).apply();
     }
     static TableInputOptions options(Context context, ChineseInputMethod method) {
         return options(context, method, false);

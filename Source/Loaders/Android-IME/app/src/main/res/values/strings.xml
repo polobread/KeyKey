@@ -41,6 +41,7 @@
     <string name="cangjie_prefix_candidates_description">開啟即時候選後才可啟用。輸入時提前顯示相同開頭的候選字，常用字優先。</string>
 
     <string name="composition_mode_title">輸入法</string>
+    <string name="simplified_chinese_output">繁體中文轉簡體</string>
     <string-array name="composition_modes">
         <item>好打注音</item>
         <item>傳統注音</item>

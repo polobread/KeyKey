@@ -115,6 +115,7 @@ android {
     sourceSets["main"].assets.directories.add("build/generated/associatedPhraseIndexAssets")
     sourceSets["main"].assets.directories.add("build/generated/smartMandarinAssets")
     sourceSets["main"].assets.directories.add("build/generated/guanyinmaLicenseAssets")
+    sourceSets["main"].assets.directories.add("build/generated/simplifiedChineseAssets")
 }
 
 val guanyinmaCoreDirectory = layout.projectDirectory.dir("../../../Guanyinma")
@@ -274,7 +275,13 @@ val generateIndexedDictionaryAssets by tasks.registering(JavaExec::class) {
     outputs.dir(generatedIndexedDictionaryDirectory)
 }
 
+val generateSimplifiedChineseAssets by tasks.registering(Sync::class) {
+    from(layout.projectDirectory.file("../../Linux-IME/data/tc2sc.cin"))
+    into(layout.buildDirectory.dir("generated/simplifiedChineseAssets"))
+}
+
 tasks.named("preBuild").configure {
+    dependsOn(generateSimplifiedChineseAssets)
     dependsOn(generateGuanyinmaNotices)
     dependsOn(generateAssociatedPhraseAssets)
     dependsOn(generateIndexedDictionaryAssets)

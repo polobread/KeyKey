@@ -37,6 +37,7 @@ final class KeyboardViewController: UIInputViewController {
     private lazy var phraseSettings = PhraseSettings(sharedDefaults: sharedDefaults)
     private lazy var candidateColorSettings = CandidateColorSettings(sharedDefaults: sharedDefaults)
     private lazy var methodSettings = ChineseInputMethodSettings(sharedDefaults: sharedDefaults)
+    private lazy var simplifiedOutputSettings = SimplifiedChineseOutputSettings(sharedDefaults: sharedDefaults)
     private lazy var compositionModeSettings = BopomofoCompositionModeSettings(
         sharedDefaults: sharedDefaults
     )
@@ -535,6 +536,7 @@ final class KeyboardViewController: UIInputViewController {
             chineseInputMethod: engine?.chineseInputMethod ?? methodSettings.method,
             methodSettings: methodSettings,
             keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout,
+            simplifiedOutputEnabled: simplifiedOutputSettings.enabled,
             omitsTones: toneOmissionSettings.enabled,
             layoutProfile: profileSettings.profile,
             keycapArea: profileSettings.keycapArea,
@@ -740,7 +742,7 @@ final class KeyboardViewController: UIInputViewController {
             mutateDocument { textDocumentProxy.deleteBackward() }
         }
         if !result.text.isEmpty {
-            commitMarkedOrInsertedText(result.text)
+            commitMarkedOrInsertedText(simplifiedOutputSettings.convertOutputText(result.text))
         }
         if engine?.hasComposition == true {
             // Candidate buttons are extension-local UIKit. Give them the
@@ -761,16 +763,18 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func applyTouchSmart(_ result: KeyboardInput.Result) {
+        let committedText = simplifiedOutputSettings.convertOutputText(result.text)
         let edit: TouchSmartHostTextState.Edit
         if engine?.isTouchSmartComposition == true, engine?.hasComposition == true {
-            edit = touchHostText.update(
-                to: engine?.completedSmartText ?? "", evictedPrefix: result.text
-            )
+            // Keep the tracked tail in the same form as the text inserted
+            // into the host so an evicted prefix is never converted twice.
+            let editableText = simplifiedOutputSettings.convertOutputText(engine?.completedSmartText ?? "")
+            edit = touchHostText.update(to: editableText, evictedPrefix: committedText)
         } else if engine?.isTouchSmartComposition == true, result.text.isEmpty,
                   !result.deletesBackward, !result.sendsReturn {
             edit = touchHostText.cancel()
         } else {
-            edit = touchHostText.finish(with: result.text)
+            edit = touchHostText.finish(with: committedText)
         }
         let reading = engine?.touchSmartHostReading ?? ""
         if hasMarkedText && (markedTouchReading.isEmpty || reading.isEmpty
@@ -1008,6 +1012,14 @@ extension KeyboardViewController: SettingsPanelDelegate {
         if let engine { apply(engine.setKeyboardLayout(layout)) }
         layoutSettings.setLayout(layout)
         refresh()
+    }
+
+    func settingsPanel(_ panel: SettingsPanel, didChangeSimplifiedOutput enabled: Bool) {
+        guard simplifiedOutputSettings.enabled != enabled else { return }
+        if let engine, engine.hasComposition {
+            apply(engine.finishCompositionForInputHandoff())
+        }
+        simplifiedOutputSettings.setEnabled(enabled)
     }
 
     func settingsPanel(_ panel: SettingsPanel, didChangeToneOmission enabled: Bool) {

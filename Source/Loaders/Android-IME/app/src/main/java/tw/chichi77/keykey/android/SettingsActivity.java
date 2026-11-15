@@ -20,6 +20,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -98,6 +99,16 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                             android.widget.AdapterView<?> parent) {}
                 });
         methodContent.addView(compositionMode, matchWrap(dp(0), dp(8)));
+
+        Switch simplifiedChineseOutput = new Switch(this);
+        simplifiedChineseOutput.setText(R.string.simplified_chinese_output);
+        simplifiedChineseOutput.setTextSize(16);
+        simplifiedChineseOutput.setTextColor(Color.DKGRAY);
+        simplifiedChineseOutput.setMinHeight(dp(48));
+        simplifiedChineseOutput.setChecked(ChineseInputMethodSettings.simplifiedChineseOutput(this));
+        simplifiedChineseOutput.setOnCheckedChangeListener((button, checked) ->
+                ChineseInputMethodSettings.setSimplifiedChineseOutput(this, checked));
+        methodContent.addView(simplifiedChineseOutput, matchWrap(dp(0), dp(8)));
 
         LinearLayout compositionContent = addSettingsGroup(content, savedInstanceState,
                 "composition", R.string.settings_group_composition, 0, false);

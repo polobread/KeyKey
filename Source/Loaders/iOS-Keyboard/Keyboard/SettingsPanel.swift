@@ -8,6 +8,7 @@ protocol SettingsPanelDelegate: AnyObject {
     func settingsPanel(
         _ panel: SettingsPanel, didChangeCompositionMode mode: BopomofoCompositionMode
     )
+    func settingsPanel(_ panel: SettingsPanel, didChangeSimplifiedOutput enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeToneOmission enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeInputClicksEnabled enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeCandidateColor color: CandidateColor)
@@ -35,6 +36,7 @@ final class SettingsPanel: UIView {
     private var deleteShiftPosition: KeyboardDeleteShiftPosition
     private var fontSize: KeyboardKeyFontSize
     private var keyboardLayout: BopomofoKeyboardLayout
+    private let simplifiedOutputEnabled: Bool
     private let omitsTones: Bool
     private let statusLabel = UILabel()
     private let candidateColorControl = UISegmentedControl(
@@ -53,7 +55,8 @@ final class SettingsPanel: UIView {
         compositionMode: BopomofoCompositionMode,
         chineseInputMethod: ChineseInputMethod = .smart,
         methodSettings: ChineseInputMethodSettings = ChineseInputMethodSettings(),
-        keyboardLayout: BopomofoKeyboardLayout = .standard, omitsTones: Bool = false,
+        keyboardLayout: BopomofoKeyboardLayout = .standard,
+        simplifiedOutputEnabled: Bool = false, omitsTones: Bool = false,
         layoutProfile: KeyboardLayoutProfile = .standard,
         keycapArea: KeyboardKeycapArea = .small,
         fontSize: KeyboardKeyFontSize = .normal,
@@ -65,6 +68,7 @@ final class SettingsPanel: UIView {
         self.chineseInputMethod = chineseInputMethod
         self.methodSettings = methodSettings
         self.keyboardLayout = keyboardLayout
+        self.simplifiedOutputEnabled = simplifiedOutputEnabled
         self.omitsTones = omitsTones
         self.layoutProfile = layoutProfile
         self.keycapArea = keycapArea
@@ -106,7 +110,8 @@ final class SettingsPanel: UIView {
         resize.addTarget(self, action: #selector(keyboardHeightTapped), for: .touchUpInside)
         resize.accessibilityIdentifier = "keyboard-settings.keyboard-height"
         let root = UIStackView(arrangedSubviews: [
-            compositionModeRow(), toneOmissionRow(), spaceSelectionRow(), resetLearningButton, statusLabel,
+            compositionModeRow(), simplifiedOutputRow(), toneOmissionRow(), spaceSelectionRow(),
+            resetLearningButton, statusLabel,
             keyboardLayoutRow(),
             tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex),
             candidateColorRow(), resize, layoutProfileRow(), keycapAreaRow(), fontSizeRow(), deleteShiftRow(),
@@ -235,7 +240,6 @@ final class SettingsPanel: UIView {
 
         let toggle = UISwitch()
         toggle.isOn = inputClicksEnabled
-        toggle.onTintColor = Palette.highlight
         toggle.accessibilityIdentifier = "input-clicks"
         toggle.accessibilityLabel = "按鍵音"
         toggle.addTarget(self, action: #selector(inputClicksToggled(_:)), for: .valueChanged)
@@ -270,6 +274,33 @@ final class SettingsPanel: UIView {
         row.isLayoutMarginsRelativeArrangement = true
         row.directionalLayoutMargins = .init(top: 4, leading: 0, bottom: 4, trailing: 0)
         return row
+    }
+
+    private func simplifiedOutputRow() -> UIView {
+        let label = UILabel()
+        label.text = SimplifiedChineseOutputSettings.displayName
+        label.font = .preferredFont(forTextStyle: .subheadline)
+        label.adjustsFontForContentSizeCategory = true
+        label.textColor = Palette.primaryText
+        label.numberOfLines = 0
+        label.isAccessibilityElement = false
+
+        let toggle = UISwitch()
+        toggle.isOn = simplifiedOutputEnabled
+        toggle.accessibilityLabel = SimplifiedChineseOutputSettings.displayName
+        toggle.accessibilityIdentifier = "keyboard-settings.simplified-chinese-output"
+        toggle.setContentHuggingPriority(.required, for: .horizontal)
+        toggle.setContentCompressionResistancePriority(.required, for: .horizontal)
+        toggle.addTarget(self, action: #selector(simplifiedOutputChanged(_:)), for: .valueChanged)
+
+        let row = UIStackView(arrangedSubviews: [label, toggle])
+        row.alignment = .center
+        row.spacing = 8
+        return row
+    }
+
+    @objc private func simplifiedOutputChanged(_ sender: UISwitch) {
+        delegate?.settingsPanel(self, didChangeSimplifiedOutput: sender.isOn)
     }
 
     private func tableOptionsButton(for method: ChineseInputMethod) -> UIButton {

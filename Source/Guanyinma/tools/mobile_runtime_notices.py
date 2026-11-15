@@ -179,6 +179,7 @@ def package_mobile(root, core, channel, sysroot, metadatas, archives, targets, o
         ("keykey", "琦琦輸入法／Guanyinma", "MIT", ["Source/Guanyinma/LICENSE.txt"]),
         ("yahoo", "Yahoo! KeyKey", "BSD-3-Clause", ["LICENSE.txt"]),
         ("formosa", "Formosa／OpenVanilla 衍生程式", "MIT AND BSD-3-Clause", ["Source/Guanyinma/LICENSES/Formosa-OpenVanilla-NOTICES.txt"]),
+        ("han-convert", "OpenVanilla 繁簡轉換字表", "BSD-3-Clause", ["LICENSES/OpenVanilla-HanConvert.txt"]),
         ("unicode", "Unicode 資料", "Unicode-3.0", ["Source/Guanyinma/LICENSES/Unicode-LICENSE.txt"]),
         ("mcbopomofo", "McBopomofo 詞庫", "MIT", ["DataSource/McBopomofo/LICENSE.txt"]),
         ("ai-data", "專案原創語料與詞庫內容", "MIT", ["DataSource/AISyntheticBigram/LICENSE.txt"]),
@@ -274,7 +275,7 @@ def package_mobile(root, core, channel, sysroot, metadatas, archives, targets, o
              "systemLibraries": {"provider": "SQLite, iconv and libunwind are supplied by iOS, not redistributed",
                                  "sqliteUpstream": "https://www.sqlite.org/copyright.html"},
              "sourceLockSHA256": hashlib.sha256((library / "Cargo.lock").read_bytes()).hexdigest(),
-             "excluded": ["Cargo build/dev/proc-macro dependencies", "unused Rust distribution crates and license catalog", "Fuchsia-only std source", "desktop updater/OpenSSL/HanConvert notices", "other-platform frontends"]}
+             "excluded": ["Cargo build/dev/proc-macro dependencies", "unused Rust distribution crates and license catalog", "Fuchsia-only std source", "desktop updater/OpenSSL notices", "other-platform frontends"]}
     if platform == "android":
         audit["systemLibraries"] = {"provider": "Android platform C/Java APIs supplied by OS; SQLite/C++ runtime bundled"}
         audit.update(android_audit)

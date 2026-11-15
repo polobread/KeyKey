@@ -240,6 +240,9 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     )
     private lazy var phraseSettings = PhraseSettings(sharedDefaults: sharedDefaults)
     private lazy var methodSettings = ChineseInputMethodSettings(sharedDefaults: sharedDefaults)
+    private lazy var simplifiedOutputSettings = SimplifiedChineseOutputSettings(
+        sharedDefaults: sharedDefaults, writesShared: true
+    )
     private lazy var compositionModeSettings = BopomofoCompositionModeSettings(
         sharedDefaults: sharedDefaults
     )
@@ -1261,7 +1264,8 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         }
         if result.deletesBackward { deleteCommittedCharacterBackward() }
         if !result.text.isEmpty {
-            insertCommittedText(widenASCII ? fullWidth(result.text) : result.text)
+            let text = simplifiedOutputSettings.convertOutputText(result.text)
+            insertCommittedText(widenASCII ? fullWidth(text) : text)
         }
         if result.sendsReturn { insertCommittedText("\n") }
         transientStatus = nil

@@ -44,6 +44,8 @@
 		C77000000000000000000056 /* HardwareKeyboardEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000057 /* HardwareKeyboardEditorViewController.swift */; };
 		C77000000000000000000090 /* SimulatorGeometryProbe.swift in App Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000092 /* SimulatorGeometryProbe.swift */; };
 		C77000000000000000000091 /* SimulatorGeometryProbe.swift in Keyboard Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000092 /* SimulatorGeometryProbe.swift */; };
+		C77000000000000000000100 /* tc2sc.cin in App Resources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000102 /* tc2sc.cin */; };
+		C77000000000000000000101 /* tc2sc.cin in Keyboard Resources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000102 /* tc2sc.cin */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -117,6 +119,7 @@
 		C77000000000000000000055 /* Keyboard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Keyboard.entitlements; sourceTree = "<group>"; };
 		C77000000000000000000057 /* HardwareKeyboardEditorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareKeyboardEditorViewController.swift; sourceTree = "<group>"; };
 		C77000000000000000000092 /* SimulatorGeometryProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatorGeometryProbe.swift; sourceTree = "<group>"; };
+		C77000000000000000000102 /* tc2sc.cin */ = {isa = PBXFileReference; lastKnownFileType = text; name = tc2sc.cin; path = "../Linux-IME/data/tc2sc.cin"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -195,6 +198,7 @@
 			isa = PBXGroup;
 			children = (
 				C77000000000000000000008 /* KeyKey.db */,
+				C77000000000000000000102 /* tc2sc.cin */,
 			);
 			name = Databases;
 			sourceTree = "<group>";
@@ -350,6 +354,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C77000000000000000000007 /* KeyKey.db in Resources */,
+				C77000000000000000000101 /* tc2sc.cin in Keyboard Resources */,
 				C77000000000000000000040 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -359,6 +364,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C7700000000000000000003C /* Assets.xcassets in Resources */,
+				C77000000000000000000100 /* tc2sc.cin in App Resources */,
 				C7700000000000000000003E /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
