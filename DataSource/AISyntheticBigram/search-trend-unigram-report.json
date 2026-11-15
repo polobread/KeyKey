@@ -8,7 +8,7 @@
   "format": 1,
   "frequency_policy": "min(100, max(1, exact substring occurrences in all 2300 training articles))",
   "input_duplicates": 0,
-  "output_sha256": "3db6fa8739a44a57aae0274547d14fe06a3ca3c8ed6e34a3b12a96c662d1089b",
+  "output_sha256": "e276a35a760f849e449c2309ca3b41d6b27a71c5f74d1ab697bb8cbe7b8cd445",
   "positive_custom_terms": 157,
   "reading_overrides": 5,
   "review_sha256": "0b7b0dc636c2000f072c013d1cafa366b1fdc62f8a6524c2c5e1f2cac9864433",

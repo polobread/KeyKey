@@ -16,7 +16,7 @@ Workflow：`.github/workflows/rebuild-keykey-db.yml`。
 | --- | --- |
 | `DataSource/chichi77Collection/phrase.*.tsv` | 分類詞庫原詞、讀音、分類與來源詞頻 |
 | `DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv` | 預設啟用的 CIN 逐字讀音替代詞頻，可明確關閉 |
-| `DataSource/CINReadingFrequency/standalone-composition-review.tsv`、`standalone-composition-weights.json` | 299 筆單音節指定字的審閱權重 |
+| `DataSource/CINReadingFrequency/standalone-composition-review.tsv`、`standalone-composition-weights.json` | 單音節指定組字的審閱權重 |
 | `DataSource/AISyntheticArticles/typing-articles-v[234].jsonl` | Bigram 訓練正文，內嵌人名範圍 |
 | `DataSource/AssociatedPhraseCollectionNames.tsv` | 關聯詞分類顯示名稱 |
 | `DataSource/AISyntheticBigram/common-unigram-supplement.tsv` | 經審閱的常用詞補償 |
@@ -56,7 +56,8 @@ Workflow：`.github/workflows/rebuild-keykey-db.yml`。
 搜尋與分類採用清單分別為 `search-trend-unigram.tsv`、`collection-unigram.tsv`。
 關聯詞表仍依原分類來源維護；本過濾規則針對自動組句 Unigram。
 
-普通 collection 新詞使用詞頻 1；搜尋詞頻依 2,300 篇的出現次數，範圍 1–100。
+台灣、港澳與中國用語的普通新增詞採用來源 TSV 的詞頻，其餘分類的普通新增詞使用詞頻 1。
+搜尋詞頻依 2,300 篇的出現次數，範圍 1–100。
 `SmartMandarinCooker.rb` 使用過濾後普通詞及 v2/v3/v4 共 2,300 篇建模，
 再套用既有 document-frequency、基本字保護與常用詞補償公式。
 131 篇驗證文章不參與 Bigram 建模。
@@ -68,8 +69,8 @@ Workflow：`.github/workflows/rebuild-keykey-db.yml`。
 
 `common-phrase-unigram.tsv` 中的 `pre-training` 詞條沿用原有審閱規則，
 「舊的」新增至訓練詞表，「新的」保留原詞頻。正式重建在 Bigram 及低順位詞處理完成後，
-先套用 299 筆指定組字的審閱權重，再依 `post-training` 列寫入「另一位」等 11 個完整詞。
-這 11 個詞按各自的 `target_count` 計分，只加入 Unigram。兩份來源皆綁入模型 manifest。
+先套用單音節指定組字的審閱權重，再依 `post-training` 列寫入或調整「另一位」等完整詞。
+這些詞按各自的 `target_count` 計分，只更新 Unigram。兩份來源皆綁入模型 manifest。
 
 `--training-articles` 可依序指定 v2／v3／v4 替代檔案供獨立重建。
 固定 131 篇的人名計分方式見[動作計分說明](../DataSource/AISyntheticBigram/TYPING_COST.md#排除人名的成本)。
@@ -103,15 +104,19 @@ PR 驗證與合併後重建均先依鎖定 Rust 工具鏈及 `Cargo.lock` 編譯
 驗證集至少包含 0001–0131，之後加入連續編號文章也會納入；排除 chat.md。
 此為固定回歸，不宣稱是新盲測。
 
-通過門檻後將 DB、採用／去重／降權／部分重疊清單、來源雜湊、cooker 報告、完整回歸結果、v5 最新紀錄、
-Android 快取檔名及各平台模型列數一起提交到工作分支，再開 PR 合併回 master。不存 DB artifact。
-只 stage `generated-files.json` 列出的檔案；一般平台 build 仍只驗證與複製共用 DB。
+通過門檻且符合自動開 PR 的條件時，將 DB、採用／去重／降權／部分重疊清單、來源雜湊、cooker 報告、
+完整回歸結果、v5 最新紀錄、Android 快取檔名及各平台模型列數一起提交到工作分支，再開 PR 合併回 master。
+只 stage `generated-files.json` 列出的檔案。一般平台 build 仍只驗證與複製共用 DB。
 
 所有新產生的 JSON 固定依 key 排序。發布判斷會比較 JSON 內容，欄位順序不同不算新結果；
 完整比較報告中，單獨的回歸引擎執行檔與量測程式雜湊變動也不觸發發布。
 manifest 中對這些報告的雜湊仍須正確綁定實際 bytes，僅在比較發布內容時改以正規化後的
-報告內容判斷。資料庫、來源雜湊、政策、逐篇與逐字結果仍納入比較，不能只因總動作差為 0
-就略過。舊報告若因已採用模型造成比較基線移動，仍保守保存新的回歸證據。
+報告內容判斷。資料庫、來源雜湊、政策、逐篇與逐字結果仍納入產物比較。
+舊報告若因已採用模型造成比較基線移動，仍保留新的回歸證據。
+
+固定回歸的正式總動作相同且顯示 `+0` 時，workflow 完成重建與驗證，在摘要記錄略過自動發布。
+此時略過建立 commit、推送分支及開 PR。仍需採用的 DB 或 manifest 變更可依本機重建的
+`--apply` 流程更新，再由維護者提交審查。
 
 沒有實質變更時，`generated-files.json` 為空清單，`--apply` 不改寫目前 checkout 的產物，
 workflow 不建立 commit、推送分支或開 PR。本次執行的完整報告仍保存在指定輸出目錄，

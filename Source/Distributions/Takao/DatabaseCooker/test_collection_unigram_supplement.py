@@ -43,6 +43,17 @@ class CollectionTests(unittest.TestCase):
         self.assertEqual(list(self.db.execute("SELECT * FROM bigrams")), bigrams)
         self.assertEqual(apply(self.db, [a, b], 1000)["totals"]["inserted"], 0)
 
+    def test_source_counts_apply_only_to_opted_in_files_and_respect_collisions(self):
+        regional = self.source("regional.tsv", "風球\t10\tㄈㄥ ㄑㄧㄡˊ\t一般\n心的\t16\tㄒㄧㄣ ㄉㄜ˙\t一般\n")
+        other = self.source("other.tsv", "颱風\t16\tㄊㄞˊ ㄈㄥ\t一般\n")
+        result = apply(self.db, [regional, other], 1000, collision_index=self.index,
+                       source_frequency_files={regional.name})
+        self.assertEqual(result["source_frequency_files"], [regional.name])
+        self.assertEqual({entry["word"]: entry["target_count"] for entry in result["inserted_entries"]},
+                         {"風球": 10, "心的": 0.01, "颱風": 1})
+        scores = dict(self.db.execute("SELECT current, probability FROM unigrams"))
+        self.assertEqual((scores["風球"], scores["心的"], scores["颱風"]), (-2., -5., -3.))
+
     def test_unencodable_readings_are_reported_and_not_inserted(self):
         a = self.source("a.tsv", "哆啦A夢\t16\tㄉㄨㄛ ㄌㄚ A ㄇㄥˋ\t動漫\n")
         result = apply(self.db, [a], 1000)

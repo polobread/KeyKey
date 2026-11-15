@@ -32,7 +32,7 @@ class RebuildPublicationTests(unittest.TestCase):
         self.report = dict(publication_needed=True, publication_fingerprint=FINGERPRINT,
                            publication_reason='Changed source, model or regression content.',
                            decision='adopted', reason='within threshold', validation_articles=131,
-                           regression=dict(before=1000, after=1000, delta=0), files=self.files)
+                           regression=dict(before=1000, after=1001, delta=1), files=self.files)
         self.event = self.directory / 'event.json'
         self.event.write_text(json.dumps(dict(action='closed', pull_request=dict(
             merged=True, base=dict(ref='master', repo=dict(full_name=publisher.REPOSITORY))))))
@@ -128,12 +128,26 @@ class RebuildPublicationTests(unittest.TestCase):
                 self.assert_no_publication_mutations()
                 self.assertFalse((self.directory / 'pull-request.md').exists())
 
-    def test_substantive_zero_delta_creates_one_review_on_fingerprint_branch(self):
-        self.assertEqual(self.publish(), dict(status='created', url=URL))
-        self.assertIn(('git', 'switch', '-c', BRANCH), self.calls)
-        self.assertIn(('git', 'push', 'origin', 'HEAD:refs/heads/' + BRANCH), self.calls)
-        self.assertFalse(any('--force' in argument for command in self.calls for argument in command))
-        self.assertEqual(sum(command[:3] == ('gh', 'pr', 'create') for command in self.calls), 1)
+    def test_equal_totals_skip_automatic_publication_even_with_generated_changes(self):
+        self.report['regression'] = dict(before=318426, after=318426, delta=0)
+        self.save()
+        self.assertEqual(self.publish(), dict(status='equal_score'))
+        self.assertEqual(self.calls, [])
+        self.assertFalse((self.directory / 'pull-request.md').exists())
+
+    def test_nonzero_delta_creates_one_review_on_fingerprint_branch(self):
+        for delta, decision in ((-1, 'adopted'), (1, 'adopted'), (31, 'rejected')):
+            with self.subTest(delta=delta, decision=decision):
+                self.calls = []
+                self.staged = ''
+                self.report['decision'] = decision
+                self.report['regression'] = dict(before=1000, after=1000 + delta, delta=delta)
+                self.save()
+                self.assertEqual(self.publish(), dict(status='created', url=URL))
+                self.assertIn(('git', 'switch', '-c', BRANCH), self.calls)
+                self.assertIn(('git', 'push', 'origin', 'HEAD:refs/heads/' + BRANCH), self.calls)
+                self.assertFalse(any('--force' in argument for command in self.calls for argument in command))
+                self.assertEqual(sum(command[:3] == ('gh', 'pr', 'create') for command in self.calls), 1)
 
     def test_closed_or_unmerged_event_cannot_publish(self):
         for merged in (False, None):

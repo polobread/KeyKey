@@ -105,12 +105,12 @@ word	status	existing_readings	action
 停車位	present	1	see custom-unigram-excluded.tsv
 停車費	present	1	see custom-unigram-excluded.tsv
 悠遊卡	present	1	see custom-unigram-excluded.tsv
-一卡通	present	1	adopted
+一卡通	present	2	adopted
 電子票證	present	1	adopted
 行動支付	present	1	adopted
 電子支付	present	1	adopted
 電子發票	present	1	adopted
-統一發票	present	1	see custom-unigram-excluded.tsv
+統一發票	present	2	see custom-unigram-excluded.tsv
 發票對獎	present	1	adopted
 載具	present	1	adopted
 雲端發票	present	1	adopted
@@ -353,7 +353,7 @@ word	status	existing_readings	action
 電競	present	1	see custom-unigram-excluded.tsv
 遊戲直播	present	1	adopted
 攻略	present	1	see custom-unigram-excluded.tsv
-下載	present	1	see custom-unigram-excluded.tsv
+下載	present	2	see custom-unigram-excluded.tsv
 更新	present	2	see custom-unigram-excluded.tsv
 版本	present	1	see custom-unigram-excluded.tsv
 伺服器	present	1	see custom-unigram-excluded.tsv
@@ -388,8 +388,8 @@ word	status	existing_readings	action
 指考	present	1	adopted
 模擬考	present	1	see custom-unigram-excluded.tsv
 段考	present	1	see custom-unigram-excluded.tsv
-期中考	present	1	see custom-unigram-excluded.tsv
-期末考	present	1	see custom-unigram-excluded.tsv
+期中考	present	2	see custom-unigram-excluded.tsv
+期末考	present	2	see custom-unigram-excluded.tsv
 考古題	present	1	see custom-unigram-excluded.tsv
 題庫	present	1	see custom-unigram-excluded.tsv
 作文	present	1	see custom-unigram-excluded.tsv
@@ -529,7 +529,7 @@ word	status	existing_readings	action
 牛肉麵	present	1	see custom-unigram-excluded.tsv
 滷肉飯	present	1	see custom-unigram-excluded.tsv
 小籠包	present	1	see custom-unigram-excluded.tsv
-蚵仔煎	present	4	see custom-unigram-excluded.tsv
+蚵仔煎	present	6	see custom-unigram-excluded.tsv
 臭豆腐	present	1	see custom-unigram-excluded.tsv
 珍珠奶茶	present	1	see custom-unigram-excluded.tsv
 咖啡	present	1	see custom-unigram-excluded.tsv

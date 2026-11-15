@@ -847,7 +847,7 @@ static void check_smart_sessions(const char *path) {
     session_type(session, "fu/3ru84ul4fm4s83");
     result = session_state(session);
     json = result_json(result);
-    REQUIRE(strstr(json, "\"composition\":\"請假要去那\"") != NULL);
+    REQUIRE(strstr(json, "\"composition\":\"請假要去哪\"") != NULL);
     free(json);
     close_result(&result);
     /* Wait for the final reading to complete 哪裡 before checking the phrase. */
