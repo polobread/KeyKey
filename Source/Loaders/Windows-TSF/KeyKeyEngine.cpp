@@ -140,11 +140,12 @@ public:
 bool HasSmartMandarinData(OVSQLiteConnection* connection) {
     if (!connection || !connection->hasTable("unigrams") ||
         !connection->hasTable("bigrams")) return false;
-    std::unique_ptr<OVSQLiteStatement> count(connection->prepare(
-        "SELECT (SELECT count(*) FROM unigrams), "
-        "(SELECT count(*) FROM bigrams)"));
-    return count && count->step() == SQLITE_ROW &&
-           count->intOfColumn(0) >= 1000 && count->intOfColumn(1) > 0;
+    // Check the minimum usable row counts before TSF advises its key sink.
+    std::unique_ptr<OVSQLiteStatement> present(connection->prepare(
+        "SELECT EXISTS(SELECT 1 FROM unigrams LIMIT 1 OFFSET 999), "
+        "EXISTS(SELECT 1 FROM bigrams)"));
+    return present && present->step() == SQLITE_ROW &&
+           present->intOfColumn(0) != 0 && present->intOfColumn(1) != 0;
 }
 
 std::wstring ModuleDirectory() {

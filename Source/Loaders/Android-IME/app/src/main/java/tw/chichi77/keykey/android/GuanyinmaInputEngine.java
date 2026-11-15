@@ -15,6 +15,7 @@ final class GuanyinmaInputEngine implements InputEngine {
     private static final int PAGE_SIZE = InputEngine.CANDIDATES_PER_PAGE;
     private final String modelPath;
     private final String userDatabasePath;
+    private final boolean primeSmartMandarin;
     private GuanyinmaNative nativeSession;
     private JSONObject snapshot;
     private Predicate<String> candidateFilter;
@@ -35,7 +36,15 @@ final class GuanyinmaInputEngine implements InputEngine {
     GuanyinmaInputEngine(String modelPath, String userDatabasePath, ChineseInputMethod method,
             BopomofoKeyboardLayout layout, TableInputOptions options, boolean spaceSelects,
             boolean useBigrams, boolean hardwareSmartEditing, Predicate<String> filter) {
+        this(modelPath, userDatabasePath, method, layout, options, spaceSelects, useBigrams,
+                hardwareSmartEditing, false, filter);
+    }
+
+    GuanyinmaInputEngine(String modelPath, String userDatabasePath, ChineseInputMethod method,
+            BopomofoKeyboardLayout layout, TableInputOptions options, boolean spaceSelects,
+            boolean useBigrams, boolean hardwareSmartEditing, boolean primeSmartMandarin, Predicate<String> filter) {
         this.modelPath = modelPath; this.userDatabasePath = userDatabasePath;
+        this.primeSmartMandarin = primeSmartMandarin;
         this.layout = layout; this.options = InputEngine.copyOptions(options);
         this.spaceSelects = spaceSelects; this.useBigrams = useBigrams;
         this.hardwareSmartEditing = hardwareSmartEditing;
@@ -83,6 +92,7 @@ final class GuanyinmaInputEngine implements InputEngine {
     private JSONObject configuration(ChineseInputMethod method) {
         return object("method", methodName(method), "profile", hardwareSmartEditing ? "desktop" : "touch",
             "layout", layoutName(layout), "user_database", userDatabasePath,
+            "prime_smart_mandarin", primeSmartMandarin,
             "traditional_selection_keys", "123456789", "table_selection_keys", "123456789",
             "smart", smartOptions(), "learning", learningOptions(),
             "cangjie", tableOptionsJSON(method == ChineseInputMethod.CANGJIE ? options : new TableInputOptions(ChineseInputMethod.CANGJIE)),

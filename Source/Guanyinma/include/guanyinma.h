@@ -306,6 +306,9 @@ int32_t GUANYINMA_CALL guanyinma_database_associated_collections(
  * only that operation; snapshot returns no new host effects. Complete ordered
  * candidates and displayed_candidates are distinct arrays. Result row_count
  * means the complete candidate count for session results.
+ * The optional config boolean prime_smart_mandarin runs an internal sample
+ * through the new Smart session before open returns. The initial snapshot
+ * stays empty and the sample produces no host effects or user data writes.
  *
  * Session calls serialize internally. A close must not race with them.
  * Results remain valid after session_close. Caller-buffer and lifetime

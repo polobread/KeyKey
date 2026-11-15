@@ -107,6 +107,7 @@ public final class GuanyinmaInputEngine: InputEngine {
                 hardwareSmartEditing: Bool = false, keyboardLayout: BopomofoKeyboardLayout = .standard,
                 tableOptions: TableInputOptions = TableInputOptions(method: .cangjie),
                 spaceSelectsCandidates: Bool = false, omitsTones: Bool = false, associatedPhrases: AssociatedPhraseSource? = nil,
+                primeSmartMandarin: Bool = false,
                 candidateFilter: @escaping (String) -> Bool = { _ in true }) throws {
         self.modelURL = modelURL
         self.hardwareSmartEditing = hardwareSmartEditing
@@ -122,6 +123,7 @@ public final class GuanyinmaInputEngine: InputEngine {
         let configuration: [String: Any] = [
             "method": method.rawValue, "profile": hardwareSmartEditing ? "desktop" : "touch",
             "layout": Self.layoutName(keyboardLayout), "user_database": userDatabaseURL.path,
+            "prime_smart_mandarin": primeSmartMandarin,
             "traditional_selection_keys": "123456789", "table_selection_keys": "123456789",
             "smart": smart,
             "learning": ["user_phrases": true, "candidate_overrides": true, "bigrams": true, "table_learning": true],

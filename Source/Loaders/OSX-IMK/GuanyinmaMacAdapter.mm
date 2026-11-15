@@ -350,6 +350,12 @@ static bool OpenSession(const std::string& path, NSDictionary* configuration,
     const std::shared_ptr<NativeCandidateFilter>& filter,
     GuanyinmaSession** session, std::string* error)
 {
+    // Priming exercises the session's native candidate policy during open.
+    if (filter->service && [[configuration objectForKey:@"method"] isEqualToString:@"smart"]) {
+        NSMutableDictionary* liveConfiguration = [NSMutableDictionary dictionaryWithDictionary:configuration];
+        [liveConfiguration setObject:Boolean(true) forKey:@"prime_smart_mandarin"];
+        configuration = liveConfiguration;
+    }
     NSError* jsonError = nil;
     NSData* config = [NSJSONSerialization dataWithJSONObject:configuration options:0 error:&jsonError];
     if (!config) return Reject(error, UTF8String([jsonError localizedDescription]));
@@ -989,7 +995,8 @@ private:
 
 static OVEventHandlingContext* CreateContext(const std::string& identifier,
     const std::string& modelPath, const std::string& userDatabasePath,
-    std::shared_ptr<ModuleConfiguration> sharedConfig, std::string* error)
+    std::shared_ptr<ModuleConfiguration> sharedConfig, OVEncodingService* encodingService,
+    std::string* error)
 {
     if (error) error->clear();
     NSDictionary* configuration = Configuration(identifier, userDatabasePath, &sharedConfig->config, error);
@@ -997,7 +1004,7 @@ static OVEventHandlingContext* CreateContext(const std::string& identifier,
     std::string keys = SelectionKeys(identifier, configuration, modelPath, error);
     if (keys.empty()) return NULL;
     std::shared_ptr<NativeCandidateFilter> filter(new NativeCandidateFilter(
-        NativeEncoding(&sharedConfig->config)));
+        NativeEncoding(&sharedConfig->config), encodingService));
     GuanyinmaSession* session = NULL;
     if (!OpenSession(modelPath, configuration, filter, &session, error)) return NULL;
     GuanyinmaContext* context = new GuanyinmaContext(identifier, modelPath, userDatabasePath,
@@ -1153,7 +1160,7 @@ public:
     {
         std::string error;
         OVEventHandlingContext* context = CreateContext(m_identifier, m_modelPath,
-            m_userPath, m_config, &error);
+            m_userPath, m_config, m_service ? m_service->encodingService() : NULL, &error);
         if (context) return context;
         if (error.empty()) error = "input context could not be created";
         if (m_service) m_service->logger("Guanyinma") << m_identifier << ": " << error << std::endl;
@@ -1201,7 +1208,7 @@ OVEventHandlingContext* GuanyinmaCreateInputContext(const std::string& identifie
     OVKeyValueMap* moduleConfig, std::string* error)
 {
     return CreateContext(identifier, modelPath, userDatabasePath,
-        std::shared_ptr<ModuleConfiguration>(new ModuleConfiguration(moduleConfig)), error);
+        std::shared_ptr<ModuleConfiguration>(new ModuleConfiguration(moduleConfig)), NULL, error);
 }
 
 bool GuanyinmaPrepareCandidatePanelForKey(const OVKey* key, OVCandidateService* candidateService)

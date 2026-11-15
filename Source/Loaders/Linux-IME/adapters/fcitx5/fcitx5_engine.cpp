@@ -363,6 +363,7 @@ linux_ime::GuanyinmaConfig sessionSettings(const KeyKeyConfig &config, const std
     settings.inputMethod = method == "chichi77-keykey-cangjie" ? linux_ime::InputMethod::Cangjie
         : method == "chichi77-keykey-simplex" ? linux_ime::InputMethod::Simplex : linux_ime::InputMethod::Bopomofo;
     settings.smartMode = settings.inputMethod == linux_ime::InputMethod::Bopomofo && *config.bopomofoMode != "Traditional";
+    settings.primeSmartMandarin = settings.smartMode;
     const std::string &layout = *config.bopomofoLayout;
     settings.layout = layout == "ETen" ? linux_ime::BopomofoLayout::ETen
         : layout == "ETen26" ? linux_ime::BopomofoLayout::ETen26
@@ -414,6 +415,7 @@ public:
                      std::shared_ptr<const linux_ime::CinDictionary> simplified,
                      std::vector<std::string> collections,
                      linux_ime::GuanyinmaSession::CandidateFilter filter = {});
+    void prepareSession();
 private:
     struct ShiftPress { std::uint32_t eventTime = 0; std::chrono::steady_clock::time_point monotonicTime; };
     void toggleChineseMode();
@@ -421,7 +423,6 @@ private:
     void updateUi(const linux_ime::EngineResult &result);
     linux_ime::EngineResult currentView() const;
     bool quiet() const;
-    void prepareSession();
     void processRust(const linux_ime::KeyEvent &event, fcitx::KeyEvent &fcitxEvent,
                      bool playSound, const fcitx5_adapter::ErrorSound &errorSound);
     void applyRust(linux_ime::EngineResult result, bool offerAssociated = true);
@@ -573,8 +574,10 @@ public:
     void activate(const fcitx::InputMethodEntry &entry,
                   fcitx::InputContextEvent &event) override {
         auto *state = event.inputContext()->propertyFor(&factory_);
+        const auto original = event.inputContext()->watch();
         state->initializeMode(*config_.defaultChineseMode);
         requestSession(*state, entry.uniqueName());
+        if (original.isValid()) state->prepareSession();
     }
 
     void deactivate(const fcitx::InputMethodEntry &entry,
