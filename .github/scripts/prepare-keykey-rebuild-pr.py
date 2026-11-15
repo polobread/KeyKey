@@ -113,8 +113,12 @@ def publish(directory, root=ROOT, environment=None):
         require(files == [], 'A no-op rebuild must not publish generated files')
         print(report['publication_reason'])
         return {'status': 'unchanged'}
-    validate_context(environment)
     require(report.get('decision') in ('adopted', 'rejected'), 'Unknown rebuild decision')
+    delta = report['regression']
+    if delta['before'] == delta['after'] and delta['delta'] == 0:
+        print('Fixed regression totals are equal; skipping automatic rebuild PR publication.')
+        return {'status': 'equal_score'}
+    validate_context(environment)
     fingerprint = report.get('publication_fingerprint', '')
     require(re.fullmatch(r'[a-f0-9]{64}', fingerprint), 'Invalid rebuild publication fingerprint')
     files = generated_paths(root, files)

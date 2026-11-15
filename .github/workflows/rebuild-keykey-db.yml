@@ -149,7 +149,7 @@ jobs:
           python3 -B Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.py
           git diff --check
 
-      - name: Publish substantive generated changes once for review
+      - name: Publish substantive rebuilds with a nonzero score change
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -170,5 +170,9 @@ jobs:
                   summary.write(f"{report['validation_articles']} articles: {delta['before']} → {delta['after']} actions ({delta['delta']:+d}).\n\n")
                   summary.write(report['reason'] + '\n\n')
                   summary.write(report['publication_reason'] + '\n\n')
-                  summary.write('A new review PR is created only for substantive content without an existing review. No database artifact is uploaded.\n')
+                  if delta['before'] == delta['after'] and delta['delta'] == 0:
+                      summary.write('Automatic rebuild PR publication skipped because the fixed regression totals are equal.\n')
+                  else:
+                      summary.write('A new review PR requires substantive content without an existing review.\n')
+                  summary.write('No database artifact is uploaded.\n')
           PY
