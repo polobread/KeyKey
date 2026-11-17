@@ -16,6 +16,7 @@
     "TraditionalSelectionKeys": "123456789",
     "SmartMandarin": {
       "ShowCandidateListWithSpace": "True",
+      "OmitTone": "False",
       "CandidateCursorAtEndOfTargetBlock": "False",
       "CandidateSelectionKeys": "123456789",
       "ComposingTextBufferSize": "10",
