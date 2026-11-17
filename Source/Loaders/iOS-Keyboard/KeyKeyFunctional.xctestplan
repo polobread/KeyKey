@@ -27,6 +27,7 @@
         "KeyKeyUITests/testAcknowledgementsAreBundledAndReachable()",
         "KeyKeyUITests/testAppSettingsEntryOpensAndPersistsCompositionMode()",
         "KeyKeyUITests/testEnterDismissesAssociatedPhrasesBeforeSendingReturn()",
+        "KeyKeyUITests/testEtenLayoutsUseNativeKeysAndOmittedToneComposition()",
         "KeyKeyUITests/testFullProfilePortraitAndLandscapeKeepDeclaredKeysReachable()",
         "KeyKeyUITests/testLayoutOptionsFollowCandidateColorAndPersistIndependently()",
         "KeyKeyUITests/testRepresentativeLayoutOptionsKeepKeysReachableWhenRotating()",

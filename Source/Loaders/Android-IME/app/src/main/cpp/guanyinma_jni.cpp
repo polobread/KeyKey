@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 Chui-Ping Cheng. MIT License.
- * JNI only transports bytes, candidate policy and owned C ABI handles.
+ * JNI transports bytes, candidate policy, owned C ABI handles and keyboard geometry.
  * No input-method algorithm or Android-specific core policy lives here.
  */
 #include <jni.h>
@@ -172,7 +172,107 @@ jbyteArray resultBytes(JNIEnv* env, GuanyinmaResult* result) {
         throw std::runtime_error(coreError());
     return bytes(env, output.data(), required - 1);
 }
+// Android passes integer pixels. Pack two nonnegative Java ints without
+// allocating a JNI object on every keyboard draw or drag.
+jlong packKeyboardEdges(const GuanyinmaKeyboardEdges& edges) {
+    constexpr auto maxPixel = std::numeric_limits<jint>::max();
+    if (!(edges.top >= 0 && edges.top <= maxPixel && edges.bottom >= 0 && edges.bottom <= maxPixel))
+        throw std::runtime_error("Guanyinma returned keyboard edges outside Java pixel range");
+    return (static_cast<jlong>(edges.top) << 32) | static_cast<jlong>(edges.bottom);
+}
+
+jdouble keyboardScalarResult(JNIEnv* env, jclass bridge, int32_t status, double result) {
+    try {
+        if (status != GUANYINMA_OK) throw std::runtime_error(coreError());
+        return result;
+    } catch (const std::exception& error) { fail(env, bridge, error.what()); }
+    return 0;
+}
 } // namespace
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_tw_chichi77_keykey_android_GuanyinmaNative_nativeDragKeyboardEdge(
+    JNIEnv* env, jclass bridge, jint top, jint bottom, jint edge, jint delta,
+    jint minimumContent, jint maximumContent, jint maximumTop, jint maximumGap) {
+    try {
+        GuanyinmaKeyboardEdges result{};
+        if (guanyinma_keyboard_drag_edge(top, bottom, static_cast<uint32_t>(edge), delta,
+                minimumContent, maximumContent, maximumTop, maximumGap, &result) != GUANYINMA_OK)
+            throw std::runtime_error(coreError());
+        return packKeyboardEdges(result);
+    } catch (const std::exception& error) { fail(env, bridge, error.what()); }
+    return 0;
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_tw_chichi77_keykey_android_GuanyinmaNative_nativeFitKeyboardHeight(
+    JNIEnv* env, jclass bridge, jint desiredContent, jint desiredGap, jint windowHeight,
+    jint systemSpace, jint minimumContent) {
+    try {
+        GuanyinmaKeyboardEdges result{};
+        if (guanyinma_keyboard_fit_height(desiredContent, desiredGap, windowHeight, systemSpace,
+                minimumContent, &result) != GUANYINMA_OK)
+            throw std::runtime_error(coreError());
+        return packKeyboardEdges(result);
+    } catch (const std::exception& error) { fail(env, bridge, error.what()); }
+    return 0;
+}
+
+extern "C" JNIEXPORT jdouble JNICALL
+Java_tw_chichi77_keykey_android_GuanyinmaNative_nativeKeyboardKeycapScale(
+    JNIEnv* env, jclass bridge, jdouble areaRatio) {
+    double result{};
+    const int32_t status = guanyinma_keyboard_keycap_scale(areaRatio, &result);
+    return keyboardScalarResult(env, bridge, status, result);
+}
+
+extern "C" JNIEXPORT jdouble JNICALL
+Java_tw_chichi77_keykey_android_GuanyinmaNative_nativeKeyboardFontSize(
+    JNIEnv* env, jclass bridge, jint level, jdouble regularFit, jdouble largestFit) {
+    double result{};
+    const int32_t status = guanyinma_keyboard_font_size(static_cast<uint32_t>(level),
+        regularFit, largestFit, &result);
+    return keyboardScalarResult(env, bridge, status, result);
+}
+
+extern "C" JNIEXPORT jdouble JNICALL
+Java_tw_chichi77_keykey_android_GuanyinmaNative_nativeKeyboardStripScale(
+    JNIEnv* env, jclass bridge, jint level) {
+    double result{};
+    const int32_t status = guanyinma_keyboard_strip_scale(static_cast<uint32_t>(level), &result);
+    return keyboardScalarResult(env, bridge, status, result);
+}
+
+extern "C" JNIEXPORT jfloatArray JNICALL
+Java_tw_chichi77_keykey_android_GuanyinmaNative_nativeKeyboardRowLayout(
+    JNIEnv* env, jclass bridge, jdouble leadingUnits, jdouble totalUnits, jint splitIndex,
+    jdouble splitGap, jdoubleArray weights) {
+    try {
+        if (!weights) throw std::runtime_error("Guanyinma keyboard row requires key weights");
+        const jsize count = env->GetArrayLength(weights);
+        if (!count || count > std::numeric_limits<jsize>::max() / 2)
+            throw std::runtime_error("Guanyinma keyboard row has an invalid number of keys");
+        std::vector<double> widths(static_cast<size_t>(count));
+        env->GetDoubleArrayRegion(weights, 0, count, widths.data());
+        if (env->ExceptionCheck()) return nullptr;
+        std::vector<GuanyinmaKeyboardSlot> slots(widths.size());
+        // Android maps normalized coordinates to pixels when painting and hit-testing.
+        if (guanyinma_keyboard_row_layout(1, 0, leadingUnits, totalUnits,
+                static_cast<size_t>(splitIndex), splitGap, widths.data(), widths.size(),
+                slots.data()) != GUANYINMA_OK)
+            throw std::runtime_error(coreError());
+        const jsize edgeCount = count * 2;
+        std::vector<jfloat> edges(static_cast<size_t>(edgeCount));
+        for (size_t index = 0; index < slots.size(); ++index) {
+            edges[index * 2] = static_cast<jfloat>(slots[index].left);
+            edges[index * 2 + 1] = static_cast<jfloat>(slots[index].right);
+        }
+        jfloatArray result = env->NewFloatArray(edgeCount);
+        if (result) env->SetFloatArrayRegion(result, 0, edgeCount, edges.data());
+        return result;
+    } catch (const std::exception& error) { fail(env, bridge, error.what()); }
+    return nullptr;
+}
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_tw_chichi77_keykey_android_GuanyinmaNative_nativeOpen(

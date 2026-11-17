@@ -370,7 +370,7 @@ final class SettingsPanel: UIView {
         control.addTarget(self, action: #selector(toneOmissionChanged(_:)), for: .valueChanged)
         let help = helpButton(
             title: title,
-            message: "標準注音、許氏與漢語拼音都可連續輸入讀音，也可照常輸入聲調。",
+            message: "標準注音、許氏、漢語拼音、倚天與倚天 26 鍵都可連續輸入讀音，也可照常輸入聲調。",
             identifier: "omit-tones"
         )
         return helpRow(label, control: control, help: help)
@@ -396,11 +396,15 @@ final class SettingsPanel: UIView {
             message: BopomofoKeyboardLayout.settingsHelp,
             identifier: "keyboard-layout"
         )
-        return helpRow(label, control: control, help: help)
+        let row = UIStackView(arrangedSubviews: [helpRow(label, help: help), control])
+        row.axis = .vertical
+        return row
     }
 
     @objc private func keyboardLayoutChanged(_ sender: UISegmentedControl) {
-        keyboardLayout = BopomofoKeyboardLayout.allCases[sender.selectedSegmentIndex]
+        let layouts = BopomofoKeyboardLayout.allCases
+        guard layouts.indices.contains(sender.selectedSegmentIndex) else { return }
+        keyboardLayout = layouts[sender.selectedSegmentIndex]
         delegate?.settingsPanel(self, didChangeKeyboardLayout: keyboardLayout)
     }
 

@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="bopomofo_keyboard_layout">注音鍵盤</string>
-    <string name="bopomofo_keyboard_layout_description">好打與傳統注音、實體與虛擬鍵盤共用配置。預設標準。許氏與漢語拼音使用英文鍵帽。拼音一聲按空白，二至四聲按 2–4，輕聲按 5。拼音寫作 ü（注音「ㄩ」）時按 v，例如綠（lǜ）輸入 lv4。</string>
+    <string name="bopomofo_keyboard_layout_description">好打與傳統注音、實體與虛擬鍵盤共用配置。預設標準。許氏、倚天 26 鍵與漢語拼音使用英文鍵帽。拼音一聲按空白，二至四聲按 2–4，輕聲按 5。拼音寫作 ü（注音「ㄩ」）時按 v，例如綠（lǜ）輸入 lv4。</string>
     <string-array name="bopomofo_keyboard_layouts">
         <item>標準</item>
         <item>許氏鍵盤</item>
         <item>漢語拼音</item>
+        <item>倚天</item>
+        <item>倚天 26 鍵</item>
     </string-array>
     <string name="app_name">琦琦輸入法</string>
     <string name="ime_name">@string/app_name</string>
@@ -104,7 +106,6 @@
     <string name="bottom_language_space_enabled">預留底部切換語言空間</string>
     <string name="integrated_bottom_controls_enabled">整合底部控制鍵</string>
     <string name="integrated_bottom_controls_description">在「設」右側加入收鍵盤，取消琦琦預留的底部空間。長按「設」可開啟輸入法清單；系統要求的地球鍵保留在最左側。支援的系統會嘗試收起輸入法控制列；不改變系統導覽設定。</string>
-    <string name="touch_bottom_space_description">開啟時為系統的切換語言按鈕預留空間；關閉時虛擬鍵盤貼齊底部。開啟「整合底部控制鍵」時，由該功能管理底部空間。</string>
     <string name="hardware_bottom_space_description">開啟時為系統的切換語言按鈕預留空間；關閉時候選列貼齊底部。使用浮動候選字窗時無法調整。</string>
     <string-array name="floating_candidate_layouts">
         <item>垂直選字窗</item>
@@ -136,11 +137,11 @@
     <string name="phrase_collection_item">%1$s　%2$s</string>
     <string name="privacy_note">字典、組字與選字均在裝置上執行；付費支持由 Google Play 結帳服務處理。輸入內容不會傳送給開發者。</string>
     <string name="smart_omit_tone">好打注音省略聲調</string>
-    <string name="smart_omit_tone_description">預設關閉，適用於好打注音的標準、許氏與漢語拼音觸控鍵盤。中文字放在 11 格組字區，讀音留在 App 輸入框，點一格即可換字。切換配置時會保留此設定，也可照常輸入聲調。</string>
+    <string name="smart_omit_tone_description">預設關閉，適用於好打注音的五種觸控鍵盤。中文字放在 11 格組字區，讀音留在 App 輸入框，點一格即可換字。切換配置時會保留此設定，也可照常輸入聲調。</string>
     <string name="smart_space_selects_candidates">好打注音使用空白鍵選字</string>
     <string name="smart_space_selects_candidates_description">僅適用好打注音，虛擬與實體鍵盤共用。預設關閉：讀音完成後，在組字區插入空白，仍可繼續輸入及回頭選字；未完成讀音時仍以空白結束一聲。開啟後，空白鍵可完成讀音、開啟候選及翻頁。關閉時仍可點選組字或按實體鍵盤 ↓ 開啟候選。</string>
     <string name="keyboard_layout_profile">版面</string>
-    <string name="keyboard_layout_profile_description">版面、鍵帽間隔、字體與刪除鍵位置可獨立搭配；標準與許氏注音鍵位另行設定。</string>
+    <string name="keyboard_layout_profile_description">版面、鍵帽間隔、字體與刪除鍵位置可獨立搭配；注音鍵位另行設定。</string>
     <string name="keyboard_keycap_area">鍵帽間隔</string>
     <string name="keyboard_spacing_small">小</string>
     <string name="keyboard_spacing_medium">中</string>

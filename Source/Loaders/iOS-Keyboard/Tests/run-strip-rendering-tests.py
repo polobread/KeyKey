@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Run production composition, candidate, and function-button rendering in UIKit.
 
-Requires an explicitly selected, booted iOS Simulator. No product app, engine,
-keyboard preference, or Xcode project is changed. Source declarations are read
+Requires an explicitly selected, booted iOS Simulator and the pinned Rust
+toolchain. No product app, keyboard preference, or Xcode project is changed. Source declarations are read
 from the working tree on every run; there is no second renderer implementation.
 """
 from __future__ import annotations
@@ -21,6 +21,8 @@ ROOT = Path(__file__).resolve().parents[4]
 IOS = ROOT / "Source/Loaders/iOS-Keyboard"
 BUTTON_SOURCE = IOS / "Keyboard/KeyboardView.swift"
 FONT_SOURCE = IOS / "KeyKeyEngine/Sources/KeyKeyEngine/KeyboardLayoutProfile.swift"
+C_MODULE = IOS / "KeyKeyEngine/Sources/CGuanyinma/include"
+CORE_BUILDER = ROOT / "Source/Guanyinma/tools/build-ios-core.sh"
 BUNDLE_ID = "io.github.polobread.keykey.strip-rendering-tests"
 
 
@@ -416,7 +418,7 @@ private final class RenderingTestApplication: UIResponder, UIApplicationDelegate
 '''
 
 
-def execute(source: Path, output: Path, device: str) -> dict:
+def execute(source: Path, output: Path, device: str, core_archive: Path, architecture: str) -> dict:
     output.mkdir(parents=True, exist_ok=True)
     source_bytes = source.read_bytes()
     font_bytes = FONT_SOURCE.read_bytes()
@@ -429,18 +431,18 @@ def execute(source: Path, output: Path, device: str) -> dict:
                  "@MainActor\n" + declaration(button_text, "private final class KeyboardStripButton:"),
                  "@MainActor\n" + declaration(button_text, "private final class KeyboardKeyButton:")]
     token = str(uuid.uuid4())
-    generated = "import UIKit\n" + "\n\n".join(extracted) + "\nlet RUN_TOKEN = " + json.dumps(token) + "\nlet RENDER_SETTLE_MS = 350\n" + SWIFT_TESTS
+    generated = "import CGuanyinma\nimport UIKit\n" + "\n\n".join(extracted) + "\nlet RUN_TOKEN = " + json.dumps(token) + "\nlet RENDER_SETTLE_MS = 350\n" + SWIFT_TESTS
     swift = output / "StripRendering.swift"
     swift.write_text(generated)
     app = output / "KeyKeyStripRenderingTests.app"
     app.mkdir(exist_ok=True)
     executable = app / "KeyKeyStripRenderingTests"
     sdk = run("xcrun", "--sdk", "iphonesimulator", "--show-sdk-path", capture_output=True).stdout.strip()
-    architecture = "arm64" if platform.machine() == "arm64" else "x86_64"
     with (output / "compile.log").open("w") as log:
         run("xcrun", "--sdk", "iphonesimulator", "swiftc", "-sdk", sdk, "-target", f"{architecture}-apple-ios17.0-simulator",
             "-module-cache-path", str(output / "ModuleCache"), "-parse-as-library",
-            str(swift), "-framework", "UIKit", "-o", str(executable), stdout=log, stderr=subprocess.STDOUT)
+            "-I", str(C_MODULE), str(swift), str(core_archive), "-lsqlite3", "-liconv",
+            "-framework", "UIKit", "-o", str(executable), stdout=log, stderr=subprocess.STDOUT)
     (app / "Info.plist").write_bytes(plistlib.dumps({
         "CFBundleIdentifier": BUNDLE_ID, "CFBundleName": "KeyKeyStripRenderingTests",
         "CFBundleExecutable": executable.name, "CFBundlePackageType": "APPL",
@@ -482,10 +484,19 @@ def main() -> int:
     matches = [item for group in devices["devices"].values() for item in group if item["udid"] == args.device]
     if len(matches) != 1 or matches[0]["state"] != "Booted":
         parser.error("--device must identify one already booted, available Simulator")
+    output = output.resolve()
+    output.mkdir(parents=True, exist_ok=True)
+    core_output = output / "Guanyinma"
+    architecture = "arm64" if platform.machine() == "arm64" else "x86_64"
+    with (output / "core-build.log").open("w") as log:
+        run("env", "PLATFORM_NAME=iphonesimulator", f"ARCHS={architecture}",
+            f"GUANYINMA_OUTPUT_DIR={core_output}", "bash", str(CORE_BUILDER), stdout=log, stderr=subprocess.STDOUT)
+    core_archive = core_output / "libguanyinma.a"
     reports = {}
     if args.negative_control:
-        reports["negativeControl"] = execute(args.negative_control.resolve(), output / "negative-control", args.device)
-    reports["current"] = execute(BUTTON_SOURCE, output / "current", args.device)
+        reports["negativeControl"] = execute(args.negative_control.resolve(), output / "negative-control",
+            args.device, core_archive, architecture)
+    reports["current"] = execute(BUTTON_SOURCE, output / "current", args.device, core_archive, architecture)
     (output / "summary.json").write_text(json.dumps(reports, ensure_ascii=False, indent=2) + "\n")
     return 1 if reports["current"]["failedCount"] or (args.negative_control and reports["negativeControl"]["failedCount"] == 0) else 0
 

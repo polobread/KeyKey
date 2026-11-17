@@ -8,13 +8,11 @@ record KeyboardEdgeGeometry(int top, int bottom) {
 
     KeyboardEdgeGeometry drag(boolean topEdge, int delta, int minContent, int maxContent,
             int maxExtent, int maxBottom) {
-        if (topEdge) {
-            int minTop = bottom + minContent;
-            int maxTop = Math.min(maxExtent, bottom + maxContent);
-            return new KeyboardEdgeGeometry(Math.max(minTop, Math.min(maxTop, top + delta)), bottom);
-        }
-        int minBottom = Math.max(0, top - maxContent);
-        int maxGap = Math.min(maxBottom, top - minContent);
-        return new KeyboardEdgeGeometry(top, Math.max(minBottom, Math.min(maxGap, bottom + delta)));
+        return fromNative(GuanyinmaNative.nativeDragKeyboardEdge(top, bottom, topEdge ? 0 : 1,
+                delta, minContent, maxContent, maxExtent, maxBottom));
+    }
+
+    static KeyboardEdgeGeometry fromNative(long packed) {
+        return new KeyboardEdgeGeometry((int) (packed >>> 32), (int) packed);
     }
 }

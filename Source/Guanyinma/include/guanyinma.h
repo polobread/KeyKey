@@ -75,6 +75,58 @@ enum {
 
 uint32_t GUANYINMA_CALL guanyinma_abi_version(void);
 
+/* Stateless keyboard geometry. The caller uses a consistent unit and measures
+ * edges upward from the usable bottom. top - bottom is content height, bottom
+ * is user clearance. A positive drag delta moves the selected edge upward.
+ * edge: 0 = top, 1 = bottom. Pass the original geometry at the start of a drag
+ * and the total delta since then. The opposite edge stays fixed.
+ * The fit function takes the actual window height and the occupied system space
+ * within it. If necessary, clearance is reduced to protect minimum content.
+ * Sizes are finite and nonnegative. Invalid input returns INVALID_ARGUMENT and
+ * leaves the caller's output unchanged. No handles or allocations are returned.
+ */
+typedef struct {
+    double top;
+    double bottom;
+} GuanyinmaKeyboardEdges;
+
+int32_t GUANYINMA_CALL guanyinma_keyboard_drag_edge(
+    double top, double bottom, uint32_t edge, double delta,
+    double minimum_content, double maximum_content, double maximum_top,
+    double maximum_gap, GuanyinmaKeyboardEdges *output);
+
+int32_t GUANYINMA_CALL guanyinma_keyboard_fit_height(
+    double desired_content, double desired_gap, double window_height,
+    double system_space, double minimum_content, GuanyinmaKeyboardEdges *output);
+
+/* Stateless keyboard appearance. The keycap area ratio is in [0, 1].
+ * Font levels 0..3 select normal, medium, large or extra-large. Supply the
+ * frontend's native measured fits using a consistent unit; strip scale is a
+ * unitless multiplier. Invalid input leaves the output unchanged.
+ */
+int32_t GUANYINMA_CALL guanyinma_keyboard_keycap_scale(double area_ratio, double *output);
+int32_t GUANYINMA_CALL guanyinma_keyboard_font_size(
+    uint32_t level, double regular_fit, double largest_fit, double *output);
+int32_t GUANYINMA_CALL guanyinma_keyboard_strip_scale(uint32_t level, double *output);
+
+/* Lay out count slots from left to right in the measured width. All sizes use
+ * the caller's unit. Positive total_units defines a shared pitch; leading_units
+ * indents that fixed-pitch row. Zero total_units distributes width by each
+ * group's key weights. A nonzero split_index in the latter mode divides the
+ * row into equal-width groups separated by split_gap.
+ * Arrays must each contain count elements and must not overlap.
+ * Invalid input leaves the output unchanged.
+ */
+typedef struct {
+    double left;
+    double right;
+} GuanyinmaKeyboardSlot;
+
+int32_t GUANYINMA_CALL guanyinma_keyboard_row_layout(
+    double width, double spacing, double leading_units, double total_units,
+    size_t split_index, double split_gap, const double *weights, size_t count,
+    GuanyinmaKeyboardSlot *output);
+
 /* Stateless composed-reading codec: no model, user store or session required.
  * Strict UTF-8 JSON request:
  * {"operation":"encode","reading":"ㄋㄧˇ,ㄏㄠˇ","options":{...}}

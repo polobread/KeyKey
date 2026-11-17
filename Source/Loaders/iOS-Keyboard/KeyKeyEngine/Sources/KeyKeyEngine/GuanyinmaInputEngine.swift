@@ -175,6 +175,8 @@ public final class GuanyinmaInputEngine: InputEngine {
         case .standard: return "standard"
         case .hsu: return "hsu"
         case .hanyuPinyin: return "hanyu_pinyin"
+        case .eten: return "eten"
+        case .eten26: return "eten26"
         }
     }
     private static func smartConfiguration(hardware: Bool, space: Bool, phoneticGrid: Bool = false) -> [String: Any] {

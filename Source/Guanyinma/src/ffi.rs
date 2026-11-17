@@ -6,6 +6,11 @@
 use crate::associated::CollectionOrder;
 use crate::database::{DatabaseError, ModelDatabase, Table};
 use crate::engine::{EngineError, InputOperation, InputSession, SessionConfig, SessionSnapshot};
+use crate::keyboard_appearance::{key_font_size, keycap_scale, strip_font_scale};
+use crate::keyboard_height::{
+    fit_keyboard_height, KeyboardEdge, KeyboardEdges, KeyboardHeightLimits,
+};
+use crate::keyboard_layout::{KeyboardRowLayout, KeyboardSlot};
 use crate::reading_codec::{decode_reading, encode_reading, DecodeOptions, EncodeOptions};
 use crate::user_archive::UserArchive;
 use crate::user_store::UserSnapshot;
@@ -258,6 +263,164 @@ fn session_result(snapshot: &SessionSnapshot) -> Result<GuanyinmaResult, FfiErro
     Ok(GuanyinmaResult {
         json,
         row_count: snapshot.candidates.len(),
+    })
+}
+
+/// Move one keyboard edge within the caller's limits. No session is required.
+///
+/// # Safety
+/// A non-NULL output must be aligned and writable for one KeyboardEdges.
+#[no_mangle]
+pub unsafe extern "C" fn guanyinma_keyboard_drag_edge(
+    top: f64,
+    bottom: f64,
+    edge: u32,
+    delta: f64,
+    minimum_content: f64,
+    maximum_content: f64,
+    maximum_top: f64,
+    maximum_gap: f64,
+    output: *mut KeyboardEdges,
+) -> i32 {
+    // SAFETY: The caller guarantees a writable output, or passes NULL.
+    unsafe {
+        keyboard_result(output, || {
+            let edge = match edge {
+                0 => KeyboardEdge::Top,
+                1 => KeyboardEdge::Bottom,
+                _ => return None,
+            };
+            KeyboardEdges { top, bottom }.drag(
+                edge,
+                delta,
+                KeyboardHeightLimits {
+                    minimum_content,
+                    maximum_content,
+                    maximum_top,
+                    maximum_gap,
+                },
+            )
+        })
+    }
+}
+
+/// Fit keyboard content and clearance to the height available to the caller.
+///
+/// # Safety
+/// A non-NULL output must be aligned and writable for one KeyboardEdges.
+#[no_mangle]
+pub unsafe extern "C" fn guanyinma_keyboard_fit_height(
+    desired_content: f64,
+    desired_gap: f64,
+    window_height: f64,
+    system_space: f64,
+    minimum_content: f64,
+    output: *mut KeyboardEdges,
+) -> i32 {
+    // SAFETY: The caller guarantees a writable output, or passes NULL.
+    unsafe {
+        keyboard_result(output, || {
+            fit_keyboard_height(
+                desired_content,
+                desired_gap,
+                window_height,
+                system_space,
+                minimum_content,
+            )
+        })
+    }
+}
+
+/// Convert the painted keycap's area ratio to its centred linear scale.
+///
+/// # Safety
+/// A non-NULL output must be aligned and writable for one f64.
+#[no_mangle]
+pub unsafe extern "C" fn guanyinma_keyboard_keycap_scale(area_ratio: f64, output: *mut f64) -> i32 {
+    // SAFETY: The caller guarantees a writable output, or passes NULL.
+    unsafe { keyboard_result(output, || keycap_scale(area_ratio)) }
+}
+
+/// Pick a font size between the two fits measured by the frontend.
+///
+/// # Safety
+/// A non-NULL output must be aligned and writable for one f64.
+#[no_mangle]
+pub unsafe extern "C" fn guanyinma_keyboard_font_size(
+    level: u32,
+    regular_fit: f64,
+    largest_fit: f64,
+    output: *mut f64,
+) -> i32 {
+    // SAFETY: The caller guarantees a writable output, or passes NULL.
+    unsafe { keyboard_result(output, || key_font_size(level, regular_fit, largest_fit)) }
+}
+
+/// Scale the primary candidate and composition text for the selected level.
+///
+/// # Safety
+/// A non-NULL output must be aligned and writable for one f64.
+#[no_mangle]
+pub unsafe extern "C" fn guanyinma_keyboard_strip_scale(level: u32, output: *mut f64) -> i32 {
+    // SAFETY: The caller guarantees a writable output, or passes NULL.
+    unsafe { keyboard_result(output, || strip_font_scale(level)) }
+}
+
+/// Lay out one row for the supplied pitch, weights and optional split.
+///
+/// # Safety
+/// weights must be readable and output writable, each aligned for count
+/// elements. The arrays cannot overlap.
+#[no_mangle]
+pub unsafe extern "C" fn guanyinma_keyboard_row_layout(
+    width: f64,
+    spacing: f64,
+    leading_units: f64,
+    total_units: f64,
+    split_index: usize,
+    split_gap: f64,
+    weights: *const f64,
+    count: usize,
+    output: *mut KeyboardSlot,
+) -> i32 {
+    boundary(|| {
+        if weights.is_null()
+            || output.is_null()
+            || count == 0
+            || count > isize::MAX as usize / std::mem::size_of::<KeyboardSlot>()
+        {
+            return Err(FfiError::invalid("invalid keyboard row arrays"));
+        }
+        // SAFETY: A valid caller provides count readable weights for this call.
+        let weights = unsafe { slice::from_raw_parts(weights, count) };
+        let slots = KeyboardRowLayout {
+            width,
+            spacing,
+            leading_units,
+            total_units,
+            split_index,
+            split_gap,
+        }
+        .slots(weights)
+        .ok_or_else(|| FfiError::invalid("invalid keyboard row layout"))?;
+        // SAFETY: The caller supplies count writable slots, distinct from the input.
+        unsafe { ptr::copy_nonoverlapping(slots.as_ptr(), output, slots.len()) };
+        Ok(())
+    })
+}
+
+unsafe fn keyboard_result<T>(output: *mut T, calculation: impl FnOnce() -> Option<T>) -> i32 {
+    boundary(|| {
+        if output.is_null() {
+            return Err(FfiError::invalid(
+                "keyboard calculation output pointer is null",
+            ));
+        }
+        let value =
+            calculation().ok_or_else(|| FfiError::invalid("invalid keyboard calculation input"))?;
+        // SAFETY: The caller supplies a writable, aligned output slot.
+        unsafe { output.write(value) };
+        Ok(())
     })
 }
 

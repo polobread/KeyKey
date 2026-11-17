@@ -1,3 +1,4 @@
+import CGuanyinma
 import Foundation
 
 /// Positions measured up from the keyboard's usable bottom, as fractions of
@@ -22,16 +23,36 @@ public struct KeyboardEdgeGeometry: Equatable, Sendable {
         self.bottom = min(bottomMax, max(bottomMin, bottom.isFinite ? bottom : 0))
     }
 
+    private init(clampedEdges: GuanyinmaKeyboardEdges) {
+        self.top = clampedEdges.top
+        self.bottom = clampedEdges.bottom
+    }
+
     public func moving(_ edge: Edge, by delta: Double) -> Self {
-        guard delta.isFinite else { return self }
-        switch edge {
-        case .top:
-            let lowerBound = bottom + Self.minimumHeight
-            let upperBound = min(Self.maximumTop, bottom + Self.maximumHeight)
-            return Self(top: min(upperBound, max(lowerBound, top + delta)), bottom: bottom)
-        case .bottom:
-            return Self(top: top, bottom: bottom + delta)
-        }
+        var edges = GuanyinmaKeyboardEdges()
+        let status = guanyinma_keyboard_drag_edge(top, bottom, edge == .top ? 0 : 1, delta,
+            Self.minimumHeight, Self.maximumHeight, Self.maximumTop, Self.maximumBottom, &edges)
+        return status == 0 ? Self(clampedEdges: edges) : self
+    }
+
+    public func fittedBottomGap(defaultHeight: Double, usableHeight: Double, safeAreaInsetHeight: Double) -> Double {
+        let minimumUsable = max(0, defaultHeight * Self.minimumHeight - safeAreaInsetHeight)
+        return KeyboardHeight.fit(content: usableHeight, gap: bottom * defaultHeight,
+            in: usableHeight + safeAreaInsetHeight, systemSpace: safeAreaInsetHeight,
+            minimumContent: minimumUsable)?.bottom ?? 0
+    }
+}
+
+public enum KeyboardHeight {
+    public static func fittedContentHeight(_ content: Double, in viewport: Double) -> Double {
+        fit(content: content, gap: 0, in: viewport, systemSpace: 0, minimumContent: content)?.top ?? 0
+    }
+
+    fileprivate static func fit(content: Double, gap: Double, in viewport: Double,
+                                systemSpace: Double, minimumContent: Double) -> GuanyinmaKeyboardEdges? {
+        var edges = GuanyinmaKeyboardEdges()
+        let status = guanyinma_keyboard_fit_height(content, gap, viewport, systemSpace, minimumContent, &edges)
+        return status == 0 ? edges : nil
     }
 }
 

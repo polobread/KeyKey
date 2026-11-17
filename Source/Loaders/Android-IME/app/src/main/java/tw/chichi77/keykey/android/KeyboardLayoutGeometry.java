@@ -1,6 +1,7 @@
 package tw.chichi77.keykey.android;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /** Normalized key slots shared by drawing and hit testing, independent of Android views. */
@@ -16,14 +17,11 @@ final class KeyboardLayoutGeometry {
             throw new IllegalArgumentException("A split strip needs equal halves");
         }
         float gap = widthDp > 0 ? centreGapDp(widthDp) / widthDp : 0;
-        float half = (1 - gap) / 2;
-        int perSide = cellCount / 2;
-        var slots = new ArrayList<StripSlot>();
+        float[] edges = GuanyinmaNative.nativeKeyboardRowLayout(0, 0, cellCount / 2, gap,
+                uniformWeights(cellCount));
+        var slots = new ArrayList<StripSlot>(cellCount);
         for (int index = 0; index < cellCount; index++) {
-            int column = index % perSide;
-            float origin = index < perSide ? 0 : half + gap;
-            slots.add(new StripSlot(origin + half * column / perSide,
-                    column == perSide - 1 ? origin + half : origin + half * (column + 1) / perSide));
+            slots.add(new StripSlot(edges[index * 2], edges[index * 2 + 1]));
         }
         return List.copyOf(slots);
     }
@@ -31,7 +29,14 @@ final class KeyboardLayoutGeometry {
     static List<List<String>> resolvedRows(KeyboardLayoutProfile profile,
             KeyboardLayoutProfile.Orientation orientation, KeyboardLayoutProfile.Plane plane,
             boolean shifted, KeyboardLayoutProfile.DeletePosition deletePosition) {
-        var rows = profile.layout(orientation).rows(plane, shifted, deletePosition);
+        return resolvedRows(profile, orientation, plane, shifted, deletePosition, BopomofoKeyboardLayout.STANDARD);
+    }
+
+    static List<List<String>> resolvedRows(KeyboardLayoutProfile profile,
+            KeyboardLayoutProfile.Orientation orientation, KeyboardLayoutProfile.Plane plane,
+            boolean shifted, KeyboardLayoutProfile.DeletePosition deletePosition,
+            BopomofoKeyboardLayout keyboardLayout) {
+        var rows = profile.layout(orientation).rows(plane, shifted, deletePosition, keyboardLayout);
         if (!profile.split) return rows;
         // Split is one twelve-column design on phones and tablets in either direction.
         var result = new ArrayList<List<String>>();
@@ -79,8 +84,16 @@ final class KeyboardLayoutGeometry {
             KeyboardLayoutProfile.Plane plane, boolean shifted,
             KeyboardLayoutProfile.DeletePosition deletePosition, float widthDp,
             boolean integrated, boolean showGlobe) {
+        return keys(profile, orientation, plane, shifted, deletePosition, widthDp, integrated, showGlobe,
+                BopomofoKeyboardLayout.STANDARD);
+    }
+
+    static List<Key> keys(KeyboardLayoutProfile profile, KeyboardLayoutProfile.Orientation orientation,
+            KeyboardLayoutProfile.Plane plane, boolean shifted,
+            KeyboardLayoutProfile.DeletePosition deletePosition, float widthDp,
+            boolean integrated, boolean showGlobe, BopomofoKeyboardLayout keyboardLayout) {
         var layout = profile.layout(orientation);
-        var rows = resolvedRows(profile, orientation, plane, shifted, deletePosition);
+        var rows = resolvedRows(profile, orientation, plane, shifted, deletePosition, keyboardLayout);
         float effectiveColumns = 0;
         for (int row = 0; row < rows.size(); row++) {
             effectiveColumns = Math.max(effectiveColumns, rows.get(row).size() + layout.rowOffset(plane, row));
@@ -90,93 +103,83 @@ final class KeyboardLayoutGeometry {
         List<Key> result = new ArrayList<>();
         for (int row = 0; row < rows.size(); row++) {
             var actions = rows.get(row);
-            if (profile.split) {
-                int boundary = actions.size() / 2;
-                addSplitGroup(result, actions, boundary, gap, row * rowHeight, (row + 1) * rowHeight, null);
-            } else {
-                float columns = profile.staggered ? effectiveColumns : actions.size();
-                float offset = layout.rowOffset(plane, row);
-                for (int column = 0; column < actions.size(); column++) {
-                    float right = (offset + column + 1) / columns;
-                    if (profile.staggered && row == rows.size() - 1 && column == actions.size() - 1) right = 1;
-                    result.add(new Key(actions.get(column), (offset + column) / columns,
-                            row * rowHeight, right, (row + 1) * rowHeight));
-                }
+            int boundary = profile.split ? actions.size() / 2 : 0;
+            double columns = profile.staggered ? effectiveColumns : 0;
+            double leading = profile.staggered ? layout.rowOffset(plane, row) : 0;
+            double[] weights = uniformWeights(actions.size());
+            if (profile.staggered && row == rows.size() - 1) {
+                // The last key on the standard row extends to the right edge.
+                weights[weights.length - 1] = columns - leading - (weights.length - 1);
             }
+            addRow(result, actions, leading, columns, boundary, profile.split ? gap : 0,
+                    row * rowHeight, (row + 1) * rowHeight, weights);
         }
         var functions = resolvedFunctionKeys(profile, orientation, deletePosition, integrated, showGlobe);
         if (profile.split) {
             int boundary = functions.indexOf("SPACE") + 1;
             float columnsPerSide = rows.get(0).size() / 2f;
-            var weights = new ArrayList<Float>();
-            for (String action : functions) {
-                weights.add(switch (action) {
-                    case "MODE" -> showGlobe ? 1f : 1.5f;
-                    case "SPACE" -> 0f;
-                    case "BACKSPACE", "ENTER" -> 2f;
-                    default -> 1f;
-                });
+            double[] weights = new double[functions.size()];
+            for (int index = 0; index < functions.size(); index++) {
+                weights[index] = switch (functions.get(index)) {
+                    case "MODE" -> showGlobe ? 1 : 1.5;
+                    case "SPACE" -> 0;
+                    case "BACKSPACE", "ENTER" -> 2;
+                    default -> 1;
+                };
             }
             fillSplitSpaceWeight(functions, weights, 0, boundary, columnsPerSide);
             fillSplitSpaceWeight(functions, weights, boundary, functions.size(), columnsPerSide);
-            addSplitGroup(result, functions, boundary, gap,
-                    rows.size() * rowHeight, 1, weights);
+            addRow(result, functions, 0, 0, boundary, gap, rows.size() * rowHeight, 1, weights);
         } else {
-            var weights = new ArrayList<Float>();
-            for (String action : functions) {
-                float weight = layout.functionWeight(action, deletePosition);
-                weights.add(showGlobe && action.equals("MODE") ? 1f : weight);
+            double[] weights = new double[functions.size()];
+            for (int index = 0; index < functions.size(); index++) {
+                String action = functions.get(index);
+                weights[index] = showGlobe && action.equals("MODE") ? 1
+                        : layout.functionWeight(action, deletePosition);
             }
             // Non-split layouts retain their existing mode/space control budget.
             float releasedModeWeight = showGlobe ? layout.functionWeight("MODE", deletePosition) - 1f : 0;
-            donateSpaceWeight(functions, weights, 0, functions.size(), releasedModeWeight);
-            addGroup(result, functions, 0, functions.size(), 0, 1,
-                    rows.size() * rowHeight, 1, weights);
+            donateSpaceWeight(functions, weights, releasedModeWeight);
+            addRow(result, functions, 0, 0, 0, 0, rows.size() * rowHeight, 1, weights);
         }
         return List.copyOf(result);
     }
 
-    private static void fillSplitSpaceWeight(List<String> actions, List<Float> weights,
+    private static void fillSplitSpaceWeight(List<String> actions, double[] weights,
             int start, int end, float columnsPerSide) {
-        float fixed = 0;
+        double fixed = 0;
         int space = -1;
         for (int index = start; index < end; index++) {
             if (actions.get(index).equals("SPACE")) space = index;
-            else fixed += weights.get(index);
+            else fixed += weights[index];
         }
         // Control units are actual main-key columns; space takes the remainder.
-        weights.set(space, columnsPerSide - fixed);
+        weights[space] = columnsPerSide - fixed;
     }
 
-    private static void donateSpaceWeight(List<String> actions, List<Float> weights, int start, int end,
-            float releasedModeWeight) {
-        float donation = 0;
+    private static void donateSpaceWeight(List<String> actions, double[] weights, float releasedModeWeight) {
+        double donation = 0;
         int space = -1;
-        for (int index = start; index < end; index++) {
-            if (actions.get(index).equals("SPACE")) space = index;
-            if (actions.get(index).equals("GLOBE") || actions.get(index).equals("DISMISS")) donation += weights.get(index);
-            if (actions.get(index).equals("MODE")) donation -= releasedModeWeight;
+        for (int index = 0; index < actions.size(); index++) {
+            String action = actions.get(index);
+            if (action.equals("SPACE")) space = index;
+            if (action.equals("GLOBE") || action.equals("DISMISS")) donation += weights[index];
+            if (action.equals("MODE")) donation -= releasedModeWeight;
         }
-        if (space >= 0 && donation > 0) weights.set(space, Math.max(.5f, weights.get(space) - donation));
+        if (space >= 0 && donation > 0) weights[space] = Math.max(.5, weights[space] - donation);
     }
 
-    private static void addSplitGroup(List<Key> result, List<String> actions, int boundary,
-            float gap, float top, float bottom, List<Float> weights) {
-        float half = (1 - gap) / 2;
-        addGroup(result, actions, 0, boundary, 0, half, top, bottom, weights);
-        addGroup(result, actions, boundary, actions.size(), half + gap, 1, top, bottom, weights);
+    private static double[] uniformWeights(int count) {
+        double[] weights = new double[count];
+        Arrays.fill(weights, 1);
+        return weights;
     }
 
-    private static void addGroup(List<Key> result, List<String> actions, int start, int end,
-            float left, float right, float top, float bottom, List<Float> weights) {
-        float total = 0;
-        for (int index = start; index < end; index++) total += weights == null ? 1 : weights.get(index);
-        float cursor = left;
-        for (int index = start; index < end; index++) {
-            float next = index == end - 1 ? right
-                    : cursor + (right - left) * (weights == null ? 1 : weights.get(index)) / total;
-            result.add(new Key(actions.get(index), cursor, top, next, bottom));
-            cursor = next;
+    private static void addRow(List<Key> result, List<String> actions, double leading, double columns,
+            int splitIndex, float gap, float top, float bottom, double[] weights) {
+        float[] edges = GuanyinmaNative.nativeKeyboardRowLayout(leading, columns, splitIndex, gap, weights);
+        for (int index = 0; index < actions.size(); index++) {
+            result.add(new Key(actions.get(index), edges[index * 2], top, edges[index * 2 + 1], bottom));
         }
     }
 

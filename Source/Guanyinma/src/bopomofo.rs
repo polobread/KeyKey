@@ -350,8 +350,8 @@ fn component_key(layout: BopomofoLayout, component: u16) -> Option<u8> {
 }
 
 impl BopomofoLayout {
-    pub(crate) fn supports_touch_phonetics(self) -> bool {
-        matches!(self, Self::Standard | Self::Hsu | Self::HanyuPinyin)
+    pub(crate) fn has_ambiguous_tone_keys(self) -> bool {
+        matches!(self, Self::Hsu | Self::ETen26)
     }
 
     pub fn is_reading_key(self, key: char) -> bool {
@@ -776,14 +776,16 @@ fn parse_pinyin_prefix(raw: &str) -> (BopomofoSyllable, &str, bool) {
     )
 }
 
-/// Parse a Hsu syllable with the legacy positional rules. Require every
-/// key to contribute one component so a malformed slice cannot swallow the
-/// start of the next syllable through the legacy component replacement.
-fn hsu_phonetic_syllable(raw: &str, tone_key: Option<u8>) -> Option<BopomofoSyllable> {
+/// Apply the compact layouts' positional rules, requiring every key to
+/// contribute a component so a slice cannot swallow the next initial.
+fn compact_phonetic_syllable(
+    layout: BopomofoLayout,
+    raw: &str,
+    tone_key: Option<u8>,
+) -> Option<BopomofoSyllable> {
     if !(1..=3).contains(&raw.len()) {
         return None;
     }
-    let layout = BopomofoLayout::Hsu;
     let mut keys = [0; 4];
     keys[..raw.len()].copy_from_slice(raw.as_bytes());
     keys[raw.len()] = tone_key.unwrap_or(b' ');
@@ -803,7 +805,10 @@ fn hsu_phonetic_syllable(raw: &str, tone_key: Option<u8>) -> Option<BopomofoSyll
     {
         let key = spelling.next()?;
         if !(mapping(layout, key).contains(&component)
-            || (key == b'g' && component == J && matches!(syllable.component(MEDIAL), I | UE)))
+            || (layout == BopomofoLayout::Hsu
+                && key == b'g'
+                && component == J
+                && matches!(syllable.component(MEDIAL), I | UE)))
         {
             return None;
         }
@@ -819,8 +824,8 @@ pub(crate) fn phonetic_toned_syllable(
     tone_key: u8,
 ) -> Option<(BopomofoSyllable, usize)> {
     let tone = phonetic_tone(layout, tone_key)?;
-    let syllable = if layout == BopomofoLayout::Hsu {
-        hsu_phonetic_syllable(raw, Some(tone_key))?
+    let syllable = if layout.has_ambiguous_tone_keys() {
+        compact_phonetic_syllable(layout, raw, Some(tone_key))?
     } else {
         phonetic_syllable(layout, raw, true)?
     };
@@ -828,8 +833,8 @@ pub(crate) fn phonetic_toned_syllable(
 }
 
 /// Resolve a single raw syllable without ignoring trailing keys. For live
-/// Standard segmentation, components follow their written order. Explicit
-/// tone entry also accepts distinct components typed in the legacy order.
+/// Standard and ETen segmentation, components follow their written order.
+/// Explicit tone entry also accepts components typed in the legacy order.
 pub(crate) fn phonetic_syllable(
     layout: BopomofoLayout,
     raw: &str,
@@ -839,7 +844,7 @@ pub(crate) fn phonetic_syllable(
         return None;
     }
     match layout {
-        BopomofoLayout::Standard => {
+        BopomofoLayout::Standard | BopomofoLayout::ETen => {
             let mut previous = 0;
             let mut syllable = BopomofoSyllable::default();
             for key in raw.bytes() {
@@ -860,7 +865,9 @@ pub(crate) fn phonetic_syllable(
             }
             Some(syllable)
         }
-        BopomofoLayout::Hsu => hsu_phonetic_syllable(raw, None),
+        BopomofoLayout::Hsu | BopomofoLayout::ETen26 => {
+            compact_phonetic_syllable(layout, raw, None)
+        }
         BopomofoLayout::HanyuPinyin => {
             if !raw.bytes().all(|key| key.is_ascii_lowercase())
                 || (!explicit && !raw.bytes().any(|key| b"aeiouv".contains(&key)))
@@ -870,15 +877,20 @@ pub(crate) fn phonetic_syllable(
             let (syllable, remainder, well_formed) = parse_pinyin_prefix(raw);
             (well_formed && remainder.is_empty() && !syllable.is_empty()).then_some(syllable)
         }
-        _ => None,
     }
 }
 
 /// A first tone is explicit only if the key was actually entered.
 pub(crate) fn phonetic_tone(layout: BopomofoLayout, key: u8) -> Option<usize> {
     match (layout, key) {
-        (layout, b' ') if layout.supports_touch_phonetics() => Some(0),
-        (BopomofoLayout::Standard | BopomofoLayout::Hsu, key) => mapping(layout, key)
+        (_, b' ') => Some(0),
+        (
+            BopomofoLayout::Standard
+            | BopomofoLayout::Hsu
+            | BopomofoLayout::ETen
+            | BopomofoLayout::ETen26,
+            key,
+        ) => mapping(layout, key)
             .iter()
             .find(|&&component| component & TONE != 0)
             .map(|&component| usize::from((component & TONE) >> 11)),
@@ -895,7 +907,7 @@ pub(crate) fn phonetic_query(syllable: BopomofoSyllable, tone: usize) -> String 
 }
 
 pub(crate) fn phonetic_display(layout: BopomofoLayout, raw: &str) -> String {
-    if layout != BopomofoLayout::Standard {
+    if !matches!(layout, BopomofoLayout::Standard | BopomofoLayout::ETen) {
         return raw.to_owned();
     }
     raw.bytes()

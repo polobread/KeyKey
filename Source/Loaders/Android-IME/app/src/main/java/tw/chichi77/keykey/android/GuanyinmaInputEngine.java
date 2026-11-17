@@ -65,13 +65,6 @@ final class GuanyinmaInputEngine implements InputEngine {
         } catch (JSONException error) { throw new IllegalArgumentException("Invalid Guanyinma operation", error); }
     }
     private static String methodName(ChineseInputMethod method) { return method.name().toLowerCase(Locale.ROOT); }
-    private static String layoutName(BopomofoKeyboardLayout value) {
-        return switch (value) {
-            case STANDARD -> "standard";
-            case HSU -> "hsu";
-            case HANYU_PINYIN -> "hanyu_pinyin";
-        };
-    }
     private JSONObject smartOptions() {
         return object("use_bigrams", useBigrams, "space_opens_candidates", spaceSelects,
             "candidate_cursor_at_end", false, "clear_composing_with_escape", false,
@@ -91,7 +84,7 @@ final class GuanyinmaInputEngine implements InputEngine {
     }
     private JSONObject configuration(ChineseInputMethod method) {
         return object("method", methodName(method), "profile", hardwareSmartEditing ? "desktop" : "touch",
-            "layout", layoutName(layout), "user_database", userDatabasePath,
+            "layout", layout.coreValue, "user_database", userDatabasePath,
             "prime_smart_mandarin", primeSmartMandarin,
             "traditional_selection_keys", "123456789", "table_selection_keys", "123456789",
             "smart", smartOptions(), "learning", learningOptions(),
@@ -249,7 +242,7 @@ final class GuanyinmaInputEngine implements InputEngine {
     @Override public InputEngine.Result setKeyboardLayout(BopomofoKeyboardLayout value) {
         if (layout == value) return InputEngine.Result.update();
         InputEngine.Result result = operateAfterPhoneticHandoff(
-                object("type", "set_layout", "layout", layoutName(value)));
+                object("type", "set_layout", "layout", value.coreValue));
         if (lastError == null) { layout = value; clearOverlay(); }
         return result;
     }
@@ -328,19 +321,10 @@ final class GuanyinmaInputEngine implements InputEngine {
         }
         clearOverlay();
         String key = value.toLowerCase(Locale.ROOT);
-        String operation = touch && omitTone && isTouchSmartComposition() && isPhoneticKey(key)
+        String operation = touch && omitTone && isTouchSmartComposition()
+                && key.length() == 1 && layout.isPhoneticKey(key.charAt(0))
                 ? "touch_phonetic" : "character";
         return offerAssociated(operate(object("type", operation, "text", key)));
-    }
-    private boolean isPhoneticKey(String key) {
-        if (key.length() != 1) return false;
-        char character = key.charAt(0);
-        return switch (keyboardLayout()) {
-            case STANDARD -> !BopomofoKeyboardLayout.symbolForKey(character).isEmpty();
-            case HANYU_PINYIN -> (character >= 'a' && character <= 'z')
-                    || (character >= '2' && character <= '5');
-            case HSU -> character >= 'a' && character <= 'z';
-        };
     }
 
     @Override public InputEngine.Result handleHardwareCharacter(char value) {

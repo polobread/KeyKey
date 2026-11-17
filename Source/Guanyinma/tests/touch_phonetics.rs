@@ -98,6 +98,8 @@ fn grid_shows_converted_cells_and_reselects_one_without_discarding_the_raw_readi
         (BopomofoLayout::HanyuPinyin, "nihao", "nihao", "n"),
         (BopomofoLayout::Standard, "sucl", "ㄋㄧㄏㄠ", "s"),
         (BopomofoLayout::Hsu, "nehw", "nehw", "b"),
+        (BopomofoLayout::ETen, "nehz", "ㄋㄧㄏㄠ", "b"),
+        (BopomofoLayout::ETen26, "nehz", "nehz", "b"),
     ] {
         let mut input = grid_session(layout);
         let live = type_touch(&mut input, keys);
@@ -168,6 +170,43 @@ fn hsu_grid_handles_explicit_tones_and_keeps_a_possible_next_initial() {
 
     assert_eq!(type_touch(&mut input, "jxl").phonetic_grid, ["中"]);
     assert_eq!(key(&mut input, Key::Return).effects.commit, "中");
+}
+
+#[test]
+fn eten_grids_confirm_explicit_tones_and_keep_the_next_ambiguous_initial() {
+    for (layout, keys) in [
+        (BopomofoLayout::ETen, "ne3hz3"),
+        (BopomofoLayout::ETen26, "nejhzj"),
+    ] {
+        let mut input = grid_session(layout);
+        type_touch(&mut input, keys);
+        assert_eq!(
+            key(&mut input, Key::Return).effects.commit,
+            "你好",
+            "{layout:?}"
+        );
+
+        let partial = type_touch(
+            &mut input,
+            if layout == BopomofoLayout::ETen {
+                ",x-"
+            } else {
+                "gxl"
+            },
+        );
+        assert!(partial.phonetic_space_first_tone, "{layout:?}");
+        let confirmed = key(&mut input, Key::Space);
+        assert_eq!(confirmed.composition, "中", "{layout:?}");
+        assert_eq!(confirmed.readings.len(), 1, "{layout:?}");
+    }
+
+    let mut compact = grid_session(BopomofoLayout::ETen26);
+    let shared_initial = type_touch(&mut compact, "neka");
+    assert_eq!(shared_initial.phonetic_grid.len(), 2);
+    let opened = compact
+        .apply(InputOperation::OpenCandidates { index: 1 })
+        .unwrap();
+    assert!(opened.candidates.iter().any(|word| word == "卡"));
 }
 
 #[test]

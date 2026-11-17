@@ -99,9 +99,11 @@ final class KeyKeyUITests: XCTestCase {
         layout.buttons["許氏鍵盤"].tap()
         XCTAssertTrue(omission.isEnabled)
         XCTAssertEqual(omission.value as? String, "1")
-        layout.buttons["漢語拼音"].tap()
-        XCTAssertTrue(omission.isEnabled)
-        XCTAssertEqual(omission.value as? String, "1")
+        for name in ["漢語拼音", "倚天", "倚天 26 鍵"] {
+            layout.buttons[name].tap()
+            XCTAssertTrue(omission.isEnabled)
+            XCTAssertEqual(omission.value as? String, "1")
+        }
         omission.tap()
         layout.buttons["標準"].tap()
         XCTAssertEqual(omission.value as? String, "0")
@@ -526,6 +528,69 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(waitForLayout { output.value as? String == "中你好" })
         app.buttons["ENTER"].tap()
         XCTAssertEqual(output.value as? String, "中你好")
+    }
+
+    func testEtenLayoutsUseNativeKeysAndOmittedToneComposition() {
+        XCUIDevice.shared.orientation = .portrait
+        launchHostApp()
+        XCTAssertTrue(revealField("default"))
+        let output = field("default")
+        tapInputField(output)
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+
+        let settings = app.buttons["SETTINGS"]
+        let scroll = app.scrollViews["keyboard-settings.scroll"]
+        let layout = app.segmentedControls["bopomofo-keyboard-layout"]
+        let method = app.segmentedControls["bopomofo-composition-mode"]
+        let omission = app.switches["keyboard-settings.omit-tones"]
+        let done = app.windows.containing(.scrollView, identifier: "keyboard-settings.scroll")
+            .firstMatch.buttons["完成"]
+
+        settings.tap()
+        method.buttons["傳統注音"].tap()
+        revealSetting(layout, in: scroll)
+        layout.buttons["倚天"].tap()
+        done.tap()
+        XCTAssertEqual(app.buttons["n"].label, "ㄋ")
+        XCTAssertEqual(app.buttons["="].label, "ㄦ")
+        XCTAssertEqual(app.buttons["'"].label, "ㄘ")
+        XCTAssertTrue(app.buttons["EMOJI"].isHittable)
+        for key in "ne3" { app.buttons[String(key)].tap() }
+        let candidate = app.buttons["第 1 個候選，你"]
+        XCTAssertTrue(candidate.waitForExistence(timeout: 3))
+        let etenScreenshot = XCTAttachment(screenshot: app.screenshot())
+        etenScreenshot.name = "ios-eten-candidates"
+        etenScreenshot.lifetime = .keepAlways
+        add(etenScreenshot)
+        candidate.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "你" })
+
+        settings.tap()
+        method.buttons["好打注音"].tap()
+        revealSetting(omission, in: scroll)
+        if omission.value as? String == "0" { omission.tap() }
+        revealSetting(layout, in: scroll)
+        layout.buttons["倚天 26 鍵"].tap()
+        XCTAssertTrue(omission.isEnabled)
+        XCTAssertEqual(omission.value as? String, "1")
+        done.tap()
+        XCTAssertEqual(app.buttons["n"].label, "n")
+        for key in "nehz" { app.buttons[String(key)].tap() }
+        XCTAssertEqual(app.buttons["keyboard.smart-cell.1"].label, "第 1 個組字，你")
+        XCTAssertEqual(app.buttons["keyboard.smart-cell.2"].label, "第 2 個組字，好")
+        let eten26Screenshot = XCTAttachment(screenshot: app.screenshot())
+        eten26Screenshot.name = "ios-eten26-tone-omission"
+        eten26Screenshot.lifetime = .keepAlways
+        add(eten26Screenshot)
+        app.buttons["ENTER"].tap()
+        XCTAssertTrue(waitForLayout { (output.value as? String)?.hasPrefix("你你好") == true })
+
+        settings.tap()
+        revealSetting(omission, in: scroll)
+        omission.tap()
+        revealSetting(layout, in: scroll)
+        layout.buttons["標準"].tap()
+        done.tap()
     }
 
     func testUserPhraseManagerOpensAndCreatesPhrase() {
@@ -1482,9 +1547,13 @@ final class KeyKeyUITests: XCTestCase {
         openEditor.tap()
         XCTAssertTrue(app.navigationBars["實體鍵盤編輯器"].waitForExistence(timeout: 3))
 
+        let firstCandidate = app.buttons["hardware-editor.candidate.1"]
+        let isPad = UIDevice.current.userInterfaceIdiom == .pad
+        XCTAssertTrue(waitForLayout { abs(firstCandidate.frame.height - (isPad ? 38 : 32)) <= 0.5 })
+
         XCUIDevice.shared.orientation = .landscapeLeft
         let output = app.textViews["hardware-editor.output"]
-        let firstCandidate = app.buttons["hardware-editor.candidate.1"]
+        XCTAssertTrue(waitForLayout { abs(firstCandidate.frame.height - (isPad ? 38 : 24)) <= 0.5 })
         let phrasePicker = app.buttons["hardware-editor.phrases"]
         let clear = app.buttons["hardware-editor.clear"]
         let copy = app.buttons["hardware-editor.copy"]
@@ -1803,13 +1872,31 @@ final class KeyKeyUITests: XCTestCase {
         openHeightEditor()
         XCTAssertEqual(upper.value as? String, landscapeHeight)
         XCTAssertEqual(lower.value as? String, landscapeGap)
-        cancel.tap()
+        reset.tap()
+        XCTAssertTrue(waitForLayout { upper.value as? String == "100%" && lower.value as? String == "貼齊" })
+        let landscapeTop = upper.frame.midY
+        let landscapeBottom = lower.frame.midY
+        drag(lower, by: -12)
+        XCTAssertTrue(waitForLayout { lower.frame.midY < landscapeBottom - 5 })
+        XCTAssertEqual(upper.frame.midY, landscapeTop, accuracy: 2)
+        let savedLandscapeHeight = try XCTUnwrap(upper.value as? String)
+        let savedLandscapeGap = try XCTUnwrap(lower.value as? String)
+        XCTAssertNotEqual(savedLandscapeGap, "貼齊")
+        done.tap()
 
         XCUIDevice.shared.orientation = .portrait
         assertAppRotation(.portrait, relativeToPortrait: portraitFrame)
         openHeightEditor()
         XCTAssertEqual(upper.value as? String, portraitHeight)
         XCTAssertEqual(lower.value as? String, portraitGap)
+        reset.tap()
+        done.tap()
+
+        XCUIDevice.shared.orientation = .landscapeLeft
+        assertAppRotation(.landscapeLeft, relativeToPortrait: portraitFrame)
+        openHeightEditor()
+        XCTAssertEqual(upper.value as? String, savedLandscapeHeight)
+        XCTAssertEqual(lower.value as? String, savedLandscapeGap)
         reset.tap()
         done.tap()
     }

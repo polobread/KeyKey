@@ -541,6 +541,13 @@ struct KeyboardLayoutProfileTests {
         }
     }
 
+    @Test func keyFontLevelsRetainTheirPositiveFloorInAnEmptyPreview() {
+        for level in KeyboardKeyFontSize.allCases {
+            #expect(level.keyPointSize(normal: 12, largeFit: 0) == 0.01)
+            #expect(level.keyPointSize(normal: 0, largeFit: 0.005) == 0.01)
+        }
+    }
+
     @Test func stripFontLevelsHaveIndependentPrimaryTextTargets() {
         for base in [11.0, 12, 14, 18] {
             for (level, scale) in zip(KeyboardKeyFontSize.allCases, [1.0, 1.15, 1.30, 1.45]) {

@@ -1,6 +1,10 @@
 package tw.chichi77.keykey.android;
 
+import static tw.chichi77.keykey.android.KeyboardHeight.HARDWARE_CONTENT_HEIGHT_DP;
+import static tw.chichi77.keykey.android.KeyboardHeight.HARDWARE_NUMBER_ROW_HEIGHT_DP;
+
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -10,11 +14,11 @@ import android.graphics.RectF;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Build;
+import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.WindowManager;
-import android.view.WindowInsets;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +36,10 @@ final class BopomofoKeyboardView extends View {
     }
 
     private enum HitKind { KEY, CANDIDATE, PAGE, SMART_CELL, CANDIDATE_BLOCK }
+
+    private record TouchGeometry(KeyboardLayoutProfile profile, KeyboardLayoutProfile.Orientation orientation,
+            KeyboardLayoutProfile.Plane plane, boolean shifted, KeyboardLayoutProfile.DeletePosition deletePosition,
+            float widthDp, boolean integrated, boolean showGlobe, BopomofoKeyboardLayout keyboardLayout) {}
 
     private static final class Hit {
         private final RectF bounds;
@@ -65,12 +73,6 @@ final class BopomofoKeyboardView extends View {
             "_", "+", "{", "}", ":", "\"", "<", ">", "?", "|", "~"
     };
     static final String HARDWARE_LITERAL_PREFIX = "HARDWARE_LITERAL:";
-    private static final int PORTRAIT_SYSTEM_AREA_HEIGHT_DP = 40;
-    private static final int LANDSCAPE_SYSTEM_AREA_HEIGHT_DP = 35;
-    private static final int HARDWARE_CONTENT_HEIGHT_DP = 58;
-    private static final int HARDWARE_NUMBER_ROW_HEIGHT_DP = 48;
-    private static final int HARDWARE_PORTRAIT_SYSTEM_AREA_HEIGHT_DP = 40;
-    private static final int HARDWARE_LANDSCAPE_SYSTEM_AREA_HEIGHT_DP = 35;
     private static final int PHONETIC_GRID_CELL_COUNT = 11;
     private static final float TONE_SYMBOL_SCALE = 1.8f;
     private static final String BOPOMOFO_HEIGHT_REFERENCE = "ㄅ";
@@ -90,6 +92,14 @@ final class BopomofoKeyboardView extends View {
     private final Rect glyphBounds = new Rect();
     private final ArrayList<Hit> hits = new ArrayList<>();
     private float touchKeyTextSize;
+    private KeyboardLayoutProfile.FontSize fittedKeyFont;
+    private float lastStandardKeyFit;
+    private float lastFullKeyFit;
+    private TouchGeometry touchGeometry;
+    private List<KeyboardLayoutGeometry.Key> touchKeys = List.of();
+    private float referenceTouchKeyWidth;
+    private float splitStripWidthDp;
+    private final SparseArray<List<KeyboardLayoutGeometry.StripSlot>> splitStrips = new SparseArray<>();
 
     private Listener listener;
     private Mode mode = Mode.PORTRAIT;
@@ -109,18 +119,16 @@ final class BopomofoKeyboardView extends View {
     private boolean shifted;
     private boolean temporaryEnglish;
     private boolean hardwareFullWidth;
-    private int measuredContentHeight;
+    private KeyboardEdgeGeometry measuredEdges = new KeyboardEdgeGeometry(0, 0);
     private Mode lastMeasuredMode;
     private int lastDesiredContentHeight = -1;
     private int lastReservedHeight = -1;
     private int lastDesiredBottomGap = -1;
-    private int measuredBottomGap;
     private int measuredHeightBudget;
     private Rect lastWindowBounds;
-    private boolean touchBottomSpaceEnabled = true;
     private boolean hardwareBottomSpaceEnabled = true;
     private boolean integratedBottomControls;
-    private int navigationBarBottomInset;
+    private int systemBottomInset;
     private boolean showGlobe;
     private String pickerPressKey;
     private boolean pickerPressConsumed;
@@ -243,16 +251,16 @@ final class BopomofoKeyboardView extends View {
     }
 
     private int hardwareNumberRowCount() {
-        return hardwareNumberRowEnabled ? 2 : hardwareSmartTwoRowsEnabled ? 1 : 0;
+        return KeyboardHeight.hardwareNumberRowCount(hardwareNumberRowEnabled, hardwareSmartTwoRowsEnabled);
     }
 
-    void setBottomSpaceEnabled(boolean touchEnabled, boolean hardwareEnabled) {
-        if (touchBottomSpaceEnabled == touchEnabled
-                && hardwareBottomSpaceEnabled == hardwareEnabled) return;
-        touchBottomSpaceEnabled = touchEnabled;
-        hardwareBottomSpaceEnabled = hardwareEnabled;
-        requestLayout();
-        invalidate();
+    void setHardwareBottomSpaceEnabled(boolean enabled) {
+        if (hardwareBottomSpaceEnabled == enabled) return;
+        hardwareBottomSpaceEnabled = enabled;
+        if (mode == Mode.HARDWARE) {
+            requestLayout();
+            invalidate();
+        }
     }
 
     void setIntegratedBottomControls(boolean integrated, boolean showGlobe) {
@@ -334,7 +342,7 @@ final class BopomofoKeyboardView extends View {
     }
 
     int minimumTouchHeight() {
-        return Math.round(defaultTouchHeight() * (KeyboardSizeSettings.MIN_PERCENT / 100f));
+        return KeyboardHeight.minimumTouchContentHeight(defaultTouchHeight());
     }
 
     int maximumTouchHeight() {
@@ -342,14 +350,18 @@ final class BopomofoKeyboardView extends View {
     }
 
     int maximumResizeExtent(int availableHeight) {
-        int reserved = Math.max(reservedSystemAreaHeight(), systemAreaHeight());
-        return Math.max(visibleTouchEdges().top(), availableHeight - reserved);
+        return Math.max(visibleTouchEdges().top(), availableHeight - systemBottomInset);
     }
 
     KeyboardEdgeGeometry visibleTouchEdges() {
-        int visibleContent = Math.round(contentHeight());
-        int gap = Math.min(measuredBottomGap, Math.max(0, getHeight() - systemAreaHeight() - visibleContent));
-        return new KeyboardEdgeGeometry(visibleContent + gap, gap);
+        // Android may measure a probe for a new window without laying it out.
+        // Use the current frame to position and hit-test the visible keyboard.
+        return touchHeight(getResources().getDisplayMetrics().density).visibleEdges(getHeight());
+    }
+
+    private KeyboardHeight touchHeight(float density) {
+        KeyboardSizeSettings.Size size = mode == Mode.LANDSCAPE ? landscapeSize : portraitSize;
+        return KeyboardHeight.touch(defaultTouchHeight(), density, size, resizePreview, systemBottomInset);
     }
 
     void setState(List<String> candidates, String reading, boolean smartMode,
@@ -401,44 +413,28 @@ final class BopomofoKeyboardView extends View {
                 .stream().map(row -> row.toArray(new String[0])).toArray(String[][]::new);
     }
 
-    @Override
-    public WindowInsets onApplyWindowInsets(WindowInsets insets) {
-        if (Build.VERSION.SDK_INT >= 30) {
-            // Parents may already have consumed this area. Only reserve what
-            // reaches this view, rather than reading the root's original insets.
-            int bottom = insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
-            if (navigationBarBottomInset != bottom) {
-                navigationBarBottomInset = bottom;
-                requestLayout();
-                invalidate();
-            }
+    void setSystemBottomInset(int bottom) {
+        if (systemBottomInset == bottom) return;
+        systemBottomInset = bottom;
+        if (isTouchMode()) {
+            requestLayout();
+            invalidate();
         }
-        return super.onApplyWindowInsets(insets);
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int desiredContentHeight = switch (mode) {
-            case HARDWARE_FLOATING -> dp(showGlobe ? HARDWARE_CONTENT_HEIGHT_DP : 1);
-            case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP
-                    + hardwareNumberRowCount() * HARDWARE_NUMBER_ROW_HEIGHT_DP);
-            case LANDSCAPE -> Math.round(defaultTouchHeight() * landscapeSize.heightScale());
-            case PORTRAIT -> Math.round(defaultTouchHeight() * portraitSize.heightScale());
+        float density = getResources().getDisplayMetrics().density;
+        KeyboardHeight height = switch (mode) {
+            case HARDWARE_FLOATING -> KeyboardHeight.floating(density, showGlobe);
+            case HARDWARE -> KeyboardHeight.hardware(density,
+                    getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE,
+                    hardwareBottomSpaceEnabled, hardwareNumberRowEnabled, hardwareSmartTwoRowsEnabled);
+            case LANDSCAPE, PORTRAIT -> touchHeight(density);
         };
-        int desiredBottomGap = 0;
-        if (isTouchMode()) {
-            KeyboardSizeSettings.Size size = mode == Mode.LANDSCAPE ? landscapeSize : portraitSize;
-            desiredBottomGap = dp(size.bottomGapDp());
-            if (resizePreview != null) {
-                desiredContentHeight = resizePreview.contentHeight();
-                desiredBottomGap = resizePreview.bottom();
-            }
-        }
-        // Budget the reserved area before clamping the keyboard content, even
-        // when that area is disabled. Otherwise a capped IME keeps its height
-        // and gives the removed padding to the keys instead of the host app.
-        int systemAreaHeight = systemAreaHeight();
-        int reservedHeight = Math.max(reservedSystemAreaHeight(), systemAreaHeight);
+        int desiredContentHeight = height.desiredEdges().contentHeight();
+        int desiredBottomGap = height.desiredEdges().bottom();
+        int reservedHeight = height.reservedBottomSpace();
         int width = MeasureSpec.getSize(widthMeasureSpec);
         Rect windowBounds = Build.VERSION.SDK_INT >= 30
                 ? getContext().getSystemService(WindowManager.class).getCurrentWindowMetrics().getBounds() : null;
@@ -454,19 +450,14 @@ final class BopomofoKeyboardView extends View {
                 && desiredBottomGap == lastDesiredBottomGap
                 && (windowBounds == null ? lastWindowBounds == null : windowBounds.equals(lastWindowBounds));
         if (!withinRequestedWindow) {
-            measuredHeightBudget = resolveSize(desiredContentHeight + desiredBottomGap + reservedHeight,
-                    heightMeasureSpec);
-            int availableHeight = Math.max(0, measuredHeightBudget - reservedHeight);
-            // A small host window may require reducing the optional gap before shrinking the keys.
-            int minimumContent = isTouchMode() ? Math.min(desiredContentHeight, minimumTouchHeight()) : 0;
-            measuredBottomGap = Math.min(desiredBottomGap, Math.max(0, availableHeight - minimumContent));
-            measuredContentHeight = Math.min(desiredContentHeight, availableHeight - measuredBottomGap);
+            measuredHeightBudget = resolveSize(height.requestedWindowHeight(), heightMeasureSpec);
+            measuredEdges = height.measuredEdges(measuredHeightBudget);
         }
         // Keep the content through old-window feedback, while obeying the
         // current parent spec. A WRAP_CONTENT root layout restores the total
         // height when it measures again against its upstream window budget.
-        int desiredHeight = resolveSize(Math.min(measuredHeightBudget,
-                measuredContentHeight + measuredBottomGap + systemAreaHeight), heightMeasureSpec);
+        int desiredHeight = resolveSize(height.measuredWindowHeight(measuredHeightBudget, measuredEdges),
+                heightMeasureSpec);
         setMeasuredDimension(resolveSize(width, widthMeasureSpec), desiredHeight);
         lastMeasuredMode = mode;
         lastDesiredContentHeight = desiredContentHeight;
@@ -475,9 +466,10 @@ final class BopomofoKeyboardView extends View {
         lastWindowBounds = windowBounds == null ? null : new Rect(windowBounds);
     }
 
-    int cappedIntegratedWindowHeight() {
-        return isTouchMode() && integratedBottomControls
-                && (measuredContentHeight < lastDesiredContentHeight || measuredBottomGap < lastDesiredBottomGap)
+    int cappedTouchWindowHeight() {
+        return isTouchMode()
+                && (measuredEdges.contentHeight() < lastDesiredContentHeight
+                    || measuredEdges.bottom() < lastDesiredBottomGap)
                 ? measuredHeightBudget : 0;
     }
 
@@ -509,7 +501,7 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawTouchKeyboard(Canvas canvas, boolean landscape) {
-        float contentHeight = contentHeight();
+        float contentHeight = visibleTouchEdges().contentHeight();
         float top = landscape ? contentHeight / 6f : Math.max(dp(46), contentHeight * 0.15f);
         if (smartMode) {
             drawSmartCellStrip(canvas, new RectF(0, 0, getWidth(), top));
@@ -521,9 +513,9 @@ final class BopomofoKeyboardView extends View {
         var plane = inputPlane();
         var layout = layoutProfile.layout(orientation);
         float rowHeight = (contentHeight - top) / (layout.rows(plane, shifted).size() + 1);
-        touchKeyTextSize = sharedTouchKeyTextSize(rowHeight);
-        for (var key : KeyboardLayoutGeometry.keys(layoutProfile, orientation, plane, shifted, deletePosition,
-                getWidth() / getResources().getDisplayMetrics().density, integratedBottomControls, showGlobe)) {
+        updateTouchGeometry(orientation, plane);
+        updateTouchKeyTextSize(rowHeight);
+        for (var key : touchKeys) {
             RectF bounds = new RectF(key.left() * getWidth() + dp(2),
                     top + key.top() * (contentHeight - top) + dp(2),
                     key.right() * getWidth() - dp(2),
@@ -538,10 +530,42 @@ final class BopomofoKeyboardView extends View {
         }
     }
 
+    private void updateTouchGeometry(KeyboardLayoutProfile.Orientation orientation,
+            KeyboardLayoutProfile.Plane plane) {
+        float widthDp = getWidth() / getResources().getDisplayMetrics().density;
+        var next = new TouchGeometry(layoutProfile, orientation, plane, shifted, deletePosition,
+                widthDp, integratedBottomControls, showGlobe, keyboardLayout);
+        if (next.equals(touchGeometry)) return;
+        touchKeys = KeyboardLayoutGeometry.keys(layoutProfile, orientation, plane, shifted, deletePosition,
+                widthDp, integratedBottomControls, showGlobe, keyboardLayout);
+        // The ㄖ slot remains the font reference even when another plane is drawn.
+        var references = plane == KeyboardLayoutProfile.Plane.BOPOMOFO && !shifted ? touchKeys
+                : KeyboardLayoutGeometry.keys(layoutProfile, orientation, KeyboardLayoutProfile.Plane.BOPOMOFO,
+                        false, deletePosition, widthDp, integratedBottomControls, showGlobe, keyboardLayout);
+        String referenceAction = keyboardLayout == BopomofoKeyboardLayout.ETEN ? "j" : "b";
+        var reference = references.stream().filter(key -> key.action().equals(referenceAction)).findFirst().orElseThrow();
+        referenceTouchKeyWidth = reference.right() - reference.left();
+        touchGeometry = next;
+    }
+
+    private List<KeyboardLayoutGeometry.StripSlot> splitStripSlots(int count, RectF area) {
+        float widthDp = widthDp(area);
+        if (splitStripWidthDp != widthDp) {
+            splitStrips.clear();
+            splitStripWidthDp = widthDp;
+        }
+        var slots = splitStrips.get(count);
+        if (slots == null) {
+            slots = KeyboardLayoutGeometry.splitStripSlots(count, widthDp);
+            splitStrips.put(count, slots);
+        }
+        return slots;
+    }
+
     private void drawSmartCellStrip(Canvas canvas, RectF area) {
         int cellCount = compositionCellCount();
         if (isTouchMode() && layoutProfile.split) {
-            var slots = KeyboardLayoutGeometry.splitStripSlots(cellCount + 1, widthDp(area));
+            var slots = splitStripSlots(cellCount + 1, area);
             for (int index = 0; index < cellCount; index++) {
                 drawSmartCell(canvas, inset(stripSlotBounds(area, slots.get(index)), dp(2)), index, cellCount);
             }
@@ -763,7 +787,7 @@ final class BopomofoKeyboardView extends View {
 
     private void drawSplitCandidateStrip(Canvas canvas, RectF area) {
         int candidateCount = InputEngine.CANDIDATES_PER_PAGE;
-        var slots = KeyboardLayoutGeometry.splitStripSlots(candidateCount + 3, widthDp(area));
+        var slots = splitStripSlots(candidateCount + 3, area);
         var last = stripSlotBounds(area, slots.get(slots.size() - 1));
         if (candidates.isEmpty()) {
             int half = slots.size() / 2;
@@ -964,7 +988,7 @@ final class BopomofoKeyboardView extends View {
         if (isTouchMode() && layoutProfile.staggered) cap.inset(dp(1), dp(1));
         RectF labelBounds = new RectF(cap);
         if (isTouchMode()) {
-            float scale = (float) Math.sqrt(keycapArea.fraction);
+            float scale = keycapArea.capScale;
             cap.inset(cap.width() * (1 - scale) / 2, cap.height() * (1 - scale) / 2);
         }
         canvas.drawRoundRect(cap, dp(6), dp(6), special ? specialKeyPaint : keyPaint);
@@ -1038,16 +1062,9 @@ final class BopomofoKeyboardView extends View {
         canvas.drawText(label, x, baseline, textPaint);
     }
 
-    private float sharedTouchKeyTextSize(float rowHeight) {
-        // The ㄖ key is the reference for every input plane. Its real slot
-        // follows the current view width, layout, direction and available height.
-        var reference = KeyboardLayoutGeometry.keys(layoutProfile, touchOrientation(),
-                KeyboardLayoutProfile.Plane.BOPOMOFO, false, deletePosition,
-                getWidth() / getResources().getDisplayMetrics().density,
-                integratedBottomControls, showGlobe).stream()
-                .filter(key -> key.action().equals("b")).findFirst().orElseThrow();
+    private void updateTouchKeyTextSize(float rowHeight) {
         float stagger = layoutProfile.staggered ? 2 * dp(1) : 0;
-        float width = Math.max(1, (reference.right() - reference.left()) * getWidth()
+        float width = Math.max(1, referenceTouchKeyWidth * getWidth()
                 - 2 * dp(2) - stagger - dp(4));
         float height = Math.max(1, rowHeight - 2 * dp(2) - stagger - dp(4));
         textPaint.setFakeBoldText(true);
@@ -1071,7 +1088,12 @@ final class BopomofoKeyboardView extends View {
         float gap = dp(2);
         float standardFit = 100 * Math.min(Math.max(1, width - gap) / (referenceWidth + hintWidth),
                 Math.max(1, height - gap) / (referenceHeight + hintHeight));
-        return KeyboardTypography.keyTextSize(fontSize, standardFit, fullFit);
+        if (fittedKeyFont != fontSize || lastStandardKeyFit != standardFit || lastFullKeyFit != fullFit) {
+            touchKeyTextSize = KeyboardTypography.keyTextSize(fontSize, standardFit, fullFit);
+            fittedKeyFont = fontSize;
+            lastStandardKeyFit = standardFit;
+            lastFullKeyFit = fullFit;
+        }
     }
 
     private void drawCompactModeLabel(Canvas canvas, RectF bounds) {
@@ -1427,11 +1449,9 @@ final class BopomofoKeyboardView extends View {
         if (chineseInputMethod.isTable())
             return inputMode == InputEngine.InputMode.BOPOMOFO && !temporaryEnglish
                     ? ChineseInputMethod.root(key) : "";
-        if (keyboardLayout != BopomofoKeyboardLayout.STANDARD) return "";
         if (inputMode != InputEngine.InputMode.BOPOMOFO && !temporaryEnglish
                 || key.length() != 1) return "";
-        String symbol = BopomofoKeyboardLayout.symbolForKey(Character.toLowerCase(key.charAt(0)));
-        return symbol;
+        return keyboardLayout.symbolForKey(key.charAt(0));
     }
 
     private KeyboardLayoutProfile.Orientation touchOrientation() {
@@ -1472,37 +1492,4 @@ final class BopomofoKeyboardView extends View {
     private int dp(float value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
-
-    private float contentHeight() {
-        if (isTouchMode() && (integratedBottomControls || measuredBottomGap > 0 || resizePreview != null)) {
-            // The old allocated window can cap a transient pass before the new
-            // WRAP_CONTENT budget arrives. Drawing and hits must still stay safe.
-            return Math.min(measuredContentHeight,
-                    Math.max(0, getHeight() - systemAreaHeight() - measuredBottomGap));
-        }
-        return measuredContentHeight;
-    }
-
-    private int systemAreaHeight() {
-        if (isTouchMode() && integratedBottomControls) return navigationBarBottomInset;
-        boolean enabled = mode == Mode.HARDWARE ? hardwareBottomSpaceEnabled : touchBottomSpaceEnabled;
-        return enabled ? reservedSystemAreaHeight() : 0;
-    }
-
-    private int reservedSystemAreaHeight() {
-        return switch (mode) {
-            case HARDWARE_FLOATING -> 0;
-            case PORTRAIT -> dp(PORTRAIT_SYSTEM_AREA_HEIGHT_DP);
-            case LANDSCAPE -> dp(LANDSCAPE_SYSTEM_AREA_HEIGHT_DP);
-            case HARDWARE -> hardwareSystemAreaHeight();
-        };
-    }
-
-    private int hardwareSystemAreaHeight() {
-        boolean landscape = getResources().getConfiguration().orientation
-                == android.content.res.Configuration.ORIENTATION_LANDSCAPE;
-        return dp(landscape ? HARDWARE_LANDSCAPE_SYSTEM_AREA_HEIGHT_DP
-                : HARDWARE_PORTRAIT_SYSTEM_AREA_HEIGHT_DP);
-    }
-
 }

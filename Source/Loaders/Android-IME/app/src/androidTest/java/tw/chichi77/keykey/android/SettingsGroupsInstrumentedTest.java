@@ -20,6 +20,8 @@ import android.widget.TextView;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import java.util.List;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -216,7 +218,7 @@ public final class SettingsGroupsInstrumentedTest {
     }
 
     @Test
-    public void allThreeBopomofoLayoutsKeepTheSharedToneOmissionSetting() {
+    public void allFiveBopomofoLayoutsKeepTheSharedToneOmissionSetting() {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         Context context = instrumentation.getTargetContext();
         var preferences = CandidateWindowSettings.preferences(context);
@@ -260,13 +262,23 @@ public final class SettingsGroupsInstrumentedTest {
                 assertTrue(option[0].isChecked());
                 selector[0] = findProfileSelector(body, context.getString(R.string.bopomofo_keyboard_layout));
                 assertNotNull(selector[0]);
-                selector[0].setSelection(BopomofoKeyboardLayout.HANYU_PINYIN.ordinal());
+                assertEquals(BopomofoKeyboardLayout.values().length, selector[0].getCount());
             });
-            instrumentation.waitForIdleSync();
-            instrumentation.runOnMainSync(() -> {
-                assertTrue(option[0].isEnabled());
-                assertTrue(option[0].isChecked());
+            for (var layout : List.of(BopomofoKeyboardLayout.HANYU_PINYIN, BopomofoKeyboardLayout.ETEN,
+                    BopomofoKeyboardLayout.ETEN26)) {
+                instrumentation.runOnMainSync(() -> {
+                    assertEquals(layout.displayName, selector[0].getItemAtPosition(layout.ordinal()));
+                    selector[0].setSelection(layout.ordinal());
+                });
+                instrumentation.waitForIdleSync();
+                assertSame(layout, BopomofoKeyboardLayoutSettings.layout(context));
                 assertTrue(preferences.getBoolean(omitKey, false));
+                instrumentation.runOnMainSync(() -> {
+                    assertTrue(option[0].isEnabled());
+                    assertTrue(option[0].isChecked());
+                });
+            }
+            instrumentation.runOnMainSync(() -> {
                 option[0].performClick();
                 assertFalse(option[0].isChecked());
                 selector[0].setSelection(BopomofoKeyboardLayout.STANDARD.ordinal());

@@ -376,8 +376,8 @@ final class KeyboardViewController: UIInputViewController {
         let insetHeight = keyboardView.safeAreaInsets.top + keyboardView.safeAreaInsets.bottom
         // The host may enforce a smaller height than requested. Give usable
         // keyboard rows precedence over the requested clearance in that host.
-        let minimumUsable = max(0, CGFloat(metrics.contentHeight * 0.75) - insetHeight)
-        let gap = min(CGFloat(geometry.bottom * metrics.contentHeight), max(0, safeArea.height - minimumUsable))
+        let gap = CGFloat(geometry.fittedBottomGap(defaultHeight: metrics.contentHeight,
+            usableHeight: Double(safeArea.height), safeAreaInsetHeight: Double(insetHeight)))
         if heightDrag == nil {
             keyboardView.setBottomGap(gap)
         }
