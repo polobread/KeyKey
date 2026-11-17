@@ -1,3 +1,4 @@
+import CGuanyinma
 import Foundation
 
 /// A visual preset, independent of Standard/Hsu mappings and the input engine.
@@ -68,13 +69,8 @@ public struct KeyboardLayoutProfile: Equatable, Identifiable, Sendable {
             }
             // One pitch for the whole plane keeps reading keys identical across
             // rows, including the row whose last control consumes the remainder.
-            let pitch = (width + spacing) / totalUnits
-            var units = leadingUnits
-            return weights.map { weight in
-                defer { units += weight }
-                return CGRect(x: units * pitch, y: 0,
-                    width: max(0, weight * pitch - spacing), height: height)
-            }
+            return KeyboardRowGeometry.frames(width: width, height: height, weights: weights,
+                spacing: spacing, leadingUnits: leadingUnits, totalUnits: totalUnits)
         }
     }
 
@@ -354,11 +350,19 @@ public enum KeyboardKeycapArea: String, CaseIterable, Sendable {
     public var areaRatio: Double {
         switch self { case .small: 1; case .medium: 0.90; case .large: 0.80 }
     }
-    public var linearScale: Double { sqrt(areaRatio) }
+    private static let scales: [KeyboardKeycapArea: Double] =
+        Dictionary(uniqueKeysWithValues: allCases.map { option in
+            var scale = 1.0
+            _ = guanyinma_keyboard_keycap_scale(option.areaRatio, &scale)
+            return (option, scale)
+        })
+
+    public var linearScale: Double { Self.scales[self] ?? 1 }
 
     public func frame(in hitBounds: CGRect) -> CGRect {
-        let width = hitBounds.width * linearScale
-        let height = hitBounds.height * linearScale
+        let scale = linearScale
+        let width = hitBounds.width * scale
+        let height = hitBounds.height * scale
         return CGRect(x: hitBounds.midX - width / 2, y: hitBounds.midY - height / 2,
             width: width, height: height)
     }
@@ -371,23 +375,25 @@ public enum KeyboardKeyFontSize: String, CaseIterable, Sendable {
         switch self { case .normal: "標準"; case .medium: "中"; case .large: "大"; case .extraLarge: "特大" }
     }
     public var showsKeyHints: Bool { self == .normal }
-    public var stripScale: Double {
-        switch self { case .normal: 1; case .medium: 1.15; case .large: 1.30; case .extraLarge: 1.45 }
+    private var fittingLevel: UInt32 {
+        switch self { case .normal: 0; case .medium: 1; case .large: 2; case .extraLarge: 3 }
     }
+
+    private static let stripScales: [KeyboardKeyFontSize: Double] =
+        Dictionary(uniqueKeysWithValues: allCases.map { option in
+            var scale = 1.0
+            _ = guanyinma_keyboard_strip_scale(option.fittingLevel, &scale)
+            return (option, scale)
+        })
+
+    public var stripScale: Double { Self.stripScales[self] ?? 1 }
 
     /// Both endpoints come from the current radical key's available space.
     /// Equal multiplicative steps keep the four choices proportional at any size.
     public func keyPointSize(normal: Double, largeFit: Double) -> Double {
-        let end = max(0.01, largeFit)
-        let start = max(0.01, min(normal, end))
-        let step: Double
-        switch self {
-        case .normal: return start
-        case .medium: step = 1
-        case .large: step = 2
-        case .extraLarge: return end
-        }
-        return start * pow(end / start, step / 3)
+        var size = 0.01
+        _ = guanyinma_keyboard_font_size(fittingLevel, normal, largeFit, &size)
+        return size
     }
 
     public func stripPointSize(base: Double) -> Double {

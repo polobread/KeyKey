@@ -9,6 +9,7 @@
 #include "guanyinma.h"
 
 #include <inttypes.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1265,6 +1266,137 @@ static void check_associated_phrases(GuanyinmaDatabase *database) {
     STATUS(guanyinma_database_associated_collections(database, invalid, 1, &result), GUANYINMA_INVALID_UTF8);
 }
 
+/* Both geometry calls run without opening a model or input session. */
+static void check_keyboard_geometry(void) {
+    GuanyinmaKeyboardEdges edges = {0};
+    STATUS(guanyinma_keyboard_fit_height(866.0, 0.0, 929.0, 126.0, 433.0,
+                                        &edges), GUANYINMA_OK);
+    REQUIRE(edges.top == 803.0 && edges.bottom == 0.0);
+    STATUS(guanyinma_keyboard_fit_height(866.0, 0.0, 992.0, 126.0, 433.0,
+                                        &edges), GUANYINMA_OK);
+    REQUIRE(edges.top == 866.0 && edges.bottom == 0.0);
+    STATUS(guanyinma_keyboard_fit_height(866.0, 42.0, 580.0, 126.0, 433.0,
+                                        &edges), GUANYINMA_OK);
+    REQUIRE(edges.top == 454.0 && edges.bottom == 21.0);
+
+    /* Use binary fractions so the C test checks exact fractional transport. */
+    STATUS(guanyinma_keyboard_drag_edge(1.0, 0.125, 0, 0.25, 0.75, 1.35,
+                                       1.40, 0.25, &edges), GUANYINMA_OK);
+    REQUIRE(edges.top == 1.25 && edges.bottom == 0.125);
+    STATUS(guanyinma_keyboard_drag_edge(edges.top, edges.bottom, 1, 0.50,
+                                       0.75, 1.35, 1.40, 0.25, &edges),
+           GUANYINMA_OK);
+    REQUIRE(edges.top == 1.25 && edges.bottom == 0.25);
+
+    STATUS(guanyinma_keyboard_drag_edge(1.0, 0.0, 2, 0.25, 0.75, 1.35,
+                                       1.40, 0.25, &edges),
+           GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_keyboard_drag_edge(1.0, 0.0, 0, NAN, 0.75, 1.35,
+                                       1.40, 0.25, &edges),
+           GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_keyboard_drag_edge(1.0, 0.0, 0, 0.25, 0.75, 1.35,
+                                       1.40, 0.25, NULL),
+           GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_keyboard_fit_height(866.0, -1.0, 992.0, 126.0, 433.0,
+                                        &edges), GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_keyboard_fit_height(866.0, 0.0, 992.0, 126.0, 433.0, NULL),
+           GUANYINMA_INVALID_ARGUMENT);
+    REQUIRE(edges.top == 1.25 && edges.bottom == 0.25);
+
+    size_t required = 0;
+    STATUS(guanyinma_last_error(NULL, 0, &required), GUANYINMA_BUFFER_TOO_SMALL);
+    REQUIRE(required > 1);
+    STATUS(guanyinma_keyboard_drag_edge(edges.top, edges.bottom, 1, -0.50,
+                                       0.75, 1.35, 1.40, 0.25, &edges),
+           GUANYINMA_OK);
+    REQUIRE(edges.top == 1.25 && edges.bottom == 0.0);
+    uint8_t diagnostic = 0xff;
+    STATUS(guanyinma_last_error(&diagnostic, 1, &required), GUANYINMA_OK);
+    REQUIRE(required == 1 && diagnostic == 0);
+}
+
+static void check_keyboard_typography(void) {
+    double value = 0.0;
+    STATUS(guanyinma_keyboard_keycap_scale(0.25, &value), GUANYINMA_OK);
+    REQUIRE(value == 0.5);
+    STATUS(guanyinma_keyboard_keycap_scale(1.0, &value), GUANYINMA_OK);
+    REQUIRE(value == 1.0);
+
+    const double key_sizes[] = {10.0, 20.0, 40.0, 80.0};
+    const double strip_scales[] = {1.0, 1.15, 1.30, 1.45};
+    for (uint32_t level = 0; level < 4; ++level) {
+        STATUS(guanyinma_keyboard_font_size(level, 10.0, 80.0, &value), GUANYINMA_OK);
+        REQUIRE(value > key_sizes[level] - 1e-12 && value < key_sizes[level] + 1e-12);
+        STATUS(guanyinma_keyboard_strip_scale(level, &value), GUANYINMA_OK);
+        REQUIRE(value == strip_scales[level]);
+    }
+    STATUS(guanyinma_keyboard_font_size(0, 40.0, 20.0, &value), GUANYINMA_OK);
+    REQUIRE(value == 20.0);
+    STATUS(guanyinma_keyboard_font_size(3, 0.0, 0.0, &value), GUANYINMA_OK);
+    REQUIRE(value == 0.01);
+
+    STATUS(guanyinma_keyboard_keycap_scale(1.5, &value), GUANYINMA_INVALID_ARGUMENT);
+    REQUIRE(value == 0.01);
+    STATUS(guanyinma_keyboard_font_size(4, 10.0, 80.0, &value),
+           GUANYINMA_INVALID_ARGUMENT);
+    REQUIRE(value == 0.01);
+    STATUS(guanyinma_keyboard_font_size(0, NAN, 80.0, &value), GUANYINMA_INVALID_ARGUMENT);
+    REQUIRE(value == 0.01);
+    STATUS(guanyinma_keyboard_strip_scale(4, &value), GUANYINMA_INVALID_ARGUMENT);
+    REQUIRE(value == 0.01);
+
+    STATUS(guanyinma_keyboard_keycap_scale(0.25, NULL), GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_keyboard_font_size(0, 10.0, 80.0, NULL), GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_keyboard_strip_scale(0, NULL), GUANYINMA_INVALID_ARGUMENT);
+}
+
+static void check_keyboard_row_layout(void) {
+    GuanyinmaKeyboardSlot slots[4] = {0};
+    const double weighted[] = {1.0, 2.0, 1.0};
+    STATUS(guanyinma_keyboard_row_layout(72.0, 2.0, 0.0, 0.0, 0, 0.0,
+                                         weighted, 3, slots), GUANYINMA_OK);
+    REQUIRE(slots[0].left == 0.0 && slots[0].right == 17.0);
+    REQUIRE(slots[1].left == 19.0 && slots[1].right == 53.0);
+    REQUIRE(slots[2].left == 55.0 && slots[2].right == 72.0);
+
+    /* A fixed pitch keeps the fractional offset and the unused trailing space. */
+    STATUS(guanyinma_keyboard_row_layout(78.0, 2.0, 0.5, 4.0, 0, 0.0,
+                                         weighted, 2, slots), GUANYINMA_OK);
+    REQUIRE(slots[0].left == 10.0 && slots[0].right == 28.0);
+    REQUIRE(slots[1].left == 30.0 && slots[1].right == 68.0);
+
+    const double split_weights[] = {1.0, 1.0, 2.0, 1.0};
+    const GuanyinmaKeyboardSlot split_expected[] = {
+        {0.0, 30.0}, {32.0, 62.0}, {82.0, 122.0}, {124.0, 144.0},
+    };
+    STATUS(guanyinma_keyboard_row_layout(144.0, 2.0, 0.0, 0.0, 2, 20.0,
+                                         split_weights, 4, slots), GUANYINMA_OK);
+    for (size_t index = 0; index < 4; ++index) {
+        REQUIRE(slots[index].left == split_expected[index].left);
+        REQUIRE(slots[index].right == split_expected[index].right);
+    }
+
+    const double invalid_weights[] = {1.0, -1.0};
+    STATUS(guanyinma_keyboard_row_layout(144.0, 2.0, 0.0, 0.0, 0, 0.0,
+                                         invalid_weights, 2, slots), GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_keyboard_row_layout(72.0, 2.0, 2.0, 4.0, 0, 0.0,
+                                         weighted, 2, slots), GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_keyboard_row_layout(144.0, 2.0, 0.0, 0.0, 2, 150.0,
+                                         split_weights, 4, slots), GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_keyboard_row_layout(144.0, 2.0, 0.0, 0.0, 4, 20.0,
+                                         split_weights, 4, slots), GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_keyboard_row_layout(72.0, 2.0, 0.0, 0.0, 0, 0.0,
+                                         weighted, 0, slots), GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_keyboard_row_layout(72.0, 2.0, 0.0, 0.0, 0, 0.0,
+                                         NULL, 3, slots), GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_keyboard_row_layout(72.0, 2.0, 0.0, 0.0, 0, 0.0,
+                                         weighted, 3, NULL), GUANYINMA_INVALID_ARGUMENT);
+    for (size_t index = 0; index < 4; ++index) {
+        REQUIRE(slots[index].left == split_expected[index].left);
+        REQUIRE(slots[index].right == split_expected[index].right);
+    }
+}
+
 static int smoke_main(int argc, char **argv) {
     if (argc != 3) {
         fprintf(stderr, "Usage: %s /absolute/path/to/KeyKey.db /scratch/user-data.db\n", argv[0]);
@@ -1272,6 +1404,9 @@ static int smoke_main(int argc, char **argv) {
     }
     REQUIRE(guanyinma_abi_version() == 1);
     check_reading_codec();
+    check_keyboard_geometry();
+    check_keyboard_typography();
+    check_keyboard_row_layout();
     GuanyinmaDatabase *database = NULL;
     STATUS(guanyinma_database_open((const uint8_t *)argv[1], strlen(argv[1]),
                                   &database),

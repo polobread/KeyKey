@@ -70,6 +70,17 @@ public final class GuanyinmaNative implements AutoCloseable {
         return new String(bytes, StandardCharsets.UTF_8);
     }
 
+    static native long nativeDragKeyboardEdge(int top, int bottom, int edge, int delta,
+            int minimumContent, int maximumContent, int maximumTop, int maximumGap);
+    static native long nativeFitKeyboardHeight(int desiredContent, int desiredGap,
+            int windowHeight, int systemSpace, int minimumContent);
+
+    static native double nativeKeyboardKeycapScale(double areaRatio);
+    static native double nativeKeyboardFontSize(int level, double regularFit, double largestFit);
+    static native double nativeKeyboardStripScale(int level);
+    static native float[] nativeKeyboardRowLayout(double leadingUnits, double totalUnits,
+            int splitIndex, double splitGap, double[] weights);
+
     private static native long nativeOpen(byte[] modelPath, byte[] configJson,
                                            Predicate<String> glyph);
     private static native byte[] nativeRead(long handle, int operation, byte[] input);

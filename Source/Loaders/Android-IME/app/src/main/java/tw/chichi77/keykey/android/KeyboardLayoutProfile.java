@@ -22,18 +22,27 @@ final class KeyboardLayoutProfile {
         SMALL("100", 1f), MEDIUM("90", .90f), LARGE("80", .80f);
         final String id;
         final float fraction;
-        KeycapArea(String id, float fraction) { this.id = id; this.fraction = fraction; }
+        final float capScale;
+        KeycapArea(String id, float fraction) {
+            this.id = id;
+            this.fraction = fraction;
+            this.capScale = (float) GuanyinmaNative.nativeKeyboardKeycapScale(fraction);
+        }
         static KeycapArea forId(String id) {
             for (var area : values()) if (area.id.equals(id)) return area;
             return SMALL;
         }
     }
     enum FontSize {
-        NORMAL("normal", 1f), MEDIUM("medium", 1.15f), LARGE("large", 1.30f),
-        EXTRA_LARGE("extra-large", 1.45f);
+        NORMAL("normal", 0), MEDIUM("medium", 1), LARGE("large", 2), EXTRA_LARGE("extra-large", 3);
         final String id;
+        final int coreLevel;
         final float stripScale;
-        FontSize(String id, float stripScale) { this.id = id; this.stripScale = stripScale; }
+        FontSize(String id, int coreLevel) {
+            this.id = id;
+            this.coreLevel = coreLevel;
+            this.stripScale = (float) GuanyinmaNative.nativeKeyboardStripScale(coreLevel);
+        }
         boolean showsHints() { return this == NORMAL; }
         static FontSize forId(String id) {
             for (var size : values()) if (size.id.equals(id)) return size;

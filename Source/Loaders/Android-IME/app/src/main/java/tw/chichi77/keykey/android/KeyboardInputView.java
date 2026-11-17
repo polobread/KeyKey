@@ -80,29 +80,21 @@ class KeyboardInputView extends FrameLayout {
         int top = locationOnScreen[1];
         int bottom = top + getHeight();
         int navigation = rootInsets.getInsets(WindowInsets.Type.navigationBars()).bottom;
-        int overlap = 0;
-        if (navigation > 0) {
-            int displayBottom = getContext().getSystemService(WindowManager.class)
-                    .getCurrentWindowMetrics().getBounds().bottom;
-            overlap = bottomOverlap(top, bottom, displayBottom, navigation);
+        int displayBottom = navigation > 0
+                ? getContext().getSystemService(WindowManager.class).getCurrentWindowMetrics().getBounds().bottom
+                : bottom;
+        int caption = Build.VERSION.SDK_INT >= 36 ? rootInsets.getInsets(WindowInsets.Type.captionBar()).bottom : 0;
+        int windowBottom = bottom;
+        if (caption > 0) {
+            // The IME control strip is attached to the window, while the
+            // system navigation bar is attached to the display.
+            View decor = getRootView();
+            decor.getLocationOnScreen(locationOnScreen);
+            windowBottom = locationOnScreen[1] + decor.getHeight();
         }
-        if (Build.VERSION.SDK_INT >= 36) {
-            int caption = rootInsets.getInsets(WindowInsets.Type.captionBar()).bottom;
-            if (caption > 0) {
-                // The IME control strip is attached to the window, while the
-                // system navigation bar is attached to the display.
-                View decor = getRootView();
-                decor.getLocationOnScreen(locationOnScreen);
-                int windowBottom = locationOnScreen[1] + decor.getHeight();
-                overlap = Math.max(overlap, bottomOverlap(top, bottom, windowBottom, caption));
-            }
-        }
-        keyboard.setSystemBottomInset(overlap);
+        keyboard.setSystemBottomInset(KeyboardHeight.systemBottomOverlap(top, bottom,
+                displayBottom, navigation, windowBottom, caption));
         return true;
-    }
-
-    private static int bottomOverlap(int top, int bottom, int barBottom, int barHeight) {
-        return Math.max(0, Math.min(bottom, barBottom) - Math.max(top, barBottom - barHeight));
     }
 
     @Override protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {

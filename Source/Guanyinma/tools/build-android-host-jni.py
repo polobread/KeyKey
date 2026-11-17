@@ -52,8 +52,12 @@ def main():
                                       *["-I" + path for path in includes], str(SOURCE), str(archive), "-o", str(library)]
         if sys.platform == "darwin":
             exports = output / "jni-exports.txt"
+            methods = ("nativeOpen", "nativeRead", "nativeClose",
+                       "nativeDragKeyboardEdge", "nativeFitKeyboardHeight",
+                       "nativeKeyboardKeycapScale", "nativeKeyboardFontSize", "nativeKeyboardStripScale",
+                       "nativeKeyboardRowLayout")
             exports.write_text("\n".join("_Java_tw_chichi77_keykey_android_GuanyinmaNative_" + name
-                                         for name in ("nativeOpen", "nativeRead", "nativeClose")) + "\n")
+                                         for name in methods) + "\n")
             compile_command += ["-dynamiclib", "-liconv", "-framework", "Security", "-framework", "CoreFoundation",
                                 "-Xlinker", "-exported_symbols_list", "-Xlinker", str(exports)]
         else:

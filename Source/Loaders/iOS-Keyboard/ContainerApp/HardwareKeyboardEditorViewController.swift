@@ -513,6 +513,16 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             && ((resolvedHeight > 0 && resolvedHeight < 750)
                 || (view.bounds.width > 0 && view.bounds.width <= 375)
                 || isSmallPhoneScreen)
+        let preferredRowHeight: Double = traitCollection.userInterfaceIdiom == .pad
+            ? 38 : (isLandscape ? 24 : 32)
+        let viewportHeight = resolvedHeight > 0 ? Double(resolvedHeight) : preferredRowHeight
+        // The list can scroll when there is no room for every candidate.
+        // Fit each row so a single candidate can still occupy the viewport.
+        let candidateRowHeight = CGFloat(KeyboardHeight.fittedContentHeight(preferredRowHeight, in: viewportHeight))
+        if candidateButtonHeightConstraints.first?.constant != candidateRowHeight {
+            candidateButtonHeightConstraints.forEach { $0.constant = candidateRowHeight }
+        }
+
         guard usesLandscapeLayout != isLandscape
                 || usesCompactPortraitLayout != isCompactPortrait
         else { return }
@@ -581,11 +591,8 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
             let compactHeight: CGFloat = traitCollection.userInterfaceIdiom == .pad ? 38 : 30
             compactableButtonHeightConstraints.forEach { $0.constant = compactHeight }
-            candidateButtonHeightConstraints.forEach {
-                $0.constant = traitCollection.userInterfaceIdiom == .pad ? 38 : 24
-            }
             let lacksVerticalSpace = traitCollection.userInterfaceIdiom == .phone
-                && (availableHeight ?? view.bounds.height) < 500
+                && resolvedHeight < 500
             optionalNavigationControls.forEach { $0.isHidden = lacksVerticalSpace }
         } else {
             mainStack.axis = .vertical
@@ -614,9 +621,6 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             outputHeightConstraint?.isActive = true
             NSLayoutConstraint.activate(portraitActionConstraints)
             compactableButtonHeightConstraints.forEach { $0.constant = 38 }
-            candidateButtonHeightConstraints.forEach {
-                $0.constant = traitCollection.userInterfaceIdiom == .pad ? 38 : 32
-            }
             optionalNavigationControls.forEach { $0.isHidden = false }
         }
 

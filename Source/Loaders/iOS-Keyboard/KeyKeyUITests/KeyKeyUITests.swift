@@ -1482,9 +1482,13 @@ final class KeyKeyUITests: XCTestCase {
         openEditor.tap()
         XCTAssertTrue(app.navigationBars["實體鍵盤編輯器"].waitForExistence(timeout: 3))
 
+        let firstCandidate = app.buttons["hardware-editor.candidate.1"]
+        let isPad = UIDevice.current.userInterfaceIdiom == .pad
+        XCTAssertTrue(waitForLayout { abs(firstCandidate.frame.height - (isPad ? 38 : 32)) <= 0.5 })
+
         XCUIDevice.shared.orientation = .landscapeLeft
         let output = app.textViews["hardware-editor.output"]
-        let firstCandidate = app.buttons["hardware-editor.candidate.1"]
+        XCTAssertTrue(waitForLayout { abs(firstCandidate.frame.height - (isPad ? 38 : 24)) <= 0.5 })
         let phrasePicker = app.buttons["hardware-editor.phrases"]
         let clear = app.buttons["hardware-editor.clear"]
         let copy = app.buttons["hardware-editor.copy"]
@@ -1803,13 +1807,31 @@ final class KeyKeyUITests: XCTestCase {
         openHeightEditor()
         XCTAssertEqual(upper.value as? String, landscapeHeight)
         XCTAssertEqual(lower.value as? String, landscapeGap)
-        cancel.tap()
+        reset.tap()
+        XCTAssertTrue(waitForLayout { upper.value as? String == "100%" && lower.value as? String == "貼齊" })
+        let landscapeTop = upper.frame.midY
+        let landscapeBottom = lower.frame.midY
+        drag(lower, by: -12)
+        XCTAssertTrue(waitForLayout { lower.frame.midY < landscapeBottom - 5 })
+        XCTAssertEqual(upper.frame.midY, landscapeTop, accuracy: 2)
+        let savedLandscapeHeight = try XCTUnwrap(upper.value as? String)
+        let savedLandscapeGap = try XCTUnwrap(lower.value as? String)
+        XCTAssertNotEqual(savedLandscapeGap, "貼齊")
+        done.tap()
 
         XCUIDevice.shared.orientation = .portrait
         assertAppRotation(.portrait, relativeToPortrait: portraitFrame)
         openHeightEditor()
         XCTAssertEqual(upper.value as? String, portraitHeight)
         XCTAssertEqual(lower.value as? String, portraitGap)
+        reset.tap()
+        done.tap()
+
+        XCUIDevice.shared.orientation = .landscapeLeft
+        assertAppRotation(.landscapeLeft, relativeToPortrait: portraitFrame)
+        openHeightEditor()
+        XCTAssertEqual(upper.value as? String, savedLandscapeHeight)
+        XCTAssertEqual(lower.value as? String, savedLandscapeGap)
         reset.tap()
         done.tap()
     }
