@@ -494,6 +494,89 @@ impl SmartGraph {
         }
         Ok(true)
     }
+
+    /// Change one inferred reading without moving its neighbors or learning.
+    pub(crate) fn replace_reading(
+        &mut self,
+        db: &ModelDatabase,
+        index: usize,
+        query: &str,
+    ) -> Result<bool, DatabaseError> {
+        if index >= self.len() || !self.is_in_dictionary(db, query)? {
+            return Ok(false);
+        }
+        let before = self.clone();
+        let at = index + 1;
+        // Rebuild context-dependent nodes, preserving explicit choices outside
+        // the replaced syllable, just as a user-data refresh preserves them.
+        let overrides: Vec<_> = self
+            .nodes
+            .iter()
+            .filter(|node| !(node.start <= at && at < node.end()))
+            .filter_map(|node| {
+                node.overridden
+                    .as_ref()
+                    .map(|text| (node.start, node.span, node.query.clone(), text.clone()))
+            })
+            .collect();
+        self.nodes.clear();
+        self.path.clear();
+        self.readings[index] = query.into();
+        if let Err(error) = self.build(db) {
+            *self = before;
+            return Err(error);
+        }
+        for (start, span, query, text) in overrides {
+            if let Some(node) = self
+                .nodes
+                .iter_mut()
+                .find(|node| node.start == start && node.span == span && node.query == query)
+            {
+                node.overridden = Some(text);
+            }
+        }
+        self.update();
+        Ok(true)
+    }
+
+    pub(crate) fn phonetic_candidates(
+        &mut self,
+        db: &ModelDatabase,
+        index: usize,
+        queries: &[String],
+    ) -> Result<Vec<SmartCandidate>, DatabaseError> {
+        let mut rows = Vec::new();
+        for query in queries {
+            let preferred = self.cached_selection(query);
+            for row in self.find_unigrams(db, query)? {
+                if row.current.chars().count() == 1 {
+                    rows.push((
+                        preferred.as_ref() == Some(&row.current),
+                        row.probability,
+                        SmartCandidate {
+                            start: index,
+                            span: 1,
+                            text: row.current,
+                            query: query.clone(),
+                        },
+                    ));
+                }
+            }
+        }
+        rows.sort_by(|left, right| {
+            right
+                .0
+                .cmp(&left.0)
+                .then_with(|| right.1.total_cmp(&left.1))
+        });
+        let mut seen = HashSet::new();
+        Ok(rows
+            .into_iter()
+            .filter_map(|(_, _, candidate)| {
+                seen.insert(candidate.text.clone()).then_some(candidate)
+            })
+            .collect())
+    }
     fn sort_nodes(&mut self) {
         self.nodes
             .sort_by(|a, b| (a.start, a.span, &a.query).cmp(&(b.start, b.span, &b.query)));

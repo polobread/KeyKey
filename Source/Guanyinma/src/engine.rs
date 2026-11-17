@@ -788,7 +788,8 @@ impl InputSession {
                 && !old_view.candidates.is_empty()
                 && self.state.smart.candidates().is_empty()
             {
-                self.state.smart.open_candidates(
+                self.state.smart.open_phonetic_candidates(
+                    &self.database,
                     None,
                     &self.config.smart,
                     &mut Effects::default(),
@@ -1224,7 +1225,11 @@ impl InputSession {
             return self.select_touch_suggestion(index, true, effects);
         }
         if self.config.method == InputMethod::Smart {
-            self.state.smart.select(index, &self.config.smart)?;
+            self.state.smart.select_phonetic_candidate(
+                &self.database,
+                index,
+                &self.config.smart,
+            )?;
             self.clear_candidates();
             return Ok(());
         }
@@ -1398,9 +1403,12 @@ impl InputSession {
                     effects.beep = true;
                 } else {
                     self.clear_candidates();
-                    self.state
-                        .smart
-                        .open_candidates(Some(index), &self.config.smart, effects)?;
+                    self.state.smart.open_phonetic_candidates(
+                        &self.database,
+                        Some(index),
+                        &self.config.smart,
+                        effects,
+                    )?;
                 }
             }
             InputOperation::CloseCandidates => {
@@ -1869,7 +1877,11 @@ impl InputSession {
             .target
             .expect("open grid target");
         if target < completed {
-            self.state.smart.select(index, &self.config.smart)?;
+            self.state.smart.select_phonetic_candidate(
+                &self.database,
+                index,
+                &self.config.smart,
+            )?;
             self.clear_candidates();
         } else {
             let mut preview = self
@@ -1933,6 +1945,7 @@ impl InputSession {
                 &self.config.smart,
                 false,
                 !is_desktop,
+                is_desktop.then_some(self.state.touch_phonetic.raw.as_str()),
                 &mut materialized,
             ) {
                 Ok(()) => {
@@ -2083,6 +2096,7 @@ impl InputSession {
             &self.config.smart,
             learn,
             append,
+            (!append).then_some(self.state.touch_phonetic.raw.as_str()),
             effects,
         )?;
         self.consume_touch_raw_prefix(choice.consumed);

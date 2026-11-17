@@ -202,3 +202,196 @@ fn inferred_desktop_text_can_open_native_ctrl_punctuation() {
         .iter()
         .any(|candidate| candidate.query == "_punctuation_list"));
 }
+
+#[test]
+fn omitted_tones_offer_other_tones_and_selection_keeps_their_readings() {
+    for chosen in ["完", "玩"] {
+        let mut input = session(BopomofoLayout::Standard, true);
+        type_keys(&mut input, "fu/ru8ulfms8xuj0");
+        let opened = key(&mut input, Key::Down);
+        let index = opened
+            .candidates
+            .iter()
+            .position(|text| text == chosen)
+            .unwrap_or_else(|| {
+                panic!(
+                    "{chosen} missing from omitted-tone candidates: {:?}",
+                    opened.candidates
+                )
+            });
+        let query = opened.candidate_spans[index].query.clone();
+        assert!(opened.candidates.iter().any(|text| text == "完"));
+        assert!(opened.candidates.iter().any(|text| text == "玩"));
+        input
+            .apply(InputOperation::Page {
+                delta: (index / opened.page_size) as i32,
+            })
+            .unwrap();
+        let selected = input
+            .apply(InputOperation::Select {
+                index: index % opened.page_size,
+            })
+            .unwrap();
+        assert_eq!(selected.visible_text, format!("請假要去哪裡{chosen}"));
+        assert_eq!(selected.readings[6], query);
+        assert!(selected.displayed_candidates.is_empty());
+        key(&mut input, Key::End);
+        type_keys(&mut input, "sk");
+        assert_eq!(
+            key(&mut input, Key::Return).effects.commit,
+            format!("請假要去哪裡{chosen}呢")
+        );
+    }
+}
+
+#[test]
+fn omitted_tone_choices_survive_native_navigation_but_explicit_tones_stay_constrained() {
+    let mut input = session(BopomofoLayout::HanyuPinyin, true);
+    type_keys(&mut input, "wan");
+    key(&mut input, Key::Left);
+    let opened = input
+        .apply(InputOperation::OpenCandidates { index: 0 })
+        .unwrap();
+    assert!(opened.candidates.iter().any(|text| text == "完"));
+    assert!(opened.candidates.iter().any(|text| text == "玩"));
+    key(&mut input, Key::Escape);
+    key(&mut input, Key::End);
+    key(&mut input, Key::Backspace);
+    type_keys(&mut input, "wan1");
+    let explicit = key(&mut input, Key::Down);
+    assert!(!explicit
+        .candidates
+        .iter()
+        .any(|text| text == "完" || text == "玩"));
+}
+
+#[test]
+fn omitted_tone_choices_follow_whole_word_shifts_and_mid_sentence_targets() {
+    let mut input = session(BopomofoLayout::Standard, true);
+    let mut committed = String::new();
+    for character in "fu/ru8ulfms8xuj0skfmc91u0".chars() {
+        let shown = input.apply(InputOperation::character(character)).unwrap();
+        committed.push_str(&shown.effects.commit);
+    }
+    assert_eq!(committed, "請假");
+    // The seventh syllable becomes index four after the two-syllable shift.
+    let opened = input
+        .apply(InputOperation::OpenCandidates { index: 4 })
+        .unwrap();
+    let index = opened
+        .candidates
+        .iter()
+        .position(|text| text == "完" || text == "玩")
+        .unwrap();
+    let chosen = opened.candidates[index].clone();
+    input
+        .apply(InputOperation::Page {
+            delta: (index / opened.page_size) as i32,
+        })
+        .unwrap();
+    let selected = input
+        .apply(InputOperation::Select {
+            index: index % opened.page_size,
+        })
+        .unwrap();
+    assert_eq!(
+        selected.visible_text.chars().nth(4).unwrap().to_string(),
+        chosen
+    );
+    assert_eq!(selected.visible_text.chars().count(), 9);
+    key(&mut input, Key::End);
+    committed.push_str(&key(&mut input, Key::Return).effects.commit);
+    assert_eq!(committed.chars().count(), 11);
+}
+
+#[test]
+fn cross_tone_candidates_respect_font_filters_and_disabled_omission() {
+    let mut input = InputSession::open_with_candidate_filter(
+        support::model_path(),
+        SessionConfig {
+            method: InputMethod::Smart,
+            smart: SmartOptions {
+                omit_tone: true,
+                ..SmartOptions::default()
+            },
+            ..SessionConfig::default()
+        },
+        guanyinma::CandidateFilter::new(|text| text != "玩"),
+    )
+    .unwrap();
+    type_keys(&mut input, "j0");
+    let opened = key(&mut input, Key::Down);
+    assert!(opened.candidates.iter().any(|text| text == "完"));
+    assert!(!opened.candidates.iter().any(|text| text == "玩"));
+
+    let mut explicit = session(BopomofoLayout::Standard, false);
+    type_keys(&mut explicit, "j0");
+    key(&mut explicit, Key::Space);
+    let opened = key(&mut explicit, Key::Down);
+    assert!(!opened
+        .candidates
+        .iter()
+        .any(|text| text == "完" || text == "玩"));
+}
+
+#[test]
+fn cross_tone_selection_preserves_a_chosen_neighbor_and_learns_the_new_reading() {
+    let mut input = session(BopomofoLayout::Standard, true);
+    input
+        .apply(InputOperation::SetLearningOptions {
+            options: guanyinma::LearningOptions {
+                candidate_overrides: true,
+                bigrams: true,
+                ..guanyinma::LearningOptions::default()
+            },
+        })
+        .unwrap();
+    type_keys(&mut input, "sucl");
+    let opened = key(&mut input, Key::Down);
+    let first = opened
+        .candidates
+        .iter()
+        .position(|text| text == "你好")
+        .unwrap();
+    input
+        .apply(InputOperation::Select { index: first })
+        .unwrap();
+    key(&mut input, Key::End);
+    type_keys(&mut input, "j0");
+    let opened = key(&mut input, Key::Down);
+    let index = opened
+        .candidates
+        .iter()
+        .position(|text| text == "玩")
+        .unwrap();
+    let query = opened.candidate_spans[index].query.clone();
+    input
+        .apply(InputOperation::Page {
+            delta: (index / opened.page_size) as i32,
+        })
+        .unwrap();
+    let selected = input
+        .apply(InputOperation::Select {
+            index: index % opened.page_size,
+        })
+        .unwrap();
+    assert_eq!(selected.visible_text, "你好玩");
+    let data = input.user_data().unwrap();
+    assert!(data
+        .bigrams
+        .iter()
+        .any(|row| row.current == "玩" && row.qstring.ends_with(&query)));
+    let reopened = key(&mut input, Key::Down);
+    assert_eq!(
+        reopened
+            .candidate_spans
+            .iter()
+            .find(|candidate| candidate.span == 1)
+            .unwrap()
+            .text,
+        "玩"
+    );
+    key(&mut input, Key::Escape);
+    key(&mut input, Key::End);
+    assert_eq!(key(&mut input, Key::Return).effects.commit, "你好玩");
+}
