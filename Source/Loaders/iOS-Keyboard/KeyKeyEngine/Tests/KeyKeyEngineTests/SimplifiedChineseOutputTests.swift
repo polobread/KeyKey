@@ -36,6 +36,32 @@ struct SimplifiedChineseOutputTests {
         #expect(keyboard.enabled)
     }
 
+    @Test func savingTheAppDefaultOverridesAnEarlierKeyboardPreference() throws {
+        let localName = "keykey.simplified.local.\(UUID())"
+        let sharedName = "keykey.simplified.shared.\(UUID())"
+        let local = try #require(UserDefaults(suiteName: localName))
+        let shared = try #require(UserDefaults(suiteName: sharedName))
+        defer {
+            local.removePersistentDomain(forName: localName)
+            shared.removePersistentDomain(forName: sharedName)
+        }
+        let keyboard = SimplifiedChineseOutputSettings(defaults: local, sharedDefaults: shared)
+        let app = SimplifiedChineseOutputSettings(sharedDefaults: shared, writesShared: true)
+        let toneOmission = SmartMandarinToneOmissionSettings(defaults: local, sharedDefaults: shared)
+
+        keyboard.setEnabled(true)
+        toneOmission.setEnabled(true)
+        #expect(!app.enabled)
+        #expect(keyboard.enabled)
+
+        app.setEnabled(app.enabled)
+
+        #expect(!app.enabled)
+        #expect(!keyboard.enabled)
+        #expect(SimplifiedChineseOutputSettings(defaults: local).enabled)
+        #expect(toneOmission.enabled)
+    }
+
     @Test func touchOverflowKeepsOnlyTheSimplifiedTailEditable() throws {
         let converter = try converter()
         var state = TouchSmartHostTextState()

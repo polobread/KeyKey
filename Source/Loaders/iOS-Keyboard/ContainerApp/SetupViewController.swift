@@ -381,6 +381,7 @@ private final class InputMethodSettingsViewController: UIViewController {
     private lazy var simplifiedOutputSettings = SimplifiedChineseOutputSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
+    private let applyKeyboardSettingsStatus = UILabel()
     private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults)
     private lazy var toneOmissionSettings = SmartMandarinToneOmissionSettings(
         sharedDefaults: sharedDefaults, writesShared: true
@@ -431,6 +432,26 @@ private final class InputMethodSettingsViewController: UIViewController {
             return
         }
 
+        let applySettings = button("套用到鍵盤", #selector(applySettingsToKeyboard))
+        applySettings.accessibilityIdentifier = "app-settings.apply-to-keyboard"
+        applySettings.accessibilityHint = "用琦琦 App 的所有鍵盤設定取代鍵盤目前的對應選項。"
+        let applyHelp = label(
+            "一次套用琦琦 App 內的所有鍵盤設定，包含首頁的關聯詞詞庫。重新叫出鍵盤後生效，之後仍可在鍵盤「設」即時調整。",
+            size: 16
+        )
+        applyHelp.textColor = .secondaryLabel
+        applyKeyboardSettingsStatus.font = .preferredFont(forTextStyle: .footnote)
+        applyKeyboardSettingsStatus.adjustsFontForContentSizeCategory = true
+        applyKeyboardSettingsStatus.textColor = .secondaryLabel
+        applyKeyboardSettingsStatus.numberOfLines = 0
+        applyKeyboardSettingsStatus.isHidden = true
+        let applySection = UIStackView(arrangedSubviews: [
+            applySettings, applyHelp, applyKeyboardSettingsStatus
+        ])
+        applySection.axis = .vertical
+        applySection.spacing = 6
+        stack.addArrangedSubview(applySection)
+
         stack.addArrangedSubview(label("輸入法", size: 18))
         let modes = ChineseInputMethod.allCases
         let modeControl = UISegmentedControl(items: modes.map(\.displayName))
@@ -451,6 +472,7 @@ private final class InputMethodSettingsViewController: UIViewController {
         let simplifiedOutputRow = UIStackView(arrangedSubviews: [simplifiedOutputLabel, simplifiedOutput])
         simplifiedOutputRow.alignment = .center
         simplifiedOutputRow.spacing = 8
+
         stack.addArrangedSubview(simplifiedOutputRow)
 
         let toneOmission = UISwitch()
@@ -521,7 +543,7 @@ private final class InputMethodSettingsViewController: UIViewController {
 
         stack.addArrangedSubview(settingWithHelp(
             "設定套用說明",
-            message: "在這裡變更後，鍵盤下次開啟會套用。鍵盤內「設」頁的修改保存在鍵盤自己的資料區，無法顯示回 App。重設學習紀錄會在下次開啟鍵盤時生效。",
+            message: "鍵盤內「設」頁的選擇保存在鍵盤。要一次改回琦琦 App 的設定，請按最上方的「套用到鍵盤」。重設學習紀錄會在下次開啟鍵盤時生效。",
             identifier: "app-settings.application.info"
         ))
     }
@@ -675,6 +697,15 @@ private final class InputMethodSettingsViewController: UIViewController {
 
     @objc private func simplifiedOutputChanged(_ sender: UISwitch) {
         simplifiedOutputSettings.setEnabled(sender.isOn)
+    }
+
+    @objc private func applySettingsToKeyboard() {
+        guard let sharedDefaults else { return }
+        KeyboardPreferenceStore.applyAppDefaults(in: sharedDefaults)
+        let message = "已送出 App 設定。重新叫出鍵盤後生效。"
+        applyKeyboardSettingsStatus.text = message
+        applyKeyboardSettingsStatus.isHidden = false
+        UIAccessibility.post(notification: .announcement, argument: message)
     }
 
     @objc private func spaceSelectionChanged(_ sender: UISwitch) {

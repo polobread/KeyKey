@@ -189,6 +189,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     private let compositionModeButton = UIButton(configuration: .tinted())
     private let keyboardLayoutButton = UIButton(configuration: .tinted())
     private let phraseButton = UIButton(configuration: .tinted())
+    private let outputScriptButton = UIButton(configuration: .tinted())
     private let modeButton = UIButton(configuration: .tinted())
     private let widthButton = UIButton(configuration: .tinted())
     private let symbolButton = UIButton(configuration: .tinted())
@@ -240,9 +241,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     )
     private lazy var phraseSettings = PhraseSettings(sharedDefaults: sharedDefaults)
     private lazy var methodSettings = ChineseInputMethodSettings(sharedDefaults: sharedDefaults)
-    private lazy var simplifiedOutputSettings = SimplifiedChineseOutputSettings(
-        sharedDefaults: sharedDefaults, writesShared: true
-    )
+    private lazy var simplifiedOutputSettings = SimplifiedChineseOutputSettings(sharedDefaults: sharedDefaults)
     private lazy var compositionModeSettings = BopomofoCompositionModeSettings(
         sharedDefaults: sharedDefaults
     )
@@ -664,6 +663,8 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     }
 
     private func makeModeControlPanel() -> UIView {
+        outputScriptButton.accessibilityIdentifier = "hardware-editor.output-script"
+        outputScriptButton.addTarget(self, action: #selector(changeOutputScript), for: .touchUpInside)
         modeButton.accessibilityIdentifier = "hardware-editor.mode"
         modeButton.addTarget(self, action: #selector(changeMode), for: .touchUpInside)
         widthButton.accessibilityIdentifier = "hardware-editor.width"
@@ -676,7 +677,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         emojiButton.accessibilityLabel = "表情符號"
         emojiButton.addTarget(self, action: #selector(showEmojis), for: .touchUpInside)
 
-        for button in [modeButton, widthButton, symbolButton, emojiButton] {
+        for button in [outputScriptButton, modeButton, widthButton, symbolButton, emojiButton] {
             button.configuration?.buttonSize = .small
             button.setContentCompressionResistancePriority(.required, for: .horizontal)
             let height = button.heightAnchor.constraint(equalToConstant: 38)
@@ -684,7 +685,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             compactableButtonHeightConstraints.append(height)
         }
 
-        let firstRow = UIStackView(arrangedSubviews: [UIView(), modeButton, widthButton])
+        let firstRow = UIStackView(arrangedSubviews: [outputScriptButton, modeButton, widthButton])
         let secondRow = UIStackView(arrangedSubviews: [UIView(), symbolButton, emojiButton])
         for row in [firstRow, secondRow] {
             row.axis = .horizontal
@@ -1081,6 +1082,10 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     private func refresh() {
         refreshSupporterPrompt()
+        let simplified = simplifiedOutputSettings.enabled
+        outputScriptButton.setTitle(simplified ? "簡" : "繁", for: .normal)
+        outputScriptButton.accessibilityLabel = simplified
+            ? "目前簡體，切換繁體" : "目前繁體，切換簡體"
         insertionCharacterIndex = min(max(insertionCharacterIndex, 0), committedText.count)
         let insertionIndex = committedText.index(
             committedText.startIndex, offsetBy: insertionCharacterIndex
@@ -1320,6 +1325,12 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     @objc private func changeMode() {
         guard let engine else { return }
         apply(engine.toggleHardwareLanguage())
+        restoreCaptureFocusAfterControlAction()
+    }
+
+    @objc private func changeOutputScript() {
+        simplifiedOutputSettings.setEnabled(!simplifiedOutputSettings.enabled)
+        refresh()
         restoreCaptureFocusAfterControlAction()
     }
 

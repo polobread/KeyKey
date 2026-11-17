@@ -38,6 +38,7 @@ final class KeyboardViewController: UIInputViewController {
     private lazy var candidateColorSettings = CandidateColorSettings(sharedDefaults: sharedDefaults)
     private lazy var methodSettings = ChineseInputMethodSettings(sharedDefaults: sharedDefaults)
     private lazy var simplifiedOutputSettings = SimplifiedChineseOutputSettings(sharedDefaults: sharedDefaults)
+    private lazy var simplifiedOutputEnabled = simplifiedOutputSettings.enabled
     private lazy var compositionModeSettings = BopomofoCompositionModeSettings(
         sharedDefaults: sharedDefaults
     )
@@ -279,6 +280,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func refreshAppSettings() {
+        updateActiveSimplifiedOutput(simplifiedOutputSettings.enabled)
         keyboardView?.setLayoutProfile(profileSettings.profile)
         refreshLayoutOptions()
         candidateColor = candidateColorSettings.color
@@ -536,7 +538,7 @@ final class KeyboardViewController: UIInputViewController {
             chineseInputMethod: engine?.chineseInputMethod ?? methodSettings.method,
             methodSettings: methodSettings,
             keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout,
-            simplifiedOutputEnabled: simplifiedOutputSettings.enabled,
+            simplifiedOutputEnabled: simplifiedOutputEnabled,
             omitsTones: toneOmissionSettings.enabled,
             layoutProfile: profileSettings.profile,
             keycapArea: profileSettings.keycapArea,
@@ -742,7 +744,9 @@ final class KeyboardViewController: UIInputViewController {
             mutateDocument { textDocumentProxy.deleteBackward() }
         }
         if !result.text.isEmpty {
-            commitMarkedOrInsertedText(simplifiedOutputSettings.convertOutputText(result.text))
+            commitMarkedOrInsertedText(SimplifiedChineseOutputSettings.convertOutputText(
+                result.text, enabled: simplifiedOutputEnabled
+            ))
         }
         if engine?.hasComposition == true {
             // Candidate buttons are extension-local UIKit. Give them the
@@ -763,12 +767,16 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func applyTouchSmart(_ result: KeyboardInput.Result) {
-        let committedText = simplifiedOutputSettings.convertOutputText(result.text)
+        let committedText = SimplifiedChineseOutputSettings.convertOutputText(
+            result.text, enabled: simplifiedOutputEnabled
+        )
         let edit: TouchSmartHostTextState.Edit
         if engine?.isTouchSmartComposition == true, engine?.hasComposition == true {
             // Keep the tracked tail in the same form as the text inserted
             // into the host so an evicted prefix is never converted twice.
-            let editableText = simplifiedOutputSettings.convertOutputText(engine?.completedSmartText ?? "")
+            let editableText = SimplifiedChineseOutputSettings.convertOutputText(
+                engine?.completedSmartText ?? "", enabled: simplifiedOutputEnabled
+            )
             edit = touchHostText.update(to: editableText, evictedPrefix: committedText)
         } else if engine?.isTouchSmartComposition == true, result.text.isEmpty,
                   !result.deletesBackward, !result.sendsReturn {
@@ -1015,11 +1023,16 @@ extension KeyboardViewController: SettingsPanelDelegate {
     }
 
     func settingsPanel(_ panel: SettingsPanel, didChangeSimplifiedOutput enabled: Bool) {
-        guard simplifiedOutputSettings.enabled != enabled else { return }
+        updateActiveSimplifiedOutput(enabled)
+        simplifiedOutputSettings.setEnabled(enabled)
+    }
+
+    private func updateActiveSimplifiedOutput(_ enabled: Bool) {
+        guard simplifiedOutputEnabled != enabled else { return }
         if let engine, engine.hasComposition {
             apply(engine.finishCompositionForInputHandoff())
         }
-        simplifiedOutputSettings.setEnabled(enabled)
+        simplifiedOutputEnabled = enabled
     }
 
     func settingsPanel(_ panel: SettingsPanel, didChangeToneOmission enabled: Bool) {

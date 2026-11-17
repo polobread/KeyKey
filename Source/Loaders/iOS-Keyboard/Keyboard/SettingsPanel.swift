@@ -277,26 +277,25 @@ final class SettingsPanel: UIView {
     }
 
     private func simplifiedOutputRow() -> UIView {
+        let title = SimplifiedChineseOutputSettings.displayName
         let label = UILabel()
-        label.text = SimplifiedChineseOutputSettings.displayName
+        label.text = title
         label.font = .preferredFont(forTextStyle: .subheadline)
         label.adjustsFontForContentSizeCategory = true
         label.textColor = Palette.primaryText
-        label.numberOfLines = 0
         label.isAccessibilityElement = false
 
         let toggle = UISwitch()
         toggle.isOn = simplifiedOutputEnabled
-        toggle.accessibilityLabel = SimplifiedChineseOutputSettings.displayName
+        toggle.accessibilityLabel = title
         toggle.accessibilityIdentifier = "keyboard-settings.simplified-chinese-output"
-        toggle.setContentHuggingPriority(.required, for: .horizontal)
-        toggle.setContentCompressionResistancePriority(.required, for: .horizontal)
         toggle.addTarget(self, action: #selector(simplifiedOutputChanged(_:)), for: .valueChanged)
-
-        let row = UIStackView(arrangedSubviews: [label, toggle])
-        row.alignment = .center
-        row.spacing = 8
-        return row
+        let help = helpButton(
+            title: title,
+            message: "開啟後，接下來送出的文字會轉成簡體，組字和候選仍顯示繁體。這裡的選擇會保存在鍵盤。要套用 App 裡的所有鍵盤設定，可到琦琦 App 的「輸入法設定」，按最上方的「套用到鍵盤」。",
+            identifier: "simplified-chinese-output"
+        )
+        return helpRow(label, control: toggle, help: help)
     }
 
     @objc private func simplifiedOutputChanged(_ sender: UISwitch) {
