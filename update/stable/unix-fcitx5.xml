@@ -6,6 +6,14 @@
     <keykey:schemaVersion>1</keykey:schemaVersion>
     <description>Linux／FreeBSD 共用每週更新通知。Linux 請從官方發行頁下載並透過套件管理器安裝；FreeBSD 請透過 ports／pkg 更新，套件可能較晚上架。本 feed 只通知新版，不下載或自動安裝套件。</description>
     <item>
+      <title>琦琦輸入法 1.5.1 正式更新</title>
+      <sparkle:version>1.5.1</sparkle:version>
+      <sparkle:shortVersionString>1.5.1</sparkle:shortVersionString>
+      <link>https://github.com/polobread/KeyKey/releases/tag/v1.5.1</link>
+      <keykey:linuxArchitecture>amd64</keykey:linuxArchitecture>
+      <description>琦琦輸入法 1.5.1 已發布。功能與操作方式請見官方發行頁。Linux 已提供 Ubuntu 24.04 amd64 套件及共用詞庫，請透過套件管理器安裝。FreeBSD 同步接收本公告，請透過 ports／pkg 更新，套件可能較晚上架。</description>
+    </item>
+    <item>
       <title>琦琦輸入法 1.5.0 正式更新</title>
       <sparkle:version>1.5.0</sparkle:version>
       <sparkle:shortVersionString>1.5.0</sparkle:shortVersionString>
