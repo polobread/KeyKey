@@ -104,7 +104,6 @@
     <string name="bottom_language_space_enabled">預留底部切換語言空間</string>
     <string name="integrated_bottom_controls_enabled">整合底部控制鍵</string>
     <string name="integrated_bottom_controls_description">在「設」右側加入收鍵盤，取消琦琦預留的底部空間。長按「設」可開啟輸入法清單；系統要求的地球鍵保留在最左側。支援的系統會嘗試收起輸入法控制列；不改變系統導覽設定。</string>
-    <string name="touch_bottom_space_description">開啟時為系統的切換語言按鈕預留空間；關閉時虛擬鍵盤貼齊底部。開啟「整合底部控制鍵」時，由該功能管理底部空間。</string>
     <string name="hardware_bottom_space_description">開啟時為系統的切換語言按鈕預留空間；關閉時候選列貼齊底部。使用浮動候選字窗時無法調整。</string>
     <string-array name="floating_candidate_layouts">
         <item>垂直選字窗</item>

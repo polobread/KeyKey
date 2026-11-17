@@ -500,15 +500,12 @@ public final class KeyboardRenderingInstrumentedTest {
                 for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
                     view.setMode(orientation == KeyboardLayoutProfile.Orientation.PORTRAIT
                             ? BopomofoKeyboardView.Mode.PORTRAIT : BopomofoKeyboardView.Mode.LANDSCAPE);
-                    view.setBottomSpaceEnabled(true, true);
                     view.setIntegratedBottomControls(false, false);
                     KeyCanvas original = draw(view);
                     int originalHeight = view.getHeight();
                     view.setIntegratedBottomControls(true, true);
                     KeyCanvas integrated = draw(view);
-                    float density = view.getResources().getDisplayMetrics().density;
-                    assertEquals(Math.round((orientation == KeyboardLayoutProfile.Orientation.PORTRAIT ? 40 : 35) * density),
-                            originalHeight - view.getHeight());
+                    assertEquals("The in-row controls must not add keyboard height", originalHeight, view.getHeight());
                     assertEquals(original.keys.size() + (profile.split ? 1 : 2), integrated.keys.size());
                     for (String label : List.of("🌐", "▼")) {
                         PaintedText text = integrated.texts.stream().filter(item -> item.value.equals(label))
@@ -555,6 +552,7 @@ public final class KeyboardRenderingInstrumentedTest {
                         }
                     }
                     if (profile.split) {
+                        float density = view.getResources().getDisplayMetrics().density;
                         view.setState(List.of(), "你ㄋ", true, List.of("你", "ㄋ"), 1,
                                 InputEngine.InputMode.BOPOMOFO, false, false, false, false,
                                 0, 1, -1, InputFieldPolicy.DEFAULT);

@@ -64,8 +64,6 @@ final class BopomofoKeyboardView extends View {
             "_", "+", "{", "}", ":", "\"", "<", ">", "?", "|", "~"
     };
     static final String HARDWARE_LITERAL_PREFIX = "HARDWARE_LITERAL:";
-    private static final int PORTRAIT_SYSTEM_AREA_HEIGHT_DP = 40;
-    private static final int LANDSCAPE_SYSTEM_AREA_HEIGHT_DP = 35;
     private static final int HARDWARE_CONTENT_HEIGHT_DP = 58;
     private static final int HARDWARE_NUMBER_ROW_HEIGHT_DP = 48;
     private static final int HARDWARE_PORTRAIT_SYSTEM_AREA_HEIGHT_DP = 40;
@@ -116,10 +114,9 @@ final class BopomofoKeyboardView extends View {
     private int measuredBottomGap;
     private int measuredHeightBudget;
     private Rect lastWindowBounds;
-    private boolean touchBottomSpaceEnabled = true;
     private boolean hardwareBottomSpaceEnabled = true;
     private boolean integratedBottomControls;
-    private int navigationBarBottomInset;
+    private int systemBottomInset;
     private boolean showGlobe;
     private String pickerPressKey;
     private boolean pickerPressConsumed;
@@ -245,13 +242,13 @@ final class BopomofoKeyboardView extends View {
         return hardwareNumberRowEnabled ? 2 : hardwareSmartTwoRowsEnabled ? 1 : 0;
     }
 
-    void setBottomSpaceEnabled(boolean touchEnabled, boolean hardwareEnabled) {
-        if (touchBottomSpaceEnabled == touchEnabled
-                && hardwareBottomSpaceEnabled == hardwareEnabled) return;
-        touchBottomSpaceEnabled = touchEnabled;
-        hardwareBottomSpaceEnabled = hardwareEnabled;
-        requestLayout();
-        invalidate();
+    void setHardwareBottomSpaceEnabled(boolean enabled) {
+        if (hardwareBottomSpaceEnabled == enabled) return;
+        hardwareBottomSpaceEnabled = enabled;
+        if (mode == Mode.HARDWARE) {
+            requestLayout();
+            invalidate();
+        }
     }
 
     void setIntegratedBottomControls(boolean integrated, boolean showGlobe) {
@@ -341,14 +338,35 @@ final class BopomofoKeyboardView extends View {
     }
 
     int maximumResizeExtent(int availableHeight) {
-        int reserved = Math.max(reservedSystemAreaHeight(), systemAreaHeight());
-        return Math.max(visibleTouchEdges().top(), availableHeight - reserved);
+        return Math.max(visibleTouchEdges().top(), availableHeight - systemAreaHeight());
     }
 
     KeyboardEdgeGeometry visibleTouchEdges() {
-        int visibleContent = Math.round(contentHeight());
-        int gap = Math.min(measuredBottomGap, Math.max(0, getHeight() - systemAreaHeight() - visibleContent));
-        return new KeyboardEdgeGeometry(visibleContent + gap, gap);
+        // Android may measure a probe for a new window without laying it out.
+        // Use the current frame to position and hit-test the visible keyboard.
+        int availableHeight = Math.max(0, getHeight() - systemAreaHeight());
+        return fitKeyboardEdges(availableHeight, desiredTouchContentHeight(), desiredTouchBottomGap());
+    }
+
+    private KeyboardSizeSettings.Size touchSize() {
+        return mode == Mode.LANDSCAPE ? landscapeSize : portraitSize;
+    }
+
+    private int desiredTouchContentHeight() {
+        return resizePreview == null
+                ? Math.round(defaultTouchHeight() * touchSize().heightScale())
+                : resizePreview.contentHeight();
+    }
+
+    private int desiredTouchBottomGap() {
+        return resizePreview == null ? dp(touchSize().bottomGapDp()) : resizePreview.bottom();
+    }
+
+    private KeyboardEdgeGeometry fitKeyboardEdges(int availableHeight, int desiredContent, int desiredGap) {
+        // Reduce optional space before shrinking the keys below the minimum height.
+        int minimumContent = desiredGap > 0 ? Math.min(desiredContent, minimumTouchHeight()) : 0;
+        int gap = Math.min(desiredGap, Math.max(0, availableHeight - minimumContent));
+        return new KeyboardEdgeGeometry(Math.min(availableHeight, desiredContent + gap), gap);
     }
 
     void setState(List<String> candidates, String reading, boolean smartMode,
@@ -400,14 +418,10 @@ final class BopomofoKeyboardView extends View {
                 .stream().map(row -> row.toArray(new String[0])).toArray(String[][]::new);
     }
 
-    boolean hasIntegratedTouchControls() {
-        return isTouchMode() && integratedBottomControls;
-    }
-
-    void setNavigationBarBottomInset(int bottom) {
-        if (navigationBarBottomInset == bottom) return;
-        navigationBarBottomInset = bottom;
-        if (hasIntegratedTouchControls()) {
+    void setSystemBottomInset(int bottom) {
+        if (systemBottomInset == bottom) return;
+        systemBottomInset = bottom;
+        if (isTouchMode()) {
             requestLayout();
             invalidate();
         }
@@ -419,23 +433,12 @@ final class BopomofoKeyboardView extends View {
             case HARDWARE_FLOATING -> dp(showGlobe ? HARDWARE_CONTENT_HEIGHT_DP : 1);
             case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP
                     + hardwareNumberRowCount() * HARDWARE_NUMBER_ROW_HEIGHT_DP);
-            case LANDSCAPE -> Math.round(defaultTouchHeight() * landscapeSize.heightScale());
-            case PORTRAIT -> Math.round(defaultTouchHeight() * portraitSize.heightScale());
+            case LANDSCAPE, PORTRAIT -> desiredTouchContentHeight();
         };
-        int desiredBottomGap = 0;
-        if (isTouchMode()) {
-            KeyboardSizeSettings.Size size = mode == Mode.LANDSCAPE ? landscapeSize : portraitSize;
-            desiredBottomGap = dp(size.bottomGapDp());
-            if (resizePreview != null) {
-                desiredContentHeight = resizePreview.contentHeight();
-                desiredBottomGap = resizePreview.bottom();
-            }
-        }
-        // Budget the reserved area before clamping the keyboard content, even
-        // when that area is disabled. Otherwise a capped IME keeps its height
-        // and gives the removed padding to the keys instead of the host app.
+        int desiredBottomGap = isTouchMode() ? desiredTouchBottomGap() : 0;
         int systemAreaHeight = systemAreaHeight();
-        int reservedHeight = Math.max(reservedSystemAreaHeight(), systemAreaHeight);
+        // Hardware's optional buffer keeps the same content budget when toggled.
+        int reservedHeight = mode == Mode.HARDWARE ? hardwareSystemAreaHeight() : systemAreaHeight;
         int width = MeasureSpec.getSize(widthMeasureSpec);
         Rect windowBounds = Build.VERSION.SDK_INT >= 30
                 ? getContext().getSystemService(WindowManager.class).getCurrentWindowMetrics().getBounds() : null;
@@ -454,10 +457,9 @@ final class BopomofoKeyboardView extends View {
             measuredHeightBudget = resolveSize(desiredContentHeight + desiredBottomGap + reservedHeight,
                     heightMeasureSpec);
             int availableHeight = Math.max(0, measuredHeightBudget - reservedHeight);
-            // A small host window may require reducing the optional gap before shrinking the keys.
-            int minimumContent = isTouchMode() ? Math.min(desiredContentHeight, minimumTouchHeight()) : 0;
-            measuredBottomGap = Math.min(desiredBottomGap, Math.max(0, availableHeight - minimumContent));
-            measuredContentHeight = Math.min(desiredContentHeight, availableHeight - measuredBottomGap);
+            KeyboardEdgeGeometry measuredEdges = fitKeyboardEdges(availableHeight, desiredContentHeight, desiredBottomGap);
+            measuredBottomGap = measuredEdges.bottom();
+            measuredContentHeight = measuredEdges.contentHeight();
         }
         // Keep the content through old-window feedback, while obeying the
         // current parent spec. A WRAP_CONTENT root layout restores the total
@@ -472,8 +474,8 @@ final class BopomofoKeyboardView extends View {
         lastWindowBounds = windowBounds == null ? null : new Rect(windowBounds);
     }
 
-    int cappedIntegratedWindowHeight() {
-        return isTouchMode() && integratedBottomControls
+    int cappedTouchWindowHeight() {
+        return isTouchMode()
                 && (measuredContentHeight < lastDesiredContentHeight || measuredBottomGap < lastDesiredBottomGap)
                 ? measuredHeightBudget : 0;
     }
@@ -506,7 +508,7 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawTouchKeyboard(Canvas canvas, boolean landscape) {
-        float contentHeight = contentHeight();
+        float contentHeight = visibleTouchEdges().contentHeight();
         float top = landscape ? contentHeight / 6f : Math.max(dp(46), contentHeight * 0.15f);
         if (smartMode) {
             drawSmartCellStrip(canvas, new RectF(0, 0, getWidth(), top));
@@ -1470,29 +1472,9 @@ final class BopomofoKeyboardView extends View {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
-    private float contentHeight() {
-        if (isTouchMode() && (integratedBottomControls || measuredBottomGap > 0 || resizePreview != null)) {
-            // The old allocated window can cap a transient pass before the new
-            // WRAP_CONTENT budget arrives. Drawing and hits must still stay safe.
-            return Math.min(measuredContentHeight,
-                    Math.max(0, getHeight() - systemAreaHeight() - measuredBottomGap));
-        }
-        return measuredContentHeight;
-    }
-
     private int systemAreaHeight() {
-        if (isTouchMode() && integratedBottomControls) return navigationBarBottomInset;
-        boolean enabled = mode == Mode.HARDWARE ? hardwareBottomSpaceEnabled : touchBottomSpaceEnabled;
-        return enabled ? reservedSystemAreaHeight() : 0;
-    }
-
-    private int reservedSystemAreaHeight() {
-        return switch (mode) {
-            case HARDWARE_FLOATING -> 0;
-            case PORTRAIT -> dp(PORTRAIT_SYSTEM_AREA_HEIGHT_DP);
-            case LANDSCAPE -> dp(LANDSCAPE_SYSTEM_AREA_HEIGHT_DP);
-            case HARDWARE -> hardwareSystemAreaHeight();
-        };
+        if (isTouchMode()) return systemBottomInset;
+        return mode == Mode.HARDWARE && hardwareBottomSpaceEnabled ? hardwareSystemAreaHeight() : 0;
     }
 
     private int hardwareSystemAreaHeight() {

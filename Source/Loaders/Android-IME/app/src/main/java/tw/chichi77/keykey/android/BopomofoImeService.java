@@ -345,7 +345,7 @@ public final class BopomofoImeService extends InputMethodService
     @Override public void onWindowShown() {
         super.onWindowShown();
         updateKeyboardBottomControls();
-        if (keyboardView != null && keyboardView.hasIntegratedTouchControls()) {
+        if (keyboardView != null && keyboardView.isTouchMode()) {
             keyboardView.requestApplyInsets();
         }
     }
@@ -617,7 +617,7 @@ public final class BopomofoImeService extends InputMethodService
             schedulePhraseDictionaryReload();
             return;
         }
-        if (KeyboardBottomSpaceSettings.isSettingKey(key)) {
+        if (KeyboardBottomSpaceSettings.KEY_HARDWARE_ENABLED.equals(key)) {
             updateKeyboardBottomSpace();
             return;
         }
@@ -1293,8 +1293,7 @@ public final class BopomofoImeService extends InputMethodService
 
     private void updateKeyboardBottomSpace() {
         if (keyboardView == null) return;
-        keyboardView.setBottomSpaceEnabled(KeyboardBottomSpaceSettings.touchEnabled(this),
-                KeyboardBottomSpaceSettings.hardwareEnabled(this));
+        keyboardView.setHardwareBottomSpaceEnabled(KeyboardBottomSpaceSettings.hardwareEnabled(this));
     }
 
     private void updateKeyboardBottomControls() {

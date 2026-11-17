@@ -38,7 +38,6 @@ public final class SettingsActivity extends Activity implements SupporterBilling
     private TextView supporterPrice;
     private Button supporterButton;
     private SupporterBillingManager supporterBillingManager;
-    private CheckBox touchBottomSpace;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -252,12 +251,6 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 startActivity(new Intent(this, KeyboardResizeActivity.class)));
         appearanceContent.addView(resizeKeyboard, matchWrap(dp(0), dp(16)));
 
-        touchBottomSpace = settingsCheckBox(R.string.bottom_language_space_enabled,
-                KeyboardBottomSpaceSettings.touchEnabled(this));
-        touchBottomSpace.setOnCheckedChangeListener((button, checked) ->
-                KeyboardBottomSpaceSettings.setTouchEnabled(SettingsActivity.this, checked));
-        addHelpRow(appearanceContent, touchBottomSpace, R.string.touch_bottom_space_description);
-        updateTouchBottomSpaceAvailability();
 
         LinearLayout hardwareContent = addSettingsGroup(content, savedInstanceState,
                 "hardware", R.string.settings_group_hardware,
@@ -461,17 +454,9 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         });
         CheckBox integrated = settingsCheckBox(R.string.integrated_bottom_controls_enabled,
                 KeyboardBottomControlsSettings.enabled(this));
-        integrated.setOnCheckedChangeListener((button, checked) -> {
-            KeyboardBottomControlsSettings.setEnabled(this, checked);
-            updateTouchBottomSpaceAvailability();
-        });
+        integrated.setOnCheckedChangeListener((button, checked) ->
+                KeyboardBottomControlsSettings.setEnabled(this, checked));
         addHelpRow(parent, integrated, R.string.integrated_bottom_controls_description);
-    }
-
-    private void updateTouchBottomSpaceAvailability() {
-        if (touchBottomSpace == null) return;
-        boolean enabled = !KeyboardBottomControlsSettings.enabled(this);
-        setDependentControlEnabled(touchBottomSpace, enabled);
     }
 
     private void addLayoutOptionLabel(LinearLayout parent, int text) {

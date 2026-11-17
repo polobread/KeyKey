@@ -38,7 +38,6 @@ public final class KeyboardResizeActivity extends Activity {
                 KeyboardLayoutProfileSettings.deletePosition(this));
         keyboard.setTouchKeyboardSizes(KeyboardSizeSettings.size(this, false),
                 KeyboardSizeSettings.size(this, true));
-        keyboard.setBottomSpaceEnabled(KeyboardBottomSpaceSettings.touchEnabled(this), false);
         keyboard.setIntegratedBottomControls(KeyboardBottomControlsSettings.enabled(this), false);
         keyboard.setOnTouchListener((view, event) -> true);
 
