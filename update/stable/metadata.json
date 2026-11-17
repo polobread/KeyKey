@@ -1,24 +1,24 @@
 {
   "channel": "stable",
-  "generated_at": "2026-11-17T07:47:15.985825+00:00",
+  "generated_at": "2026-11-17T08:07:45.159811+00:00",
   "package_managers": {
     "freebsd": "ports/pkg",
     "linux": "distribution repository"
   },
   "releases": [
     {
-      "ed25519_signature": "8uwyNIICoKpYFILGEs53TYekrKTGOznZQwfw4GPRL9sEYomhcQa+Lqd8AQhO3hpijdxIym/fpYbxHZf4qYBZBw==",
+      "ed25519_signature": "/yo2VVKxfw2/un3IGPqPzeZQ7TE9/SB20Vjeq6E1SG8YH1wwtqcRRrFpUG7Inmu2N5oadAFfvMpBiCr9iWk0Cg==",
       "minimum_system_version": "10.0.0",
-      "name": "KeyKey-1.5.0-windows-x64-f01f5eced28e8fa9c1857bc81ac1c198d809f81ee7e0eaa68e2f0bb9c9a3ec6e.exe",
-      "notes": "Windows 1.5.0 四種輸入法統一採用 Guanyinma（觀音嬤）共用核心；自訂詞與學習使用獨立詞庫，支援完整 JSON 備份／匯入及明確匯入舊 Windows 詞庫。",
-      "release_tag": "v1.5.0",
-      "sha256": "f01f5eced28e8fa9c1857bc81ac1c198d809f81ee7e0eaa68e2f0bb9c9a3ec6e",
-      "size": 95275888,
-      "source_sha": "b2f73e432b3e25b29d0db0fb07b29a426b318f93",
-      "tag_sha": "b2f73e432b3e25b29d0db0fb07b29a426b318f93",
+      "name": "KeyKey-1.5.1-windows-x64-b252145575ea25821d2324251e6313f516157268ef30f88c488ce38620a7c8d3.exe",
+      "notes": "Windows 1.5.1 更新好打注音共用詞庫，改善常用字詞的讀音與候選排序，並預先準備首音節查詢所需的資料。候選窗新增 70% 至 300% 的 15 種比例，預設跟隨 Windows 顯示設定。",
+      "release_tag": "v1.5.1",
+      "sha256": "b252145575ea25821d2324251e6313f516157268ef30f88c488ce38620a7c8d3",
+      "size": 95657688,
+      "source_sha": "7a4288a00e76d4ccbb72c89ef407908eaa1c922b",
+      "tag_sha": "7a4288a00e76d4ccbb72c89ef407908eaa1c922b",
       "target": "windows-x64",
-      "url": "https://download.aws.polobread.com/keykey/releases/download/v1.5.0/KeyKey-1.5.0-windows-x64-f01f5eced28e8fa9c1857bc81ac1c198d809f81ee7e0eaa68e2f0bb9c9a3ec6e.exe",
-      "version": "1.5.0",
+      "url": "https://download.aws.polobread.com/keykey/releases/download/v1.5.1/KeyKey-1.5.1-windows-x64-b252145575ea25821d2324251e6313f516157268ef30f88c488ce38620a7c8d3.exe",
+      "version": "1.5.1",
       "windows_signing": "authenticode"
     },
     {
