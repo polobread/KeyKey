@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 
 public final class BopomofoImeService extends InputMethodService
         implements BopomofoKeyboardView.Listener, FloatingCandidateWindow.Listener,
+        HardwareQuickSettingsWindow.Listener,
         SharedPreferences.OnSharedPreferenceChangeListener {
     private HostInputEngine engine;
     private String lastReportedCoreError;
@@ -38,6 +39,7 @@ public final class BopomofoImeService extends InputMethodService
     private SimplifiedChineseOutput simplifiedChineseConverter;
     private BopomofoKeyboardView keyboardView;
     private FloatingCandidateWindow floatingCandidateWindow;
+    private HardwareQuickSettingsWindow hardwareQuickSettings;
     private Vibrator vibrator;
     private Set<String> loadedPhraseCollections;
     private Set<String> pendingPhraseCollections;
@@ -143,6 +145,7 @@ public final class BopomofoImeService extends InputMethodService
         // InputMethodService recreates this view during configuration changes.
         // Dispose the previous window before replacing its only owner reference.
         hideFloatingCandidates();
+        dismissHardwareQuickSettings();
         keyboardView = new BopomofoKeyboardView(this);
         keyboardView.setListener(this);
         KeyboardInputView inputView = new KeyboardInputView(this, keyboardView);
@@ -162,6 +165,7 @@ public final class BopomofoImeService extends InputMethodService
             });
         }
         floatingCandidateWindow = new FloatingCandidateWindow(this, keyboardView, this);
+        hardwareQuickSettings = new HardwareQuickSettingsWindow(this, keyboardView, this);
         updateKeyboardMode();
         requestCursorAnchorUpdates();
         refreshKeyboard();
@@ -196,6 +200,7 @@ public final class BopomofoImeService extends InputMethodService
         if (engine == null) openEngine();
         stopHardwareBackspace();
         if (!restarting) {
+            dismissHardwareQuickSettings();
             fieldPolicyUnlocked = false;
         }
         resetCursorAnchor();
@@ -299,6 +304,7 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onFinishInput() {
+        dismissHardwareQuickSettings();
         stopHardwareBackspace();
         commitPendingComposition();
         if (engine != null) abandonHostEffects();
@@ -322,12 +328,14 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onFinishInputView(boolean finishingInput) {
+        dismissHardwareQuickSettings();
         commitPendingComposition();
         super.onFinishInputView(finishingInput);
     }
 
     @Override
     public void onWindowHidden() {
+        dismissHardwareQuickSettings();
         stopHardwareBackspace();
         commitPendingComposition();
         hideFloatingCandidates();
@@ -398,6 +406,7 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onDestroy() {
         destroying = true;
+        dismissHardwareQuickSettings();
         releaseCaptionController();
         stopHardwareBackspace();
         CandidateWindowSettings.preferences(this)
@@ -414,6 +423,7 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
+        dismissHardwareQuickSettings();
         hideFloatingCandidates();
         resetCursorAnchor();
         rebuildingForConfiguration = true;
@@ -529,6 +539,7 @@ public final class BopomofoImeService extends InputMethodService
                 // Finish with the old setting while it still owns the editable host suffix.
                 if (!hostTransactionFailed) commitPendingComposition();
                 simplifiedChineseOutput = enabled;
+                updateHardwareQuickSettings();
             }
             if (key != null) return;
         }
@@ -627,6 +638,7 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onKey(String key) {
+        if (!key.equals("HARDWARE_LANGUAGE")) dismissHardwareQuickSettings();
         if (key.equals("DISMISS")) {
             if (finishCompositionForKeyboardHide()) requestHideSelf(0);
             return;
@@ -662,7 +674,10 @@ public final class BopomofoImeService extends InputMethodService
             return;
         }
         if (key.equals("HARDWARE_LANGUAGE")) {
-            apply(engine.toggleHardwareLanguage());
+            if (canUseHardwareQuickSettings()) {
+                hardwareQuickSettings.toggle(simplifiedChineseOutput, engine.chineseInputMethod(),
+                        engine.inputMode() != InputEngine.InputMode.BOPOMOFO, engine.isHardwareFullWidth());
+            }
             return;
         }
         if (key.equals("HARDWARE_WIDTH")) {
@@ -682,8 +697,10 @@ public final class BopomofoImeService extends InputMethodService
         apply(engine.handleSoftKey(key, omitTone), key.equals("ENTER"));
     }
 
-    private void openKeyboardSettings() {
+    @Override
+    public void openKeyboardSettings() {
         if (engine == null || hostTransactionFailed) return;
+        dismissHardwareQuickSettings();
         apply(engine.finishCompositionForModeSwitch());
         Intent intent = new Intent(this, SettingsActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -691,13 +708,60 @@ public final class BopomofoImeService extends InputMethodService
     }
 
     @Override
+    public void onScriptToggle() {
+        if (canUseHardwareQuickSettings()) {
+            ChineseInputMethodSettings.setSimplifiedChineseOutput(this, !simplifiedChineseOutput);
+        }
+    }
+
+    @Override
+    public void onInputModeSelected(ChineseInputMethod method) {
+        if (!canUseHardwareQuickSettings()) return;
+        engine.prepareForHardwareInput();
+        if (method != null && method != engine.chineseInputMethod()) {
+            ChineseInputMethodSettings.setMethod(this, method);
+        }
+        boolean wantsEnglish = method == null;
+        boolean english = engine.inputMode() != InputEngine.InputMode.BOPOMOFO;
+        if (!hostTransactionFailed && wantsEnglish != english) {
+            apply(engine.toggleHardwareLanguage());
+        }
+    }
+
+    @Override
+    public void onWidthToggle() {
+        if (canUseHardwareQuickSettings()) apply(engine.toggleHardwareWidth());
+    }
+
+    private boolean canUseHardwareQuickSettings() {
+        return hardwareQuickSettings != null && keyboardView.mode() == BopomofoKeyboardView.Mode.HARDWARE
+                && !hardwareCandidatesCollapsed && engine != null && !hostTransactionFailed;
+    }
+
+    private void updateHardwareQuickSettings() {
+        if (hardwareQuickSettings == null || !hardwareQuickSettings.isShowing()) return;
+        if (!canUseHardwareQuickSettings()) {
+            dismissHardwareQuickSettings();
+            return;
+        }
+        hardwareQuickSettings.update(simplifiedChineseOutput, engine.chineseInputMethod(),
+                engine.inputMode() != InputEngine.InputMode.BOPOMOFO, engine.isHardwareFullWidth());
+    }
+
+    private void dismissHardwareQuickSettings() {
+        if (hardwareQuickSettings != null) hardwareQuickSettings.dismiss();
+    }
+
+    @Override
     public void onCandidate(int displayedIndex) {
+        dismissHardwareQuickSettings();
         if (engine == null || hostTransactionFailed) return;
         apply(engine.selectDisplayedCandidate(displayedIndex));
     }
 
     @Override
     public void onSmartCell(int index) {
+        dismissHardwareQuickSettings();
         if (engine == null || hostTransactionFailed) return;
         if (engine.selectTouchSmartCell(index)) refreshKeyboard();
     }
@@ -713,6 +777,7 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onPage(int delta) {
+        dismissHardwareQuickSettings();
         if (engine == null || hostTransactionFailed) return;
         engine.changePage(delta);
         refreshKeyboard();
@@ -1161,6 +1226,7 @@ public final class BopomofoImeService extends InputMethodService
                 engine.isHardwareFullWidth(), supportPromptVisible,
                 engine.page(), engine.pageCount(),
                 engine.isShowingAssociatedPhrases() ? -1 : engine.highlightedIndex(), fieldPolicy);
+        updateHardwareQuickSettings();
         if (isFloatingCandidateMode() && floatingCandidateWindow != null) {
             boolean candidatesVisible = !engine.displayedCandidates().isEmpty();
             boolean openingCandidates = candidatesVisible && !floatingCandidatesVisible;
@@ -1341,6 +1407,7 @@ public final class BopomofoImeService extends InputMethodService
                     ? BopomofoKeyboardView.Mode.LANDSCAPE : BopomofoKeyboardView.Mode.PORTRAIT;
         }
         keyboardView.setMode(nextMode);
+        if (nextMode != BopomofoKeyboardView.Mode.HARDWARE) dismissHardwareQuickSettings();
         if (!isFloatingCandidateMode()) hideFloatingCandidates();
         updateKeyboardBottomControls();
     }

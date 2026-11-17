@@ -3,15 +3,18 @@ package tw.chichi77.keykey.android;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 
+import android.accessibilityservice.AccessibilityService;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.InputDevice;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inspector.WindowInspector;
@@ -136,6 +139,176 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
     @Test public void horizontalLandscape() throws Exception { exercise("horizontal", 1); }
     @Test public void bottomPortrait() throws Exception { exercise("off", 0); }
     @Test public void bottomLandscape() throws Exception { exercise("off", 1); }
+
+    @Test public void quickSettingsSingleRow() throws Exception { exerciseQuickSettings(false); }
+    @Test public void quickSettingsSmartTwoRows() throws Exception { exerciseQuickSettings(true); }
+
+    private void exerciseQuickSettings(boolean twoRows) throws Exception {
+        prepareHost("off", 0);
+        CandidateWindowSettings.setSmartTwoRowsEnabled(context, twoRows);
+        ChineseInputMethodSettings.setSimplifiedChineseOutput(context, false);
+        try {
+            fresh("smart");
+            assertEquals(twoRows, main(() -> engine().isTouchSmartComposition()));
+            type("tk ");
+            expectText("車");
+            assertTrue(main(() -> engine().hasComposition()));
+
+            InputConnection connection = main(() -> service().getCurrentInputConnection());
+            assertNotNull(connection);
+            int keyboardHeight = main(() -> keyboardView().getHeight());
+            tapHardwareLanguage();
+            await(() -> popupControl("文字輸出：繁體", true) != null);
+            assertSame(connection, main(() -> service().getCurrentInputConnection()));
+            assertEquals(keyboardHeight, (int) main(() -> keyboardView().getHeight()));
+            assertTrue(main(() -> engine().hasComposition()));
+            expectText("車");
+
+            tapHardwareLanguage();
+            await(() -> popupControl("文字輸出：繁體", true) == null);
+            assertTrue(main(() -> engine().hasComposition()));
+            tapHardwareLanguage();
+            tapPopupControl("文字輸出：繁體", true);
+            await(() -> popupControl("文字輸出：簡體", true) != null
+                    && !engine().hasComposition());
+            expectText("車");
+            type("tk ");
+            key(KeyEvent.KEYCODE_ENTER);
+            expectText("車车");
+            if (main(() -> popupControl("文字輸出：簡體", true) == null)) tapHardwareLanguage();
+            tapPopupControl("文字輸出：簡體", true);
+            await(() -> popupControl("文字輸出：繁體", true) != null);
+
+            String method = ChineseInputMethod.SMART.displayName;
+            for (ChineseInputMethod next : List.of(ChineseInputMethod.TRADITIONAL, ChineseInputMethod.CANGJIE,
+                    ChineseInputMethod.SIMPLEX, ChineseInputMethod.SMART)) {
+                chooseQuickInputMethod(method, next.displayName);
+                await(() -> engine().chineseInputMethod() == next && !engine().isEnglishMode());
+                method = next.displayName;
+            }
+            chooseQuickInputMethod(method, "英文");
+            await(() -> engine().isEnglishMode());
+            chooseQuickInputMethod("英文", ChineseInputMethod.TRADITIONAL.displayName);
+            await(() -> engine().chineseInputMethod() == ChineseInputMethod.TRADITIONAL
+                    && !engine().isEnglishMode());
+            chooseQuickInputMethod(ChineseInputMethod.TRADITIONAL.displayName, "英文");
+            await(() -> engine().isEnglishMode());
+
+            tapPopupControl("字元寬度：半形", true);
+            await(() -> popupControl("字元寬度：全形", true) != null && engine().isHardwareFullWidth());
+            type("A");
+            expectText("車车Ａ");
+            chord(KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.KEYCODE_SPACE);
+            assertFalse(main(() -> engine().isHardwareFullWidth()));
+            type("b");
+            expectText("車车Ａb");
+            chord(KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.KEYCODE_SPACE);
+            assertFalse(main(() -> engine().isEnglishMode()));
+            assertEquals(ChineseInputMethod.TRADITIONAL, main(() -> engine().chineseInputMethod()));
+            chord(KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.KEYCODE_SPACE);
+            assertTrue(main(() -> engine().isEnglishMode()));
+            assertTrue(main(editor::hasFocus));
+            expectText("車车Ａb");
+            openSettingsAndReturnToEditor();
+            expectText("車车Ａb");
+        } finally {
+            if (activity != null) main(() -> { activity.finish(); return true; });
+        }
+    }
+
+    private void openSettingsAndReturnToEditor() throws Exception {
+        if (main(() -> popupControl("設定", false) == null)) tapHardwareLanguage();
+        Instrumentation.ActivityMonitor monitor = instrumentation.addMonitor(
+                SettingsActivity.class.getName(), null, false);
+        Activity settings = null;
+        try {
+            tapPopupControl("設定", false);
+            settings = instrumentation.waitForMonitorWithTimeout(monitor, 7000);
+            assertNotNull("The panel must open the existing settings screen", settings);
+            await(settings::hasWindowFocus);
+            assertTrue(instrumentation.getUiAutomation().performGlobalAction(
+                    AccessibilityService.GLOBAL_ACTION_BACK));
+            // The editor can regain focus before the closing activity lets taps through.
+            await(settings::isDestroyed);
+            await(() -> activity.hasWindowFocus() && editor.hasFocus());
+            showKeyboard();
+            assertNull(main(() -> popupControl("設定", false)));
+            tapHardwareLanguage();
+            await(() -> popupControl("設定", false) != null);
+        } finally {
+            instrumentation.removeMonitor(monitor);
+            if (settings != null) {
+                Activity openedSettings = settings;
+                main(() -> { openedSettings.finish(); return true; });
+            }
+        }
+    }
+
+    private void chooseQuickInputMethod(String current, String next) throws Exception {
+        tapPopupControl("輸入方式：" + current, true);
+        tapPopupControl(next, false);
+        await(() -> popupControl("輸入方式：" + next, true) != null);
+    }
+
+    private void tapHardwareLanguage() {
+        float[] coordinates = main(() -> {
+            BopomofoKeyboardView view = keyboardView();
+            assertNotNull(view);
+            List<?> hits = (List<?>) field(view, "hits");
+            Object button = hits.stream().filter(hit -> "HARDWARE_LANGUAGE".equals(field(hit, "key")))
+                    .findFirst().orElseThrow(() -> new AssertionError("Missing candidate strip language key"));
+            RectF bounds = (RectF) field(button, "bounds");
+            int[] origin = new int[2];
+            view.getLocationOnScreen(origin);
+            return new float[]{origin[0] + bounds.centerX(), origin[1] + bounds.centerY()};
+        });
+        tapScreen(coordinates[0], coordinates[1]);
+    }
+
+    private void tapPopupControl(String label, boolean byDescription) throws Exception {
+        await(() -> popupControl(label, byDescription) != null);
+        float[] coordinates = main(() -> {
+            View view = popupControl(label, byDescription);
+            assertNotNull(label, view);
+            int[] origin = new int[2];
+            view.getLocationOnScreen(origin);
+            return new float[]{origin[0] + view.getWidth() / 2f, origin[1] + view.getHeight() / 2f};
+        });
+        tapScreen(coordinates[0], coordinates[1]);
+    }
+
+    private View popupControl(String label, boolean byDescription) {
+        for (View root : WindowInspector.getGlobalWindowViews()) {
+            View result = popupControl(root, label, byDescription);
+            if (result != null) return result;
+        }
+        return null;
+    }
+
+    private View popupControl(View view, String label, boolean byDescription) {
+        if (!view.isShown() || view.getWidth() <= 0 || view.getHeight() <= 0) return null;
+        if (view instanceof TextView text && label.contentEquals(String.valueOf(
+                byDescription ? text.getContentDescription() : text.getText()))) return text;
+        if (view instanceof ViewGroup group) for (int index = 0; index < group.getChildCount(); index++) {
+            View result = popupControl(group.getChildAt(index), label, byDescription);
+            if (result != null) return result;
+        }
+        return null;
+    }
+
+    private void tapScreen(float x, float y) {
+        long downTime = SystemClock.uptimeMillis();
+        for (int action : new int[]{MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP}) {
+            MotionEvent event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, x, y, 0);
+            event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+            try {
+                assertTrue(instrumentation.getUiAutomation().injectInputEvent(event, true));
+            } finally {
+                event.recycle();
+            }
+        }
+        instrumentation.waitForIdleSync();
+    }
 
     private void prepareHost(String mode, int pose) throws Exception {
         floating = mode;
