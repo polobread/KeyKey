@@ -346,14 +346,12 @@ public final class KeyboardBottomSpaceInstrumentedTest {
             keyboard.setLayoutProfile(KeyboardLayoutProfile.ALIGNED);
             keyboard.setBottomSpaceEnabled(true, true);
             keyboard.setIntegratedBottomControls(true, false);
-            var window = new FrameLayout(context);
-            window.addView(keyboard, new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            var window = new KeyboardInputView(context, keyboard);
             measureWindow(window, width, cap, View.MeasureSpec.AT_MOST);
             KeyboardContent original = drawnMainKeys(keyboard, true);
             for (int insetDp : new int[]{24, 64, 0}) {
                 int inset = Math.round(insetDp * density);
-                keyboard.onApplyWindowInsets(new WindowInsets.Builder()
+                window.dispatchApplyWindowInsets(new WindowInsets.Builder()
                         .setInsets(WindowInsets.Type.navigationBars(), Insets.of(0, 0, 0, inset))
                         .setVisible(WindowInsets.Type.navigationBars(), inset > 0).build());
                 int oldWindowHeight = window.getMeasuredHeight();
@@ -379,7 +377,7 @@ public final class KeyboardBottomSpaceInstrumentedTest {
             }
             // A parent's already-consumed navigation area arrives as zero.
             assertEquals(original.totalHeight(), keyboard.getHeight());
-            keyboard.onApplyWindowInsets(new WindowInsets.Builder()
+            window.dispatchApplyWindowInsets(new WindowInsets.Builder()
                     .setInsets(WindowInsets.Type.navigationBars(), Insets.of(0, 0, 0, Math.round(64 * density))).build());
             keyboard.setIntegratedBottomControls(false, false);
             measureWindow(window, width, cap, View.MeasureSpec.AT_MOST);

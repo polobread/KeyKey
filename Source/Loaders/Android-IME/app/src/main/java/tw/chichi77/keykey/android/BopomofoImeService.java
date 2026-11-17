@@ -158,7 +158,7 @@ public final class BopomofoImeService extends InputMethodService
             }
         });
         if (Build.VERSION.SDK_INT >= 36) {
-            keyboardView.setOnApplyWindowInsetsListener((view, insets) -> {
+            inputView.setOnApplyWindowInsetsListener((view, insets) -> {
                 WindowInsets remaining = view.onApplyWindowInsets(insets);
                 view.post(BopomofoImeService.this::updateKeyboardBottomControls);
                 return remaining;
@@ -345,6 +345,9 @@ public final class BopomofoImeService extends InputMethodService
     @Override public void onWindowShown() {
         super.onWindowShown();
         updateKeyboardBottomControls();
+        if (keyboardView != null && keyboardView.hasIntegratedTouchControls()) {
+            keyboardView.requestApplyInsets();
+        }
     }
 
     @Override public void onCustomImeSwitcherButtonRequestedVisible(boolean visible) {

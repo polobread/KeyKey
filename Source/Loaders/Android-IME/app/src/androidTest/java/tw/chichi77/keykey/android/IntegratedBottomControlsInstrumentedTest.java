@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
+import android.graphics.Insets;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Rect;
@@ -17,6 +18,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.view.InputDevice;
 import android.view.View;
 import android.view.Surface;
 import android.view.MotionEvent;
@@ -116,13 +118,15 @@ public final class IntegratedBottomControlsInstrumentedTest {
     }
 
     private record HeightSnapshot(int viewHeight, float contentBottom, int imeWindowHeight,
-            int appImeBottom, JSONObject json) {}
+            int appImeBottom, Rect firstCell, JSONObject json) {}
 
     private static HeightSnapshot captureHeight(Activity host, boolean integrated) {
         var view = findKeyboard();
         float[] contentBottom = {0};
+        Rect firstCell = new Rect();
         view.draw(new Canvas() {
             @Override public void drawRoundRect(RectF bounds, float rx, float ry, Paint paint) {
+                if (firstCell.isEmpty()) bounds.roundOut(firstCell);
                 contentBottom[0] = Math.max(contentBottom[0], bounds.bottom);
             }
         });
@@ -144,7 +148,7 @@ public final class IntegratedBottomControlsInstrumentedTest {
                 Map.entry("captionVisible", Build.VERSION.SDK_INT >= 36 && imeInsets.isVisible(WindowInsets.Type.captionBar())),
                 Map.entry("captionBottom", imeInsets.getInsets(WindowInsets.Type.captionBar()).bottom),
                 Map.entry("navigationBottom", imeInsets.getInsets(WindowInsets.Type.navigationBars()).bottom)));
-        return new HeightSnapshot(view.getHeight(), contentBottom[0], imeDecor.getHeight(), appImeBottom, evidence);
+        return new HeightSnapshot(view.getHeight(), contentBottom[0], imeDecor.getHeight(), appImeBottom, firstCell, evidence);
     }
 
     @Test public void liveImePreservesPendingTextAndRestoresCaption() throws Exception {
@@ -294,7 +298,9 @@ public final class IntegratedBottomControlsInstrumentedTest {
         Map<String, ?> previous = preferences.getAll();
         String[] keys = {KeyboardBottomControlsSettings.KEY_ENABLED, KeyboardBottomSpaceSettings.KEY_TOUCH_ENABLED,
                 KeyboardLayoutProfileSettings.KEY_LAYOUT, KeyboardSizeSettings.KEY_PORTRAIT_PERCENT,
-                KeyboardSizeSettings.KEY_LANDSCAPE_PERCENT, KeyboardLayoutProfileSettings.KEY_SPACING};
+                KeyboardSizeSettings.KEY_LANDSCAPE_PERCENT, KeyboardLayoutProfileSettings.KEY_SPACING,
+                ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
+                BopomofoKeyboardLayoutSettings.KEY_LAYOUT};
         Activity activity = null;
         int originalRotation = Surface.ROTATION_0;
         boolean originalAutoRotate = Settings.System.getInt(context.getContentResolver(),
@@ -304,7 +310,10 @@ public final class IntegratedBottomControlsInstrumentedTest {
                     .putString(keys[2], KeyboardLayoutProfile.ALIGNED.id)
                     .putInt(keys[3], KeyboardSizeSettings.DEFAULT_PERCENT)
                     .putInt(keys[4], KeyboardSizeSettings.DEFAULT_PERCENT)
-                    .putString(keys[5], KeyboardLayoutProfile.KeycapArea.SMALL.id).commit();
+                    .putString(keys[5], KeyboardLayoutProfile.KeycapArea.SMALL.id)
+                    .putString(keys[6], ChineseInputMethod.SMART.name())
+                    .putString(keys[7], BopomofoCompositionModeSettings.valueForMode(BopomofoCompositionMode.SMART))
+                    .putString(keys[8], BopomofoKeyboardLayout.STANDARD.value).commit();
             activity = instrumentation.startActivitySync(new Intent()
                     .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -322,6 +331,12 @@ public final class IntegratedBottomControlsInstrumentedTest {
             var widths = new ArrayList<Integer>();
             for (int rotation : new int[]{Surface.ROTATION_0, Surface.ROTATION_90,
                     Surface.ROTATION_270, Surface.ROTATION_0}) {
+                boolean reopen = !widths.isEmpty() && rotation != Surface.ROTATION_270;
+                if (reopen) {
+                    instrumentation.runOnMainSync(() -> service.onKey("DISMISS"));
+                    await(() -> !host.getWindow().getDecorView().getRootWindowInsets()
+                            .isVisible(WindowInsets.Type.ime()));
+                }
                 assertTrue(instrumentation.getUiAutomation().setRotation(rotation));
                 int orientation = rotation == Surface.ROTATION_0
                         ? android.content.res.Configuration.ORIENTATION_PORTRAIT
@@ -329,6 +344,7 @@ public final class IntegratedBottomControlsInstrumentedTest {
                 await(() -> host.getDisplay().getRotation() == rotation
                         && host.getResources().getConfiguration().orientation == orientation
                         && service.getResources().getConfiguration().orientation == orientation);
+                if (reopen) showEditorKeyboard(host, context);
                 await(() -> findKeyboard() != null && findKeyboard().isShown()
                         && findKeyboard().getRootWindowInsets() != null
                         && host.getWindow().getDecorView().getRootWindowInsets().isVisible(WindowInsets.Type.ime()));
@@ -349,7 +365,17 @@ public final class IntegratedBottomControlsInstrumentedTest {
                     int navBottom = host.getWindow().getDecorView().getRootWindowInsets()
                             .getInsets(WindowInsets.Type.navigationBars()).bottom;
                     int navigationTop = viewport.bottom - navBottom;
-                    int[] location = new int[2]; findKeyboard().getLocationOnScreen(location);
+                    var keyboard = findKeyboard();
+                    int[] location = new int[2];
+                    keyboard.getLocationOnScreen(location);
+                    Rect visible = new Rect();
+                    assertTrue(keyboard.getLocalVisibleRect(visible));
+                    assertFalse("The Smart Mandarin composition row must be drawn", phase.firstCell.isEmpty());
+                    assertTrue("The full composition cell must be inside the visible keyboard",
+                            visible.contains(phase.firstCell));
+                    int firstPaintedTop = location[1] + phase.firstCell.top;
+                    assertTrue("The composition row must start within the IME area reserved by the host",
+                            firstPaintedTop >= viewport.bottom - phase.appImeBottom);
                     float lastPaintedBottom = location[1] + phase.contentBottom;
                     float density = findKeyboard().getResources().getDisplayMetrics().density;
                     int expectedContent = Math.round(KeyboardLayoutProfile.ALIGNED.layout(
@@ -364,7 +390,8 @@ public final class IntegratedBottomControlsInstrumentedTest {
                     }
                     JSONObject geometry = new JSONObject(Map.of("geometry", phase.json,
                             "displayRotation", rotation, "hostNavigationTop", navigationTop,
-                            "lastPaintedScreenBottom", lastPaintedBottom, "sameEditorAndImeWindow", true));
+                            "firstCellScreenTop", firstPaintedTop, "lastPaintedScreenBottom", lastPaintedBottom,
+                            "reopenedAfterRotation", reopen, "sameEditorAndImeWindow", true));
                     Bundle evidence = new Bundle();
                     evidence.putString("keykey_native_rotation_geometry", geometry.toString());
                     instrumentation.sendStatus(0, evidence);
@@ -374,6 +401,30 @@ public final class IntegratedBottomControlsInstrumentedTest {
                 });
             }
             assertNotEquals("The keyboard must really change width across rotation", widths.get(0), widths.get(1));
+            instrumentation.runOnMainSync(() -> assertMissingNavigationDispatchKeepsWindowHeight(findKeyboard()));
+            instrumentation.waitForIdleSync();
+
+            RectF cellOnScreen = new RectF();
+            instrumentation.runOnMainSync(() -> {
+                var keyboard = findKeyboard();
+                for (char key : "su3".toCharArray()) service.onKey(String.valueOf(key));
+                cellOnScreen.set(drawnKeyBounds(keyboard, "你").get(0));
+                int[] location = new int[2];
+                keyboard.getLocationOnScreen(location);
+                cellOnScreen.offset(location[0], location[1]);
+            });
+            long downTime = SystemClock.uptimeMillis();
+            for (int action : new int[]{MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP}) {
+                MotionEvent touch = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action,
+                        cellOnScreen.centerX(), cellOnScreen.top + 2, 0);
+                touch.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+                try {
+                    assertTrue(instrumentation.getUiAutomation().injectInputEvent(touch, true));
+                } finally {
+                    touch.recycle();
+                }
+            }
+            await(() -> labels(findKeyboard()).contains("▲"));
         } finally {
             instrumentation.getUiAutomation().setRotation(originalRotation);
             if (originalAutoRotate) instrumentation.getUiAutomation().setRotation(UiAutomation.ROTATION_UNFREEZE);
@@ -389,6 +440,61 @@ public final class IntegratedBottomControlsInstrumentedTest {
                 Activity host = activity;
                 instrumentation.runOnMainSync(host::finish);
             }
+        }
+    }
+
+    private static void assertMissingNavigationDispatchKeepsWindowHeight(BopomofoKeyboardView keyboard) {
+        View inputView = (View) keyboard.getParent();
+        WindowInsets original = keyboard.getRootWindowInsets();
+        int navigationType = WindowInsets.Type.navigationBars();
+        int navigationBottom = original.getInsets(navigationType).bottom;
+        if (navigationBottom == 0) return; // The hidden and side-bar cases have no bottom reservation.
+        Rect viewport = keyboard.getContext().getSystemService(android.view.WindowManager.class)
+                .getCurrentWindowMetrics().getBounds();
+        int[] location = new int[2];
+        inputView.getLocationOnScreen(location);
+        int bottom = location[1] + inputView.getHeight();
+        int offset = viewport.bottom - bottom;
+        WindowInsets missing = new WindowInsets.Builder(original).setInsets(navigationType, Insets.NONE).build();
+        int exactWidth = View.MeasureSpec.makeMeasureSpec(inputView.getWidth(), View.MeasureSpec.EXACTLY);
+        int freeHeight = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        inputView.offsetTopAndBottom(offset);
+        try {
+            inputView.dispatchApplyWindowInsets(original);
+            inputView.measure(exactWidth, freeHeight);
+            int expectedHeight = inputView.getMeasuredHeight();
+            inputView.dispatchApplyWindowInsets(missing);
+            inputView.measure(exactWidth, freeHeight);
+            assertEquals("A missing dispatch must not shrink the IME window over a visible navigation bar",
+                    expectedHeight, inputView.getMeasuredHeight());
+
+            int originalTop = inputView.getTop();
+            int originalBottom = inputView.getBottom();
+            try {
+                // Reproduce the framework laying out its old frame after the
+                // keyboard has already measured with the recovered inset.
+                inputView.layout(inputView.getLeft(), originalBottom - expectedHeight + navigationBottom,
+                        inputView.getRight(), originalBottom);
+                assertEquals("No key may start above a short IME frame", 0, keyboard.getTop());
+                assertTrue("The keyboard must stay within the actual frame",
+                        keyboard.getBottom() <= inputView.getHeight());
+            } finally {
+                inputView.layout(inputView.getLeft(), originalTop, inputView.getRight(), originalBottom);
+            }
+
+            inputView.offsetTopAndBottom(-navigationBottom);
+            try {
+                inputView.dispatchApplyWindowInsets(missing);
+                inputView.measure(exactWidth, freeHeight);
+                assertEquals("Space already reserved by an ancestor must be counted only once",
+                        expectedHeight - navigationBottom, inputView.getMeasuredHeight());
+            } finally {
+                inputView.offsetTopAndBottom(navigationBottom);
+            }
+        } finally {
+            inputView.offsetTopAndBottom(-offset);
+            inputView.requestApplyInsets();
+            inputView.requestLayout();
         }
     }
 

@@ -33,7 +33,8 @@ final class KeyboardResizeView extends KeyboardInputView {
     }
 
     KeyboardResizeView(KeyboardResizeActivity context, BopomofoKeyboardView keyboard) {
-        super(context, keyboard);
+        // The settings Activity already pads its content above the system bars.
+        super(context, keyboard, false);
         closeEditor = context::finish;
         resizeToolbar = toolbar();
         addAction(resizeToolbar, R.string.keyboard_resize_reset, this::resetResize, 1);

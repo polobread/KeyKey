@@ -1,7 +1,7 @@
-# 琦琦輸入法 / chichi77 KeyKey 1.5.1
+# 琦琦輸入法 / chichi77 KeyKey
 
 正式支援 **Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台**。
-目前六平台的產品原始碼均為 **1.5.1**。Android 與 iOS 新增鍵盤高度拖曳、漢語拼音鍵盤，以及「好打注音省略聲調」選項。各平台仍須完成發布程序。下載桌面正式版請查 [已發布版本](https://github.com/polobread/KeyKey/releases)，手機版以各商店列出的版本為準。
+Android 原始碼版號為 **1.5.2**，其他五個平台為 **1.5.1**。Android 與 iOS 新增鍵盤高度拖曳、漢語拼音鍵盤，以及「好打注音省略聲調」選項。各平台仍須完成發布程序。下載桌面正式版請查 [已發布版本](https://github.com/polobread/KeyKey/releases)，手機版以各商店列出的版本為準。
 macOS、Windows 與 Ubuntu 24.04 安裝包由 GitHub Release 提供；FreeBSD 透過 ports／pkg 安裝，
 套件庫版本可能較晚上架。Android 與 iOS 可分別從 [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android) 與 [App Store](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939) 下載安裝。
 
@@ -194,7 +194,7 @@ bigram 資料、計數及權重，包括匯出檔及併入資料庫的相應部�
 可能含有錯誤；不保證正確性或完整性，詳見
 [`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md)。
 
-六大平台的 1.5.1 原始碼均提供「好打注音」整句組字模式，
+六大平台均提供「好打注音」整句組字模式，
 並可切回傳統逐字注音；已發布套件的功能仍以各版本安裝指南為準。目前原始碼共用預先產生的
 1.5.0 模型，平台建置只驗證與複製，不各自重建。模型以 McBopomofo 的 MIT 授權資料為基礎，
 Bigram 使用 2,300 篇合成文章建模，固定 131 篇文章驗證，並依專案流程整合詞條與讀音補充；
@@ -205,11 +205,11 @@ Bigram 使用 2,300 篇合成文章建模，固定 131 篇文章驗證，並依�
 
 ## English
 
-The source version is **1.5.1 on all six platforms**. Android and iOS add keyboard height adjustment by dragging, a Hanyu Pinyin layout, and optional tone omission for Smart Phonetic. See [published releases](https://github.com/polobread/KeyKey/releases) for desktop downloads, and check the App Store and Google Play listings for the available mobile version.
+The source version is **1.5.2 on Android** and **1.5.1 on the other five platforms**. Android and iOS add keyboard height adjustment by dragging, a Hanyu Pinyin layout, and optional tone omission for Smart Phonetic. See [published releases](https://github.com/polobread/KeyKey/releases) for desktop downloads, and check the App Store and Google Play listings for the available mobile version.
 FreeBSD uses ports/pkg; binary package repositories may receive the update later.
 Download and install the Android and iOS apps from [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android) and the [App Store](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939), respectively.
 
-The 1.5.1 source on all six platforms implements Smart Phonetic
+All six platforms implement Smart Phonetic
 sentence composition, with Traditional Phonetic available as an
 option. For published builds, consult the installation guide for that version.
 Current sources share the pre-generated 1.5.0 model based on MIT-licensed McBopomofo

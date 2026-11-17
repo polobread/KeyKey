@@ -14,7 +14,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.WindowManager;
-import android.view.WindowInsets;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -401,19 +400,17 @@ final class BopomofoKeyboardView extends View {
                 .stream().map(row -> row.toArray(new String[0])).toArray(String[][]::new);
     }
 
-    @Override
-    public WindowInsets onApplyWindowInsets(WindowInsets insets) {
-        if (Build.VERSION.SDK_INT >= 30) {
-            // Parents may already have consumed this area. Only reserve what
-            // reaches this view, rather than reading the root's original insets.
-            int bottom = insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
-            if (navigationBarBottomInset != bottom) {
-                navigationBarBottomInset = bottom;
-                requestLayout();
-                invalidate();
-            }
+    boolean hasIntegratedTouchControls() {
+        return isTouchMode() && integratedBottomControls;
+    }
+
+    void setNavigationBarBottomInset(int bottom) {
+        if (navigationBarBottomInset == bottom) return;
+        navigationBarBottomInset = bottom;
+        if (hasIntegratedTouchControls()) {
+            requestLayout();
+            invalidate();
         }
-        return super.onApplyWindowInsets(insets);
     }
 
     @Override

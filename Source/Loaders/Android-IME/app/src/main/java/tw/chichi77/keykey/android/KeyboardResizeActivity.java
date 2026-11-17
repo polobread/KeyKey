@@ -40,8 +40,6 @@ public final class KeyboardResizeActivity extends Activity {
                 KeyboardSizeSettings.size(this, true));
         keyboard.setBottomSpaceEnabled(KeyboardBottomSpaceSettings.touchEnabled(this), false);
         keyboard.setIntegratedBottomControls(KeyboardBottomControlsSettings.enabled(this), false);
-        // The Activity already keeps the preview above the system navigation area.
-        keyboard.setOnApplyWindowInsetsListener((view, insets) -> insets);
         keyboard.setOnTouchListener((view, event) -> true);
 
         ChineseInputMethod method = ChineseInputMethodSettings.method(this);
