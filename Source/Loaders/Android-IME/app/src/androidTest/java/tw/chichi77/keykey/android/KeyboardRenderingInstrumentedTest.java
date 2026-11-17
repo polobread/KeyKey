@@ -732,7 +732,8 @@ public final class KeyboardRenderingInstrumentedTest {
             KeyboardLayoutProfile.Orientation orientation, KeyboardLayoutProfile.Plane plane,
             boolean shifted, KeyboardLayoutProfile.DeletePosition position) {
         var result = new ArrayList<String>();
-        profile.layout(orientation).rows(plane, shifted, position).forEach(result::addAll);
+        profile.layout(orientation).rows(plane, shifted, position, BopomofoKeyboardLayout.STANDARD)
+                .forEach(result::addAll);
         result.addAll(profile.layout(orientation).functionKeys(position));
         return result;
     }
@@ -756,6 +757,38 @@ public final class KeyboardRenderingInstrumentedTest {
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
         view.layout(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
         KeyCanvas canvas = new KeyCanvas(); view.draw(canvas); return canvas;
+    }
+
+    @Test public void etenKeycapsFollowTheirActionsInAllProfilesAndDirections() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            for (var profile : KeyboardLayoutProfile.available()) {
+                for (var mode : List.of(BopomofoKeyboardView.Mode.PORTRAIT, BopomofoKeyboardView.Mode.LANDSCAPE)) {
+                    var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
+                    view.setLayoutProfile(profile);
+                    view.setMode(mode);
+                    var actions = new ArrayList<String>();
+                    view.setListener(keyListener(actions));
+                    view.setKeyboardLayout(BopomofoKeyboardLayout.ETEN);
+                    KeyCanvas eten = draw(view);
+                    for (var sample : java.util.Map.of("ㄦ", "=", "ㄘ", "'", "ˇ", "3").entrySet()) {
+                        var caption = eten.texts.stream().filter(t -> t.value.equals(sample.getKey()))
+                                .findFirst().orElseThrow();
+                        var slot = eten.keys.get(caption.keyIndex);
+                        tap(view, slot.centerX(), slot.centerY());
+                        assertEquals(sample.getValue(), actions.remove(0));
+                    }
+                    view.setKeyboardLayout(BopomofoKeyboardLayout.ETEN26);
+                    KeyCanvas eten26 = draw(view);
+                    assertFalse(eten26.texts.stream().anyMatch(t -> t.value.equals("ㄦ")));
+                    var j = eten26.texts.stream().filter(t -> t.value.equals("j"))
+                            .findFirst().orElseThrow();
+                    var slot = eten26.keys.get(j.keyIndex);
+                    tap(view, slot.centerX(), slot.centerY());
+                    assertEquals(List.of("j"), actions);
+                }
+            }
+        });
     }
 
     @Test public void touchProfilesRenderReachableActionsAcrossDirectionsAndPlacements() {
@@ -799,7 +832,7 @@ public final class KeyboardRenderingInstrumentedTest {
                                 view.draw(canvas);
                                 var expected = new ArrayList<String>();
                                 KeyboardLayoutGeometry.resolvedRows(profile, orientation, placement.plane(), shifted,
-                                        deletePosition).forEach(expected::addAll);
+                                        deletePosition, mapping).forEach(expected::addAll);
                                 expected.addAll(KeyboardLayoutGeometry.resolvedFunctionKeys(profile, orientation,
                                         deletePosition));
                                 if (profile.split) expected.add(0, "DISMISS");

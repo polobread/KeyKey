@@ -39,7 +39,7 @@ final class BopomofoKeyboardView extends View {
 
     private record TouchGeometry(KeyboardLayoutProfile profile, KeyboardLayoutProfile.Orientation orientation,
             KeyboardLayoutProfile.Plane plane, boolean shifted, KeyboardLayoutProfile.DeletePosition deletePosition,
-            float widthDp, boolean integrated, boolean showGlobe) {}
+            float widthDp, boolean integrated, boolean showGlobe, BopomofoKeyboardLayout keyboardLayout) {}
 
     private static final class Hit {
         private final RectF bounds;
@@ -534,15 +534,16 @@ final class BopomofoKeyboardView extends View {
             KeyboardLayoutProfile.Plane plane) {
         float widthDp = getWidth() / getResources().getDisplayMetrics().density;
         var next = new TouchGeometry(layoutProfile, orientation, plane, shifted, deletePosition,
-                widthDp, integratedBottomControls, showGlobe);
+                widthDp, integratedBottomControls, showGlobe, keyboardLayout);
         if (next.equals(touchGeometry)) return;
         touchKeys = KeyboardLayoutGeometry.keys(layoutProfile, orientation, plane, shifted, deletePosition,
-                widthDp, integratedBottomControls, showGlobe);
+                widthDp, integratedBottomControls, showGlobe, keyboardLayout);
         // The ㄖ slot remains the font reference even when another plane is drawn.
         var references = plane == KeyboardLayoutProfile.Plane.BOPOMOFO && !shifted ? touchKeys
                 : KeyboardLayoutGeometry.keys(layoutProfile, orientation, KeyboardLayoutProfile.Plane.BOPOMOFO,
-                        false, deletePosition, widthDp, integratedBottomControls, showGlobe);
-        var reference = references.stream().filter(key -> key.action().equals("b")).findFirst().orElseThrow();
+                        false, deletePosition, widthDp, integratedBottomControls, showGlobe, keyboardLayout);
+        String referenceAction = keyboardLayout == BopomofoKeyboardLayout.ETEN ? "j" : "b";
+        var reference = references.stream().filter(key -> key.action().equals(referenceAction)).findFirst().orElseThrow();
         referenceTouchKeyWidth = reference.right() - reference.left();
         touchGeometry = next;
     }
@@ -1448,11 +1449,9 @@ final class BopomofoKeyboardView extends View {
         if (chineseInputMethod.isTable())
             return inputMode == InputEngine.InputMode.BOPOMOFO && !temporaryEnglish
                     ? ChineseInputMethod.root(key) : "";
-        if (keyboardLayout != BopomofoKeyboardLayout.STANDARD) return "";
         if (inputMode != InputEngine.InputMode.BOPOMOFO && !temporaryEnglish
                 || key.length() != 1) return "";
-        String symbol = BopomofoKeyboardLayout.symbolForKey(Character.toLowerCase(key.charAt(0)));
-        return symbol;
+        return keyboardLayout.symbolForKey(key.charAt(0));
     }
 
     private KeyboardLayoutProfile.Orientation touchOrientation() {

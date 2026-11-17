@@ -92,8 +92,11 @@ final class KeyboardLayoutProfile {
         }
 
         List<List<String>> rows(Plane plane, boolean shifted) { return planes.get(plane).rows(shifted); }
-        List<List<String>> rows(Plane plane, boolean shifted, DeletePosition position) {
-            return rows(plane, shifted).stream().map(row -> row.stream()
+        List<List<String>> rows(Plane plane, boolean shifted, DeletePosition position,
+                BopomofoKeyboardLayout keyboardLayout) {
+            var source = plane == Plane.BOPOMOFO && keyboardLayout == BopomofoKeyboardLayout.ETEN
+                    ? BopomofoKeyboardLayout.ETEN_TOUCH_ROWS : rows(plane, shifted);
+            return source.stream().map(row -> row.stream()
                     .map(key -> position == DeletePosition.ABOVE_ENTER && key.equals("SHIFT")
                             ? "BACKSPACE" : key).collect(Collectors.toList())).collect(Collectors.toList());
         }

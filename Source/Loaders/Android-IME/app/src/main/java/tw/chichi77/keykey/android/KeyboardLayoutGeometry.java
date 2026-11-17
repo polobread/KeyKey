@@ -29,7 +29,14 @@ final class KeyboardLayoutGeometry {
     static List<List<String>> resolvedRows(KeyboardLayoutProfile profile,
             KeyboardLayoutProfile.Orientation orientation, KeyboardLayoutProfile.Plane plane,
             boolean shifted, KeyboardLayoutProfile.DeletePosition deletePosition) {
-        var rows = profile.layout(orientation).rows(plane, shifted, deletePosition);
+        return resolvedRows(profile, orientation, plane, shifted, deletePosition, BopomofoKeyboardLayout.STANDARD);
+    }
+
+    static List<List<String>> resolvedRows(KeyboardLayoutProfile profile,
+            KeyboardLayoutProfile.Orientation orientation, KeyboardLayoutProfile.Plane plane,
+            boolean shifted, KeyboardLayoutProfile.DeletePosition deletePosition,
+            BopomofoKeyboardLayout keyboardLayout) {
+        var rows = profile.layout(orientation).rows(plane, shifted, deletePosition, keyboardLayout);
         if (!profile.split) return rows;
         // Split is one twelve-column design on phones and tablets in either direction.
         var result = new ArrayList<List<String>>();
@@ -77,8 +84,16 @@ final class KeyboardLayoutGeometry {
             KeyboardLayoutProfile.Plane plane, boolean shifted,
             KeyboardLayoutProfile.DeletePosition deletePosition, float widthDp,
             boolean integrated, boolean showGlobe) {
+        return keys(profile, orientation, plane, shifted, deletePosition, widthDp, integrated, showGlobe,
+                BopomofoKeyboardLayout.STANDARD);
+    }
+
+    static List<Key> keys(KeyboardLayoutProfile profile, KeyboardLayoutProfile.Orientation orientation,
+            KeyboardLayoutProfile.Plane plane, boolean shifted,
+            KeyboardLayoutProfile.DeletePosition deletePosition, float widthDp,
+            boolean integrated, boolean showGlobe, BopomofoKeyboardLayout keyboardLayout) {
         var layout = profile.layout(orientation);
-        var rows = resolvedRows(profile, orientation, plane, shifted, deletePosition);
+        var rows = resolvedRows(profile, orientation, plane, shifted, deletePosition, keyboardLayout);
         float effectiveColumns = 0;
         for (int row = 0; row < rows.size(); row++) {
             effectiveColumns = Math.max(effectiveColumns, rows.get(row).size() + layout.rowOffset(plane, row));

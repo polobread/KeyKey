@@ -1642,7 +1642,6 @@ impl InputSession {
         self.state.touch_phonetic.grid.enabled
             && self.config.profile == BehaviorProfile::Touch
             && self.config.method == InputMethod::Smart
-            && self.config.layout.supports_touch_phonetics()
             && !self.state.english
     }
 
@@ -1914,7 +1913,6 @@ impl InputSession {
         if self.config.profile != BehaviorProfile::Touch
             || self.config.method != InputMethod::Smart
             || self.state.english
-            || !layout.supports_touch_phonetics()
             || !layout.is_reading_key(character)
             || !self.state.smart.touch_reading_keys().is_empty()
             || (!self.touch_phonetic_pending()
@@ -1923,8 +1921,9 @@ impl InputSession {
         {
             return self.character(character, Modifiers::default(), effects);
         }
-        // Hsu's letter tones can also start the next syllable.
-        let is_unambiguous_tone = layout != BopomofoLayout::Hsu && layout.is_tone_key(character);
+        // Compact layouts reuse their tone keys as initials.
+        let is_unambiguous_tone =
+            !layout.has_ambiguous_tone_keys() && layout.is_tone_key(character);
         if is_unambiguous_tone && !self.touch_phonetic_pending() {
             return self.character(character, Modifiers::default(), effects);
         }

@@ -72,18 +72,20 @@ public enum KeyboardLayout {
     public static func bopomofoGlyph(
         for key: String, layout: BopomofoKeyboardLayout = .standard
     ) -> String? {
-        guard layout == .standard else { return nil }
         guard key.count == 1, let character = key.first else { return nil }
-        return StandardBopomofoLayout.glyph(for: character).map(String.init)
+        return layout.glyph(for: character).map(String.init)
     }
 
     /// How much bigger the glyph is drawn than the rest of the caption. The
     /// tone marks (ˊ ˇ ˋ ˙) are spacing modifier letters, drawn small and high
     /// in the em box, so at the size that suits ㄅ they are barely readable.
     /// The key position underneath keeps the normal hint size.
-    public static func glyphPointScale(for key: String) -> Double {
-        guard key.count == 1, let character = key.first else { return 1 }
-        return StandardBopomofoLayout.isToneKey(character) ? 1.8 : 1
+    public static func glyphPointScale(
+        for key: String, layout: BopomofoKeyboardLayout = .standard
+    ) -> Double {
+        guard key.count == 1, let character = key.first, let glyph = layout.glyph(for: character)
+        else { return 1 }
+        return "ˊˇˋ˙".contains(glyph) ? 1.8 : 1
     }
 
     /// What the candidate strip shows when there are no candidates. This is the

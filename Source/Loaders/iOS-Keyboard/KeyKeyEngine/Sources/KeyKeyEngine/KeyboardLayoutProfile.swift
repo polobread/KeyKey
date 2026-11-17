@@ -118,8 +118,11 @@ public struct KeyboardLayoutProfile: Equatable, Identifiable, Sendable {
     /// The saved original rows stay available for compatibility and baselines.
     /// Only the two control actions exchange positions; reading indices do not move.
     public func resolvedRows(orientation: Orientation, plane: Plane, shifted: Bool,
-                             deleteShiftPosition: KeyboardDeleteShiftPosition) -> [[String]] {
-        rows(orientation: orientation, plane: plane, shifted: shifted).map { row in
+                             deleteShiftPosition: KeyboardDeleteShiftPosition,
+                             keyboardLayout: BopomofoKeyboardLayout = .standard) -> [[String]] {
+        let mainRows = plane == .bopomofo && keyboardLayout == .eten
+            ? OriginalFullLayout.etenRows : rows(orientation: orientation, plane: plane, shifted: shifted)
+        return mainRows.map { row in
             row.map { deleteShiftPosition.mainKey(for: $0) }
         }
     }
@@ -305,6 +308,14 @@ private enum OriginalFullLayout {
         ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-"],
         ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "@"],
         ["a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "EMOJI"],
+        ["z", "x", "c", "v", "b", "n", "m", ",", ".", "/", "SHIFT"]
+    ]
+
+    // The full 倚天 layout needs apostrophe and equals as reading keys.
+    static let etenRows: [[String]] = [
+        ["1", "2", "3", "4", "7", "8", "9", "0", "-", "=", "EMOJI"],
+        ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "@"],
+        ["a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'"],
         ["z", "x", "c", "v", "b", "n", "m", ",", ".", "/", "SHIFT"]
     ]
 

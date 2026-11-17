@@ -71,6 +71,49 @@ public final class GuanyinmaIntegrationTest {
             }
         }
     }
+    @Test public void etenLayoutsUseTheSameNativeMappingForTouchAndHardware() throws Exception {
+        record LayoutSample(BopomofoKeyboardLayout layout, String toned) {}
+        for (var sample : List.of(new LayoutSample(BopomofoKeyboardLayout.ETEN, "ne3hz3"),
+                new LayoutSample(BopomofoKeyboardLayout.ETEN26, "nejhzj"))) {
+            for (boolean hardware : new boolean[] {false, true}) {
+                try (Fixture fixture = new Fixture();
+                        GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
+                    engine.setHardwareSmartEditing(hardware);
+                    engine.setKeyboardLayout(sample.layout());
+                    type(engine, sample.toned(), hardware);
+                    assertNull(engine.lastError());
+                    assertEquals("你好", engine.completedSmartText());
+                    assertEquals("你好", engine.enter().committedText());
+                }
+                try (Fixture fixture = new Fixture();
+                        GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.TRADITIONAL, text -> true)) {
+                    engine.setHardwareSmartEditing(hardware);
+                    engine.setKeyboardLayout(sample.layout());
+                    type(engine, sample.toned().substring(0, 3), hardware);
+                    assertNull(engine.lastError());
+                    int candidate = engine.displayedCandidates().indexOf("你");
+                    assertTrue("候選包含「你」", candidate >= 0);
+                    assertEquals("你", engine.selectDisplayedCandidate(candidate).committedText());
+                }
+            }
+        }
+    }
+
+    @Test public void etenLayoutsOmitToneInTheTouchGrid() throws Exception {
+        for (var layout : List.of(BopomofoKeyboardLayout.ETEN, BopomofoKeyboardLayout.ETEN26)) {
+            try (Fixture fixture = new Fixture();
+                    GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
+                engine.setKeyboardLayout(layout);
+                engine.setTouchPhoneticGrid(true);
+                for (char key : "nehz".toCharArray()) engine.handleSoftKey(String.valueOf(key), true);
+                assertNull(engine.lastError());
+                assertTrue(engine.hasPendingPhoneticReading());
+                assertEquals(List.of("你", "好"), engine.touchSmartCells());
+                assertEquals("你好", engine.enter().committedText());
+            }
+        }
+    }
+
     @Test public void pinyinUsesNativeTouchAndHardwareReadingAndSelection() throws Exception {
         for (boolean hardware : new boolean[]{false, true}) {
             try (Fixture fixture = new Fixture();

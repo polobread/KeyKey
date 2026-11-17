@@ -481,7 +481,7 @@ private final class InputMethodSettingsViewController: UIViewController {
         toneOmission.addTarget(self, action: #selector(toneOmissionChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(settingWithHelp(
             SmartMandarinToneOmissionSettings.displayName,
-            message: "預設關閉。開啟後，觸控好打注音的標準注音、許氏與漢語拼音可連續輸入讀音，並在 11 格組字區顯示轉出的中文字。仍可照常輸入聲調。",
+            message: "預設關閉。開啟後，觸控好打注音的標準注音、許氏、漢語拼音、倚天與倚天 26 鍵可連續輸入讀音，並在 11 格組字區顯示轉出的中文字。仍可照常輸入聲調。",
             identifier: "app-settings.omit-tones.info",
             control: toneOmission
         ))
@@ -511,6 +511,7 @@ private final class InputMethodSettingsViewController: UIViewController {
         ))
         let layouts = BopomofoKeyboardLayout.allCases
         let layoutControl = UISegmentedControl(items: layouts.map(\.displayName))
+        layoutControl.apportionsSegmentWidthsByContent = true
         layoutControl.selectedSegmentIndex = layouts.firstIndex(of: layoutSettings.layout) ?? 0
         layoutControl.accessibilityIdentifier = "app-settings.keyboard-layout"
         layoutControl.addTarget(self, action: #selector(layoutChanged(_:)), for: .valueChanged)
@@ -717,7 +718,9 @@ private final class InputMethodSettingsViewController: UIViewController {
     }
 
     @objc private func layoutChanged(_ sender: UISegmentedControl) {
-        layoutSettings.setLayout(BopomofoKeyboardLayout.allCases[sender.selectedSegmentIndex])
+        let layouts = BopomofoKeyboardLayout.allCases
+        guard layouts.indices.contains(sender.selectedSegmentIndex) else { return }
+        layoutSettings.setLayout(layouts[sender.selectedSegmentIndex])
     }
 
     @objc private func colorChanged(_ sender: UISegmentedControl) {

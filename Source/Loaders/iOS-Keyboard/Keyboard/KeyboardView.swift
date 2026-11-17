@@ -444,7 +444,8 @@ final class KeyboardView: UIView {
     private var currentKeyRows: [[String]] {
         layoutProfile.resolvedRows(orientation: layoutOrientation,
             plane: currentPlane,
-            shifted: state.shifted, deleteShiftPosition: deleteShiftPosition)
+            shifted: state.shifted, deleteShiftPosition: deleteShiftPosition,
+            keyboardLayout: state.keyboardLayout)
     }
 
     func setLayoutOrientation(_ orientation: KeyboardLayoutProfile.Orientation) {
@@ -874,7 +875,8 @@ final class KeyboardView: UIView {
         button.hint.isHidden = !keyFontSize.showsKeyHints || glyph == nil
         button.glyph.textColor = Palette.primaryText
         button.hint.textColor = Palette.hintText
-        let readingScale = state.chineseInputMethod.isTable ? 1 : KeyboardLayout.glyphPointScale(for: key)
+        let readingScale = state.chineseInputMethod.isTable ? 1
+            : KeyboardLayout.glyphPointScale(for: key, layout: state.keyboardLayout)
         button.glyphScale = glyph != nil && !state.temporaryEnglish ? readingScale : 1
         button.hintScale = glyph != nil && state.temporaryEnglish ? readingScale : 1
         if let glyph {

@@ -100,6 +100,36 @@ struct GuanyinmaIntegrationTests {
         #expect(traditional.selectDisplayedCandidate(middle).text == "中")
     }
 
+    @Test func etenLayoutsSupportExplicitTonesOnTouchAndHardwareAndOmittedTonesOnTouch() throws {
+        let fixture = try Fixture()
+        for (layout, first, toned, untoned) in [
+            (BopomofoKeyboardLayout.eten, "ne3", "ne3hz3", "nehz"),
+            (.eten26, "nej", "nejhzj", "nehz"),
+        ] {
+            let touch = try fixture.engine(layout: layout)
+            type(toned, in: touch)
+            #expect(touch.completedSmartText == "你好")
+            #expect(touch.enter().text == "你好")
+
+            touch.omitsTones = true
+            type(untoned, in: touch)
+            #expect(touch.usesTouchPhoneticGrid)
+            #expect(touch.touchSmartCells == ["你", "好"])
+            #expect(touch.enter().text == "你好")
+
+            type(toned, in: touch)
+            #expect(touch.touchSmartCells == ["你", "好"])
+            #expect(touch.enter().text == "你好")
+            #expect(touch.lastError == nil)
+
+            let hardware = try fixture.engine(method: .traditional, hardware: true, layout: layout)
+            type(first, in: hardware, hardware: true)
+            let candidate = try #require(hardware.displayedCandidates.firstIndex(of: "你"))
+            #expect(hardware.selectDisplayedCandidate(candidate).text == "你")
+            #expect(hardware.lastError == nil)
+        }
+    }
+
     @Test func toneOmissionIsOptInAndKeepsAllTouchLayoutsAndExplicitTones() throws {
         let fixture = try Fixture()
         let engine = try fixture.engine()

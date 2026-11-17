@@ -129,9 +129,8 @@ fn syllable_matches(layout: BopomofoLayout, raw: &str, start: usize) -> Vec<Syll
         let spelling = &raw[start..end];
         let tone_key = raw.as_bytes().get(end).copied();
         let explicit = tone_key.is_some_and(|key| phonetic_tone(layout, key).is_some());
-        // Hsu's letter tones are also initial consonants, so keep the
-        // untoned boundary alongside a possible tone-consuming edge.
-        let ambiguous = layout == BopomofoLayout::Hsu && tone_key != Some(b' ');
+        // Keep a possible next initial alongside a letter tone.
+        let ambiguous = layout.has_ambiguous_tone_keys() && tone_key != Some(b' ');
         if let Some((syllable, tone)) =
             tone_key.and_then(|key| phonetic_toned_syllable(layout, spelling, key))
         {
