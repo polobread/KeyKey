@@ -154,6 +154,35 @@ static void testFailure(const fs::path& model, const fs::path& root) {
     h.loader.resetState(); h.install(module.get()); h.type("su3cl3"); h.press(OVKeyCode::Return);
     require(h.committed == "你好" && h.loader.notifyMessage().empty(), "corrected configuration creates a Rust session without fallback state");
 }
+static void testSmartToneOmissionPreference(const fs::path& model, const fs::path& root) {
+    Harness h;
+    std::unique_ptr<OVModulePackage> package(GuanyinmaCreateModulePackage(model.u8string(),
+        (root / "omit-tone-users.db").u8string()));
+    PVBasicKeyValueMapImpl values;
+    OVKeyValueMap config(&values);
+    auto module = input(package.get(), 1, h, &config);
+    h.install(module.get());
+
+    h.type("su");
+    require(!h.reading.isEmpty() && h.composing.isEmpty(), "missing omission setting preserves ordinary phonetic input");
+    config.setKeyBoolValue("OmitTone", true);
+    module->loadConfig(&config, &h.loader);
+    h.type("3");
+    h.press(OVKeyCode::Return);
+    require(h.committed == "你", "loading the setting preserves the in-progress reading");
+
+    h.type("sucl");
+    h.press(OVKeyCode::Return);
+    require(h.committed == "你你好", "the existing context picks up the saved omission setting");
+    h.type("su3cl3");
+    h.press(OVKeyCode::Return);
+    require(h.committed == "你你好你好", "explicit tones still work with native omission enabled");
+
+    config.setKeyBoolValue("OmitTone", false);
+    module->loadConfig(&config, &h.loader);
+    h.type("su");
+    require(!h.reading.isEmpty() && h.composing.isEmpty(), "disabling omission restores ordinary phonetic input");
+}
 static void testPendingHostCommit(const fs::path& model, const fs::path& root) {
     Harness h;
     std::unique_ptr<OVModulePackage> package(GuanyinmaCreateModulePackage(model.u8string(),
@@ -182,6 +211,7 @@ int main(int argc, char** argv) {
             if (argc != 3) throw std::runtime_error("expected model and scratch paths");
             testPackage(argv[1], argv[2]);
             testFailure(argv[1], argv[2]);
+            testSmartToneOmissionPreference(argv[1], argv[2]);
             testPendingHostCommit(argv[1], argv[2]);
             std::cout << "Guanyinma macOS package: " << checks << " checks passed.\n";
             return 0;

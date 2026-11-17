@@ -64,6 +64,8 @@ pub struct SmartOptions {
     /// Use model Bigram probabilities and context backoff during composition.
     pub use_bigrams: bool,
     pub space_opens_candidates: bool,
+    /// Decode consecutive phonetic keys without requiring tones on desktop.
+    pub omit_tone: bool,
     pub candidate_cursor_at_end: bool,
     pub clear_composing_with_escape: bool,
     /// Force explicit Shift ASCII letters to uppercase after FE translation.
@@ -82,6 +84,7 @@ impl Default for SmartOptions {
         Self {
             use_bigrams: true,
             space_opens_candidates: true,
+            omit_tone: false,
             candidate_cursor_at_end: false,
             clear_composing_with_escape: false,
             shift_always_uppercase: false,
@@ -427,27 +430,34 @@ impl SmartState {
     }
 
     /// Materialize a provisional suggestion using its original dictionary
-    /// readings, pinning each chosen word before enforcing the touch limit.
-    pub(crate) fn choose_touch_words(
+    /// readings, pinning each chosen word before enforcing the composition limit.
+    pub(crate) fn choose_phonetic_words(
         &mut self,
         database: &ModelDatabase,
         chunks: &[crate::phonetic_suggestions::PhoneticChunk],
         options: &SmartOptions,
         learn: bool,
+        append: bool,
         effects: &mut Effects,
     ) -> Result<(), DatabaseError> {
         self.sync_model_options(options);
         self.cancel_mark_for_other_key(effects);
         self.candidates.clear();
         for chunk in chunks {
-            let start = self.graph.len();
+            let start = if append {
+                self.graph.len()
+            } else {
+                self.cursor
+            };
+            let mut end = start;
             for key in chunk.query.as_bytes().chunks_exact(2) {
                 let key = std::str::from_utf8(key).expect("phonetic dictionary keys are ASCII");
-                if !self.graph.insert(database, self.graph.len(), key)? {
+                if !self.graph.insert(database, end, key)? {
                     return Err(DatabaseError::InvalidData(
                         "suggested word contains an unavailable reading".into(),
                     ));
                 }
+                end += 1;
             }
             let candidate = SmartCandidate {
                 start,
@@ -460,7 +470,7 @@ impl SmartState {
                     "suggested word no longer belongs to the graph".into(),
                 ));
             }
-            self.cursor = self.graph.len();
+            self.cursor = end;
             self.enforce_limit(options, effects);
         }
         Ok(())
@@ -477,11 +487,12 @@ impl SmartState {
     ) -> Result<usize, DatabaseError> {
         let consumed = if self.graph.is_empty() {
             let Some(chunk) = inferred else { return Ok(0) };
-            self.choose_touch_words(
+            self.choose_phonetic_words(
                 database,
                 std::slice::from_ref(chunk),
                 options,
                 false,
+                true,
                 effects,
             )?;
             *chunk
@@ -721,6 +732,21 @@ impl SmartState {
         Ok(())
     }
 
+    pub(crate) fn has_control_punctuation(
+        &mut self,
+        database: &ModelDatabase,
+        character: char,
+        modifiers: Modifiers,
+    ) -> Result<bool, DatabaseError> {
+        if !modifiers.control || modifiers.command || modifiers.keypad || modifiers.caps_lock {
+            return Ok(false);
+        }
+        self.graph.is_in_dictionary(
+            database,
+            &control_punctuation_query(character, modifiers.alt),
+        )
+    }
+
     pub fn character(
         &mut self,
         database: &ModelDatabase,
@@ -756,13 +782,7 @@ impl SmartState {
                 return Ok(());
             }
             self.cancel_mark_for_other_key(effects);
-            let query = if modifiers.alt {
-                format!("_ctrl_opt_{character}")
-            } else if character == '0' || character == '1' {
-                "_punctuation_list".into()
-            } else {
-                format!("_ctrl_{character}")
-            };
+            let query = control_punctuation_query(character, modifiers.alt);
             if !self.graph.is_in_dictionary(database, &query)? {
                 if self.is_empty() {
                     effects.handled = false;
@@ -940,6 +960,16 @@ impl SmartState {
         }
         self.cursor = self.cursor.min(self.graph.len());
         Ok(())
+    }
+}
+
+fn control_punctuation_query(character: char, alt: bool) -> String {
+    if alt {
+        format!("_ctrl_opt_{character}")
+    } else if matches!(character, '0' | '1') {
+        "_punctuation_list".into()
+    } else {
+        format!("_ctrl_{character}")
     }
 }
 

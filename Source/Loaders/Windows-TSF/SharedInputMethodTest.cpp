@@ -32,23 +32,27 @@ static void Success(HRESULT result, const char* message) {
     Check(SUCCEEDED(result), message);
 }
 
-static std::wstring LegacyRuntimeSnapshot(const std::wstring& snapshot) {
-    auto bytes = OpenVanilla::OVUTF8::FromUTF16(snapshot);
-    Check(bytes.compare(0,3,"v2;")==0,"Expected v2 runtime snapshot");
-    std::vector<std::pair<size_t,size_t>> fields;
-    for (size_t offset=3; offset<bytes.size();) {
-        const auto colon=bytes.find(':',offset);
-        Check(colon!=std::string::npos,"Snapshot field length missing");
-        const auto size=std::stoul(bytes.substr(offset,colon-offset));
-        Check(size<=bytes.size()-colon-1,"Snapshot field truncated");
-        const auto next=colon+1+size;
-        fields.emplace_back(offset,next-offset); offset=next;
+static std::wstring LegacyRuntimeSnapshot(const std::wstring& snapshot, unsigned version) {
+    const auto bytes = OpenVanilla::OVUTF8::FromUTF16(snapshot);
+    Check(bytes.compare(0, 3, "v4;") == 0, "Expected v4 runtime snapshot");
+    std::vector<std::string> fields;
+    for (size_t offset = 3; offset < bytes.size();) {
+        const auto colon = bytes.find(':', offset);
+        Check(colon != std::string::npos, "Snapshot field length missing");
+        const auto size = std::stoul(bytes.substr(offset, colon - offset));
+        Check(size <= bytes.size() - colon - 1, "Snapshot field truncated");
+        const auto next = colon + 1 + size;
+        fields.push_back(bytes.substr(offset, next - offset));
+        offset = next;
     }
-    Check(fields.size()>4,"Snapshot missing visibility fields");
-    // v2 appends Caps Lock before the four visibility fields.
-    const auto first=fields[fields.size()-5];
-    bytes.erase(first.first,first.second); bytes.replace(0,3,"v1;");
-    return OpenVanilla::OVUTF16::FromUTF8(bytes);
+    Check(fields.size() >= 6, "Snapshot missing appended settings or visibility fields");
+    // The two recent preference fields precede the four visibility fields.
+    fields.erase(fields.end() - 5); // v4 adds tone omission.
+    if (version == 1) fields.erase(fields.end() - 5); // v2 adds Caps Lock.
+    if (version == 3) fields.insert(fields.end() - 4, "8:Manjusri");
+    std::string legacy = "v" + std::to_string(version) + ";";
+    for (const auto& field : fields) legacy += field;
+    return OpenVanilla::OVUTF16::FromUTF8(legacy);
 }
 
 struct Container {
@@ -254,27 +258,21 @@ int wmain(int argc, wchar_t** argv) {
             const auto afterSnapshot = RuntimePreferencesSnapshot();
             Check(afterSnapshot == *sourceSnapshot && SyncRuntimePreferences(preferences, client, true) &&
                 RuntimePreferencesSnapshot() == afterSnapshot, "Preference groups diverged or unchanged sync rewrote values");
-            // A v3 publisher still sends its obsolete selector. Applying that
-            // snapshot must retain all settings while keeping the Rust core.
-            auto v3 = OpenVanilla::OVUTF8::FromUTF16(*sourceSnapshot);
-            size_t offset = 3;
-            std::vector<size_t> starts;
-            while (offset < v3.size()) {
-                starts.push_back(offset);
-                const auto colon = v3.find(':', offset);
-                offset = colon + 1 + std::stoul(v3.substr(offset, colon - offset));
-            }
-            v3.insert(starts[starts.size() - 4], "8:Manjusri");
-            v3.replace(0, 3, "v3;");
-            Success(preferences.write(client, OpenVanilla::OVUTF16::FromUTF8(v3)), "Publish retired core selector");
-            Check(SyncRuntimePreferences(preferences, client, true) && RuntimePreferencesSnapshot() == *sourceSnapshot,
-                "Retired selector shifted or changed active runtime preferences");
+            Check(SmartMandarinSettingsSignature().find("OmitTone=true\n") != std::string::npos,
+                "Restricted profile did not apply tone omission");
+            const auto v2 = LegacyRuntimeSnapshot(*sourceSnapshot, 2);
+            // v3 has the retired selector and omits the new tone preference.
+            Success(preferences.write(client, LegacyRuntimeSnapshot(*sourceSnapshot, 3)), "Publish retired core selector");
+            Check(SyncRuntimePreferences(preferences, client, true) &&
+                LegacyRuntimeSnapshot(RuntimePreferencesSnapshot(), 2) == v2 &&
+                SmartMandarinSettingsSignature().find("OmitTone=false\n") != std::string::npos,
+                "Retired selector shifted runtime settings or lost the tone omission default");
             auto required = KeyKeyEngineSession::CreateControlled(selected->identifier);
             Check(required && required->usesGuanyinma(), "Retired shared selector selected an old core");
-            Success(preferences.write(client, LegacyRuntimeSnapshot(*sourceSnapshot)), "Publish legacy preferences");
+            Success(preferences.write(client, LegacyRuntimeSnapshot(*sourceSnapshot, 1)), "Publish legacy preferences");
             Check(SyncRuntimePreferences(preferences, client, true) && LoadFrontendSettings().ignoreCapsLockInChinese,
                 "Legacy snapshot did not adopt Windows Caps Lock default");
-            Success(preferences.write(client, *sourceSnapshot), "Restore v2 preferences");
+            Success(preferences.write(client, v2), "Restore v2 preferences");
             Check(SyncRuntimePreferences(preferences, client, true) && !LoadFrontendSettings().ignoreCapsLockInChinese,
                 "Restored snapshot lost explicit Caps Lock opt-out");
             if (index < 2) {
@@ -324,6 +322,7 @@ int wmain(int argc, wchar_t** argv) {
                 "<key>Secret</key><string>do-not-publish</string>");
             seed(L".SmartMandarin", "<key>KeyboardLayout</key><string>Hsu</string>"
                 "<key>ShowCandidateListWithSpace</key><string>true</string>"
+                "<key>OmitTone</key><string>true</string>"
                 "<key>CandidateCursorAtEndOfTargetBlock</key><string>true</string>"
                 "<key>CandidateSelectionKeys</key><string>qwertyui</string>"
                 "<key>ComposingTextBufferSize</key><string>15</string>"

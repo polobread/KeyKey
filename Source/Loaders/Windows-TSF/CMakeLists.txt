@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(KeyKeyWindowsTsf VERSION 1.5.1 LANGUAGES C CXX)
+project(KeyKeyWindowsTsf VERSION 1.5.2 LANGUAGES C CXX)
 
 set(KEYKEY_VERSION_TWEAK 0)
 if(NOT "${PROJECT_VERSION_TWEAK}" STREQUAL "")
@@ -401,7 +401,7 @@ if(BUILD_TESTING)
     target_compile_options(KeyKeyEngineAdvancedSettingsTest PRIVATE /utf-8)
     target_link_libraries(KeyKeyEngineAdvancedSettingsTest PRIVATE keykey_core shell32 user32)
     add_dependencies(KeyKeyEngineAdvancedSettingsTest keykey_database_deploy)
-    foreach(mode custom hsu eten26 invalid four-output)
+    foreach(mode custom hsu eten26 invalid four-output omit-tone)
         add_test(NAME KeyKeyEngineAdvanced-${mode} COMMAND KeyKeyEngineAdvancedSettingsTest ${mode})
     endforeach()
     add_executable(KeyKeySymbolPanelTest SymbolPanelTest.cpp SymbolPanel.cpp)

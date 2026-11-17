@@ -1,12 +1,15 @@
 # 琦琦輸入法 Windows TSF frontend
 
-Windows 1.5.1 固定使用 Guanyinma Rust 單核心，四種輸入法直接啟用，不提供核心選擇、舊引擎或失敗回退。Rust 接合、使用者資料、建置依賴及少量冒煙入口見 [Windows Guanyinma 接合](../../../docs/GUANYINMA_WINDOWS_ADAPTER.md)。正式版本及發布狀態另依下文與安裝指南。
+Windows 1.5.2 固定使用 Guanyinma Rust 單核心，四種輸入法直接啟用，不提供核心選擇、舊引擎或失敗回退。Rust 接合、使用者資料、建置依賴及少量冒煙入口見 [Windows Guanyinma 接合](../../../docs/GUANYINMA_WINDOWS_ADAPTER.md)。正式版本及發布狀態另依下文與安裝指南。
 
 倉頡新增可選的「即時候選」與「未打完也能選字」，兩項預設關閉；設定與分層驗證見 [桌面倉頡試用說明](../../../docs/DESKTOP_CANGJIE_PREFIX_TRIAL.md)。
 
 倉頡與簡易的即時候選、錯碼清除及倉頡前綴候選，透過各自獨立的 TSF 全域 compartment 同步至 Windows 搜尋列等受限宿主。設定程式套用及桌面宿主讀取時發布開關；受限宿主只接收並合併至自己的設定檔，再由既有組字送出邊界套用。尚無已發布設定時保留本地值，不回寫隔離預設值；自訂詞與學習不透過此機制共享。
 
-同類設定亦涵蓋注音配置／選字鍵／組字長度／空白與 Esc、候選外觀、快捷鍵與提示聲、輸入法顯示、表格字集／滿碼送出／排序開關及關聯詞來源選擇。同步採固定允許清單與有長度上限的版本化快照，以整數 compartment 傳遞；只在完整版本到達後套用，未變更時重用快照。寫入失敗或不完整資料保留原值、後續輸入重試，不放寬個人檔案權限。自訂詞、學習內容、診斷期限及更新器偏好不在此輸入設定通道內。
+同類設定亦涵蓋注音配置／選字鍵／組字長度／省略聲調／空白與 Esc、候選外觀、快捷鍵與提示聲、輸入法顯示、表格字集／滿碼送出／排序開關及關聯詞來源選擇。同步採固定允許清單與有長度上限的版本化快照，以整數 compartment 傳遞；只在完整版本到達後套用，未變更時重用快照。寫入失敗或不完整資料保留原值、後續輸入重試，不放寬個人檔案權限。自訂詞、學習內容、診斷期限及更新器偏好不在此輸入設定通道內。
+
+設定頁「好打注音進階設定 → 省略聲調」預設關閉。開啟後，使用標準注音可連打
+`sucl` 組成「你好」，按 Enter 送出或按 ↓ 開啟候選，原本聲調鍵仍可使用。
 
 自動更新沿用設定程式：啟動至少 10 分鐘後、且距上次嘗試已滿 7 天才檢查；未到期直接排至每週期限，不逐分鐘輪詢。手動檢查仍可立即執行。
 
@@ -107,7 +110,7 @@ Windows frontend 內的更新客戶端仍屬程式變更。可透過 `workflow_d
 上述局部開發驗證當成已發布或已安裝的證據。
 
 Windows **1.5.1** 提供進階設定、讀音輔助、符號表與簡體輸出。
-六平台發布版號為 1.5.1，共用好打注音模型為 1.5.0。1.5.1 的資料升級、完整矩陣及簽章交付條件見 [六平台發布準備](../../../docs/CROSS_PLATFORM_V1_5_1_RELEASE.md)。歷史實作與驗證記錄見
+共用好打注音模型為 1.5.0。1.5.1 的資料升級、完整矩陣及簽章交付條件見 [六平台發布準備](../../../docs/CROSS_PLATFORM_V1_5_1_RELEASE.md)。歷史實作與驗證記錄見
 [Windows v1.3.2 功能驗證](../../../docs/WINDOWS_V1_3_2_FEATURE_VALIDATION.md)。
 
 2026-10-10：依官方 TSF 契約修正模式通知、候選／符號 owner、UI 執行緒失焦、
@@ -293,7 +296,7 @@ reference and is not linked into this DLL.
 
 ### Cangjie and Simplex
 
-Windows 1.5.1 includes Cangjie and Simplex. Older installed DLLs must be upgraded
+Windows includes Cangjie and Simplex. Older installed DLLs must be upgraded
 to use the features in the current release.
 Cangjie retains up to five radicals and queries with Space/Enter; Simplex queries
 at two radicals. Number keys select candidates, Page Up/Down page, Backspace
@@ -413,8 +416,7 @@ the Windows light/dark preference.
 
 ## Prerequisites
 
-- Windows 10 or later; development builds have been launched on Windows 11,
-  while Windows 10 x64/x86 device verification remains pending
+- Windows 10 or later on x64 or x86. Windows 10 has passed Windows host testing. [Verification record](../../../WINDOWS_INSTALL.md#圖片與適用範圍)
 - .NET 10 SDK for building the self-contained settings and deployment apps (not needed on user PCs)
 - Visual Studio 2026 with **Desktop development with C++** (a Visual Studio
   2022 compatibility preset is also included)

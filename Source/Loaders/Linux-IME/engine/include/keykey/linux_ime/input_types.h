@@ -86,6 +86,7 @@ enum class InputMethod { Bopomofo, Cangjie, Simplex };
 
 struct SmartMandarinPreferences {
     bool showCandidateListWithSpace = false;
+    bool omitTone = false;
     bool candidateCursorAtEndOfTargetBlock = false;
     bool clearComposingTextWithEsc = false;
     std::size_t maxCompletedSyllables = 10;

@@ -1,7 +1,7 @@
 # 琦琦輸入法 / chichi77 KeyKey
 
 正式支援 **Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台**。
-Android 原始碼版號為 **1.5.2**，其他五個平台為 **1.5.1**。Android 與 iOS 新增鍵盤高度拖曳、漢語拼音鍵盤，以及「好打注音省略聲調」選項。各平台仍須完成發布程序。下載桌面正式版請查 [已發布版本](https://github.com/polobread/KeyKey/releases)，手機版以各商店列出的版本為準。
+六平台原始碼版號為 **1.5.2**。好打注音可開啟「省略聲調」，Android 與 iOS 也新增倚天和倚天 26 鍵。各平台仍須完成發布程序。下載桌面正式版請查 [已發布版本](https://github.com/polobread/KeyKey/releases)，手機版以各商店列出的版本為準。
 macOS、Windows 與 Ubuntu 24.04 安裝包由 GitHub Release 提供；FreeBSD 透過 ports／pkg 安裝，
 套件庫版本可能較晚上架。Android 與 iOS 可分別從 [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android) 與 [App Store](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939) 下載安裝。
 
@@ -69,7 +69,7 @@ Guanyinma 以 Rust 實作，讓 Windows、macOS、iOS、Android、Linux 與 Free
 | 平台 | 實作與支援範圍 |
 |---|---|
 | macOS | InputMethodKit；macOS 15 以上、Apple Silicon |
-| Windows | 原生 TSF；1.5.1 提供 Windows 10 起的 x64／x86 建置；Windows 10 尚待實機驗證 |
+| Windows | 原生 TSF，支援 Windows 10 以上的 x64／x86。Windows 10 已通過實機驗證 |
 | Android | 原生 IME；Android 8 以上，支援觸控與外接鍵盤，不需網路權限 |
 | iOS | Swift custom keyboard extension、安裝引導 App 與 App 內實體鍵盤編輯器；不要求完整取用權限、不連網 |
 | Linux | Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64；注音、倉頡、簡易 |

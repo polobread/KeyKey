@@ -126,6 +126,7 @@ public partial class MainWindow : Window
         var sharedOutput = NativeBackend.KeyKeyReadSimplifiedOutput();
         if (sharedOutput >= 0) SimplifiedChineseOutput.IsChecked = sharedOutput != 0;
         ShowCandidateListWithSpace.IsChecked = ReadBool(SettingsStore.SmartPath, "ShowCandidateListWithSpace", false);
+        OmitTone.IsChecked = ReadBool(SettingsStore.SmartPath, "OmitTone", false);
         CandidateCursorAtEndOfTargetBlock.IsChecked = ReadBool(SettingsStore.SmartPath, "CandidateCursorAtEndOfTargetBlock", false);
         SelectValue(CandidateSelectionKeys, SelectionKeys,
             SettingsStore.Read(SettingsStore.SmartPath, "CandidateSelectionKeys", "12345678"));
@@ -321,6 +322,7 @@ public partial class MainWindow : Window
             SettingsStore.Write(SettingsStore.TraditionalPath, phoneticValues);
             var smartValues = new Dictionary<string, string>(phoneticValues) {
                 ["ShowCandidateListWithSpace"] = BoolValue(ShowCandidateListWithSpace),
+                ["OmitTone"] = BoolValue(OmitTone),
                 ["CandidateCursorAtEndOfTargetBlock"] = BoolValue(CandidateCursorAtEndOfTargetBlock),
                 ["CandidateSelectionKeys"] = selectionKeys,
                 ["ComposingTextBufferSize"] = bufferSize.ToString(System.Globalization.CultureInfo.InvariantCulture),
