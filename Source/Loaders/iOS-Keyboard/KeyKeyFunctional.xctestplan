@@ -38,6 +38,7 @@
         "KeyKeyUITests/testHardwareEditorForwardDeleteRemovesCommittedGraphemes()",
         "KeyKeyUITests/testHardwareEditorRightHandSelectionSurvivesRotationAndRefocus()",
         "KeyKeyUITests/testHardwareEditorModeWidthAndFunctionButtonsKeepSmartText()",
+        "KeyKeyUITests/testHardwareEditorSwitchesOutputScriptWithoutCommittingComposition()",
         "KeyKeyUITests/testHardwareEditorSupportPromptGatingAndLongConnection()",
         "KeyKeyUITests/testHardwareKeyboardEditorHasCopyAndShareActions()",
         "KeyKeyUITests/testHardwareKeyboardEditorLandscapeColumns()",

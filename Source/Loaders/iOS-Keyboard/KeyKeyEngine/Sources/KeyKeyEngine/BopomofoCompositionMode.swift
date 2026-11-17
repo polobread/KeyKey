@@ -2,10 +2,11 @@ import Foundation
 
 /// The containing app may write App Group preferences without Full Access.
 /// The keyboard reads those values, while its own changes stay in its sandbox.
-/// A revision per setting lets the most recent app change override an older
-/// keyboard-local value without making unrelated settings jump back.
+/// Changes in the App supersede older keyboard choices for the same setting.
+/// The App can also explicitly reapply all defaults with a shared revision.
 public struct KeyboardPreferenceStore {
     public static let appGroupIdentifier = "group.io.github.polobread.inputmethod.chichi77.ios"
+    private static let applyDefaultsRevisionKey = "keyboardAppDefaultsRevision"
 
     private let defaults: UserDefaults
     private let sharedDefaults: UserDefaults?
@@ -22,15 +23,19 @@ public struct KeyboardPreferenceStore {
 
     public func object(forKey key: String) -> Any? {
         if writesShared { return sharedDefaults?.object(forKey: key) }
-        guard let sharedValue = sharedDefaults?.object(forKey: key) else {
-            return defaults.object(forKey: key)
-        }
+        let sharedValue = sharedDefaults?.object(forKey: key)
+        let defaultsRevision = sharedDefaults?.string(forKey: Self.applyDefaultsRevisionKey)
         let revision = sharedDefaults?.string(forKey: revisionKey(key))
-        if let localValue = defaults.object(forKey: key),
-           defaults.string(forKey: appliedRevisionKey(key)) == revision {
-            return localValue
+        if defaults.string(forKey: appliedDefaultsRevisionKey(key)) == defaultsRevision,
+           sharedValue == nil || defaults.string(forKey: appliedRevisionKey(key)) == revision {
+            return defaults.object(forKey: key) ?? sharedValue
         }
         return sharedValue
+    }
+
+    /// Reapply all App choices together, including built-in defaults for unset preferences.
+    public static func applyAppDefaults(in sharedDefaults: UserDefaults) {
+        sharedDefaults.set(UUID().uuidString, forKey: applyDefaultsRevisionKey)
     }
 
     public func set(_ value: Any, forKey key: String) {
@@ -38,9 +43,11 @@ public struct KeyboardPreferenceStore {
             sharedDefaults?.set(value, forKey: key)
             sharedDefaults?.set(UUID().uuidString, forKey: revisionKey(key))
         } else {
+            let revision = sharedDefaults?.string(forKey: revisionKey(key))
+            let defaultsRevision = sharedDefaults?.string(forKey: Self.applyDefaultsRevisionKey)
             defaults.set(value, forKey: key)
-            defaults.set(sharedDefaults?.string(forKey: revisionKey(key)),
-                         forKey: appliedRevisionKey(key))
+            defaults.set(revision, forKey: appliedRevisionKey(key))
+            defaults.set(defaultsRevision, forKey: appliedDefaultsRevisionKey(key))
         }
     }
 
@@ -51,11 +58,13 @@ public struct KeyboardPreferenceStore {
         } else {
             defaults.removeObject(forKey: key)
             defaults.removeObject(forKey: appliedRevisionKey(key))
+            defaults.removeObject(forKey: appliedDefaultsRevisionKey(key))
         }
     }
 
     private func revisionKey(_ key: String) -> String { key + ".appRevision" }
     private func appliedRevisionKey(_ key: String) -> String { key + ".appliedAppRevision" }
+    private func appliedDefaultsRevisionKey(_ key: String) -> String { key + ".appliedAppDefaultsRevision" }
 }
 
 public enum BopomofoCompositionMode: String, CaseIterable, Sendable {

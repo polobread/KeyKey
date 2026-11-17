@@ -21,6 +21,10 @@ public struct SimplifiedChineseOutputSettings {
 
     /// Filters engine text at the host-output boundary.
     public func convertOutputText(_ text: String) -> String {
+        Self.convertOutputText(text, enabled: enabled)
+    }
+
+    public static func convertOutputText(_ text: String, enabled: Bool) -> String {
         guard !text.isEmpty, enabled else { return text }
         return TraditionalToSimplified.bundled.convert(text)
     }

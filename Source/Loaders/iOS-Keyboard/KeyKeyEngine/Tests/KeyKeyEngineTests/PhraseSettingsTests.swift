@@ -53,6 +53,105 @@ struct PhraseSettingsTests {
     }
 }
 
+@Suite("Apply App keyboard defaults")
+struct ApplyAppKeyboardDefaultsTests {
+    @Test func replacesKeyboardChoicesWithAppValuesAndBuiltInDefaults() throws {
+        let localName = "keykey.keyboard-defaults.local.\(UUID())"
+        let sharedName = "keykey.keyboard-defaults.shared.\(UUID())"
+        let local = try #require(UserDefaults(suiteName: localName))
+        let shared = try #require(UserDefaults(suiteName: sharedName))
+        defer {
+            local.removePersistentDomain(forName: localName)
+            shared.removePersistentDomain(forName: sharedName)
+        }
+
+        let appMethod = ChineseInputMethodSettings(sharedDefaults: shared, writesShared: true)
+        let appScript = SimplifiedChineseOutputSettings(sharedDefaults: shared, writesShared: true)
+        let appLayout = BopomofoKeyboardLayoutSettings(sharedDefaults: shared, writesShared: true)
+        let appProfile = KeyboardLayoutProfileSettings(sharedDefaults: shared, writesShared: true)
+        let appPhrases = PhraseSettings(sharedDefaults: shared, writesShared: true)
+        let sharedSpace = SmartMandarinSpaceSettings(sharedDefaults: shared)
+        appMethod.setMethod(.simplex)
+        appScript.setEnabled(true)
+        appLayout.setLayout(.hsu)
+        appProfile.setProfile(.alignedSplit)
+        appProfile.setKeycapArea(.medium)
+        appProfile.setDeleteShiftPosition(.leftOfEnter)
+        appPhrases.setEnabledCollections([])
+        sharedSpace.setEnabled(true)
+
+        var virtualCangjie = appMethod.options(for: .cangjie, virtualKeyboard: true)
+        virtualCangjie.queryAtMaximum = true
+        virtualCangjie.punctuation = 1
+        appMethod.setOptions(virtualCangjie, for: .cangjie, virtualKeyboard: true)
+        var physicalCangjie = appMethod.options(for: .cangjie)
+        physicalCangjie.clearOnError = false
+        appMethod.setOptions(physicalCangjie, for: .cangjie)
+        var simplex = appMethod.options(for: .simplex)
+        simplex.composeWhileTyping = true
+        appMethod.setOptions(simplex, for: .simplex)
+
+        let method = ChineseInputMethodSettings(defaults: local, sharedDefaults: shared)
+        let script = SimplifiedChineseOutputSettings(defaults: local, sharedDefaults: shared)
+        let toneOmission = SmartMandarinToneOmissionSettings(defaults: local, sharedDefaults: shared)
+        let layout = BopomofoKeyboardLayoutSettings(defaults: local, sharedDefaults: shared)
+        let profile = KeyboardLayoutProfileSettings(defaults: local, sharedDefaults: shared)
+        let color = CandidateColorSettings(defaults: local, sharedDefaults: shared)
+        let click = KeyboardClickSettings(defaults: local, sharedDefaults: shared)
+        let phrases = PhraseSettings(defaults: local, sharedDefaults: shared)
+        let height = KeyboardHeightSettings(defaults: local)
+        let learningReset = KeyboardLearningResetRequest(localDefaults: local, sharedDefaults: shared)
+        let taller = KeyboardEdgeGeometry(top: 1.25)
+
+        method.setMethod(.traditional)
+        method.setOptions(TableInputOptions(method: .cangjie), for: .cangjie, virtualKeyboard: true)
+        method.setOptions(TableInputOptions(method: .cangjie), for: .cangjie)
+        method.setOptions(TableInputOptions(method: .simplex), for: .simplex)
+        script.setEnabled(false)
+        toneOmission.setEnabled(true)
+        layout.setLayout(.hanyuPinyin)
+        profile.setProfile(.aligned)
+        profile.setKeycapArea(.large)
+        profile.setFontSize(.extraLarge)
+        profile.setDeleteShiftPosition(.aboveEnter)
+        color.setColor(.red)
+        click.setEnabled(false)
+        phrases.setEnabledCollections([PhraseSettings.baseCollection])
+        height.setGeometry(taller, for: .portrait)
+
+        #expect(method.method == .traditional)
+        #expect(toneOmission.enabled)
+        #expect(!phrases.enabledCollections.isEmpty)
+        KeyboardPreferenceStore.applyAppDefaults(in: shared)
+
+        #expect(method.method == .simplex)
+        #expect(method.options(for: .cangjie, virtualKeyboard: true) == virtualCangjie)
+        #expect(method.options(for: .cangjie) == physicalCangjie)
+        #expect(method.options(for: .simplex) == simplex)
+        #expect(script.enabled)
+        #expect(!toneOmission.enabled)
+        #expect(sharedSpace.enabled)
+        #expect(layout.layout == .hsu)
+        #expect(profile.profile.id == KeyboardLayoutProfile.alignedSplit.id)
+        #expect(profile.keycapArea == .medium)
+        #expect(profile.fontSize == .normal)
+        #expect(profile.deleteShiftPosition == .leftOfEnter)
+        #expect(color.color == .purple)
+        #expect(click.enabled)
+        #expect(phrases.enabledCollections.isEmpty)
+        #expect(height.geometry(for: .portrait) == taller)
+        #expect(!learningReset.applyIfNeeded { Issue.record("Applying defaults requested a reset") })
+
+        script.setEnabled(false)
+        toneOmission.setEnabled(true)
+        #expect(!SimplifiedChineseOutputSettings(defaults: local, sharedDefaults: shared).enabled)
+        #expect(toneOmission.enabled)
+        KeyboardPreferenceStore.applyAppDefaults(in: shared)
+        #expect(script.enabled)
+        #expect(!toneOmission.enabled)
+    }
+}
+
 @Suite("Bopomofo composition mode settings")
 struct BopomofoCompositionModeSettingsTests {
     private func settings() -> (BopomofoCompositionModeSettings, UserDefaults) {

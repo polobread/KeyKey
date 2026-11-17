@@ -66,6 +66,14 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(entry.waitForExistence(timeout: 8))
         entry.tap()
         XCTAssertTrue(app.navigationBars["輸入法設定"].waitForExistence(timeout: 3))
+        let apply = app.buttons["app-settings.apply-to-keyboard"]
+        XCTAssertTrue(apply.isHittable)
+        XCTAssertLessThan(apply.frame.maxY, app.segmentedControls["app-settings.composition-mode"].frame.minY)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(
+            format: "label CONTAINS %@", "包含首頁的關聯詞詞庫"
+        )).firstMatch.exists)
+        apply.tap()
+        XCTAssertTrue(app.staticTexts["已送出 App 設定。重新叫出鍵盤後生效。"].exists)
         XCTAssertTrue(app.segmentedControls["app-settings.candidate-color"].exists)
         XCTAssertTrue(app.switches["app-settings.input-clicks"].exists)
         let omission = app.switches["app-settings.omit-tones"]
@@ -293,6 +301,23 @@ final class KeyKeyUITests: XCTestCase {
         app.segmentedControls["bopomofo-composition-mode"].buttons["好打注音"].tap()
         app.buttons["完成"].tap()
         XCTAssertEqual(app.buttons["j"].label, "ㄨ")
+        app.terminate()
+        app = XCUIApplication()
+        app.launch()
+        app.buttons["open-input-method-settings"].tap()
+        XCTAssertTrue(app.segmentedControls["app-settings.keyboard-layout"].buttons["許氏鍵盤"].isSelected)
+        app.buttons["app-settings.apply-to-keyboard"].tap()
+
+        launchHostApp()
+        XCTAssertTrue(revealField("message"))
+        field("message").tap()
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        app.buttons["SETTINGS"].tap()
+        XCTAssertTrue(keyboardLayout.buttons["許氏鍵盤"].isSelected)
+        keyboardLayout.buttons["標準"].tap()
+        app.buttons["完成"].tap()
+        XCTAssertEqual(app.buttons["j"].label, "ㄨ")
+
         app.terminate()
         app = XCUIApplication()
         app.launch()
@@ -1129,6 +1154,80 @@ final class KeyKeyUITests: XCTestCase {
         typeReading("su3")
         app.buttons["hardware-editor.emoji"].tap()
         XCTAssertEqual(output.value as? String, "你好你好你")
+    }
+
+    func testHardwareEditorSwitchesOutputScriptWithoutCommittingComposition() throws {
+        app = XCUIApplication()
+        app.launch()
+        let openEditor = app.buttons["open-hardware-editor"]
+        XCTAssertTrue(openEditor.waitForExistence(timeout: 8))
+        openEditor.tap()
+
+        let output = app.textViews["hardware-editor.output"]
+        let script = app.buttons["hardware-editor.output-script"]
+        let language = app.buttons["hardware-editor.mode"]
+        let enter = app.buttons["hardware-editor.enter"]
+        XCTAssertTrue(script.waitForExistence(timeout: 3))
+        XCTAssertTrue(language.exists)
+        XCTAssertEqual(script.frame.midY, language.frame.midY, accuracy: 1)
+        XCTAssertLessThan(script.frame.maxX, language.frame.minX)
+
+        let traditionalLabel = "目前繁體，切換簡體"
+        let simplifiedLabel = "目前簡體，切換繁體"
+        let originalScriptLabel = script.label
+        XCTAssertTrue([traditionalLabel, simplifiedLabel].contains(originalScriptLabel))
+        addTeardownBlock {
+            if script.isHittable, script.label != originalScriptLabel { script.tap() }
+        }
+        if script.label == simplifiedLabel { script.tap() }
+        XCTAssertEqual(script.label, traditionalLabel)
+
+        let method = app.buttons["hardware-editor.composition-mode"]
+        let originalMethod = try XCTUnwrap(ChineseInputMethod.allCases.first {
+            method.label == "輸入法：\($0.displayName)"
+        })
+        if originalMethod != .smart {
+            addTeardownBlock { [weak self] in
+                guard let self, method.isHittable else { return }
+                method.tap()
+                self.app.buttons[originalMethod.displayName].tap()
+            }
+            method.tap()
+            app.buttons[ChineseInputMethod.smart.displayName].tap()
+        }
+
+        let layout = app.buttons["hardware-editor.keyboard-layout"]
+        let originalLayout = try XCTUnwrap(BopomofoKeyboardLayout.allCases.first {
+            layout.label == "鍵盤：\($0.displayName)"
+        })
+        if originalLayout != .standard {
+            addTeardownBlock { [weak self] in
+                guard let self, layout.isHittable else { return }
+                layout.tap()
+                self.app.buttons[originalLayout.displayName].tap()
+            }
+            layout.tap()
+            app.buttons[BopomofoKeyboardLayout.standard.displayName].tap()
+        }
+
+        typeHardwareEditorASCII("94")
+        enter.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "愛" })
+
+        typeHardwareEditorASCII("94")
+        script.tap()
+        XCTAssertEqual(script.label, simplifiedLabel)
+        XCTAssertEqual(output.value as? String, "愛",
+                       "Changing the output script must preserve committed text and leave preedit uncommitted")
+        enter.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "愛爱" })
+
+        script.tap()
+        XCTAssertEqual(script.label, traditionalLabel)
+        XCTAssertEqual(output.value as? String, "愛爱")
+        typeHardwareEditorASCII("94")
+        enter.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "愛爱愛" })
     }
 
     func testHardwareEditorRightHandSelectionSurvivesRotationAndRefocus() throws {
