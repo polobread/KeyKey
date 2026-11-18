@@ -751,6 +751,11 @@ static void OVCLaunchApplication(const string& value)
         if (!OVCShouldEnterEngine(key))
             return NO;
 
+        // Preferences may change while this IMK context stays active. Poll only
+        // the current input method/around filters; Rust defers replacement until
+        // composition, candidates, and the native host commit are all clear.
+        [OpenVanillaLoader sharedLoader]->syncSandwichConfig();
+
         // The native panel compares selection keys without keypad identity.
         // Let the Rust behavior receive actual printable keypad input.
         GuanyinmaPrepareCandidatePanelForKey(&key, _context->candidateService());

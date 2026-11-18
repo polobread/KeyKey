@@ -22,17 +22,25 @@ profile 由 frontend 的實際互動方式決定，Rust 不判斷 Android OS 或
 
 Service 先以舊策略完成組字，才改變實體／雙排 profile。硬體快捷鍵與半／全形辨識留在 FE，核心接收語意操作。倉頡候選選項仍有虛擬／實體兩組設定，每頁沿 Android 的九格候選。
 
-觸控策略由 `TouchSmartHostTextState` 追蹤已插入宿主的可修改尾段；擠出的前段不再被 Backspace 或選詞修改。普通實體策略使用 `setComposingText` 與 UTF-16 caret。Service 保留 `onUpdateSelection` 自有回呼分類與 generation，避免延遲的舊 commit callback 清除新組字；真正的新欄位會清除舊宿主狀態。
+觸控策略由 `TouchSmartHostTextState` 追蹤已插入宿主的可修改尾段；擠出的前段不再被 Backspace 或選詞修改。普通實體策略使用 `setComposingText` 與 UTF-16 caret。Service 的 `OwnSelectionTracker` 在目前連線世代內追蹤已接受、尚未回報的選取位置與 composing range，以精確座標分類延遲或合併的自有回呼，不以固定毫秒數判定所有權。已確認的歷史不再保留為可命中的意圖；真正的外部游標／範圍變動仍結束舊組字。宿主接受批次編輯時，最終座標完全未變的批次可不產生回報；宿主不支援批次時，仍保留各次寫入的待確認意圖。真正的新欄位會清除舊宿主狀態。
 
-旋轉或重新啟動同一輸入欄位時，Android 可能已結束舊 composing span，但 frontend 仍保留組字。`onStartInput(restarting = true)` 經 `restoreMarkedComposition()` 讀取目前 `ExtractedText`，以 `startOffset` 換算既有組字範圍，核對完整文字及範圍內的折疊選取；不接受局部更新、缺少快照或文字不符。確認後只以 `setComposingRegion` 重新掛上原範圍，並恢復核心的 UTF-16 caret，不重送組字文字，也不採用 configuration replay 可能過時的 `EditorInfo.initialSelStart`。這次操作列為自有 selection 更新，避免回呼再次確認或清空原組字；觸控 host-text 尾段維持原流程。
+真正的新欄位若未由 `EditorInfo` 提供初始選取位置，僅在該連線首次實際寫入前、批次之外取得一次完整 `ExtractedText`；新欄位位置已知或只有本地未完成讀音時不增加查詢。快照須核對文字長度、UTF-16 端點、`startOffset` 與連線世代，保留合法的反向選取；局部、缺少或越界快照不假設絕對位置，也不由舊 fallback 再查一次。較晚到達、與這份初始快照相同的初始通知，不得倒退已接受寫入的游標。
 
-無法驗證或重新接續時，Service 結束宿主標記、abandon 舊核心效果並清除 frontend 組字快取，保留 App 現有文字，不把舊組字追加到未知範圍；真正的新宿主仍走原有清除邊界。宿主標記無法結束時維持交易失敗狀態，等待重新進入欄位。Android 遠端 `InputConnection` 的操作 boolean 不等於宿主實際回傳值；下述失敗回歸驗證的是缺少／不符文字快照的安全退路，不宣稱已涵蓋宿主無聲忽略 `setComposingRegion` 的情境。
+正常收起觸控鍵盤時，系統返回鍵與「▼」均透過既有 `finishCompositionForKeyboardHide()` 保留完成文字、取消未完成讀音或字根。`KEYCODE_BACK` 先交給 `InputMethodService`，避免進入一般實體鍵盤交接而提前送出讀音；欄位／輸入法切換及 configuration 重建仍使用各自的交接流程。未失敗的待組字在正常隱藏時若已失去連線，清除本地待送狀態而不確認或重播；已拒絕效果仍由既有失敗狀態保護，於真正宿主邊界 abandon。
+
+旋轉或重新啟動同一輸入欄位時，`EditorInfo.initialSelStart`／`initialSelEnd` 可能仍是最初進入欄位的位置。`onStartInput(restarting = true)` 經 `restoreMarkedComposition()` 取得一份完整 `ExtractedText` 校準當前游標，並與既有組字驗證共用，不於首次寫入時重複查詢；即使目前沒有 marked text，也不能沿用過期的正數位置。快照須通過端點、完整內容及連線世代檢查；缺少或無效快照不猜測位置。
+
+若 frontend 仍擁有 marked text，以 `startOffset` 換算原範圍，核對文字及範圍內的折疊選取。確認後只以 `setComposingRegion` 重新掛上原範圍，恢復核心的 UTF-16 caret，不重送文字；操作列為自有 selection 更新。普通觸控好打注音已送入 App、仍可改選的尾段，則須確認游標仍在重啟前已接受的折疊位置，且該位置前的文字與尾段相同，才能保留修改權。
+
+無法驗證或重新接續時，Service 結束原先擁有的宿主標記、abandon 舊核心效果並清除 frontend 組字快取，保留 App 現有文字，不把舊組字追加到未知範圍；真正的新宿主仍走原有清除邊界。宿主標記無法結束時維持交易失敗狀態，等待重新進入欄位。Android 遠端 `InputConnection` 的操作 boolean 不等於宿主實際回傳值；下述失敗回歸驗證的是缺少／不符文字快照的安全退路，不宣稱已涵蓋宿主無聲忽略 `setComposingRegion` 的情境。
 
 一般實體好打注音固定 `candidate_cursor_at_end = false`、`selection_returns_to_end = false`：候選從游標右側開始，句尾以最後一字為目標，選字後游標位於所選詞後方。`openSmartCandidates()` 的明確索引同樣使用 `min(reading_cursor, readings.length - 1)`，不能只修改選項卻沿用左側索引。觸控及實體雙排仍在選字後回到可編輯句尾；「使用空白鍵選字」沿用 Android 已存偏好及預設關閉，不因對齊游標規則改寫。Esc 清除整句與 Shift 強制大寫的核心選項明確設為關閉。
 
 實體 `KEYCODE_FORWARD_DEL` 在有組字時經 `InputEngine.deleteForward()`／`HostInputEngine` 送到 Rust 既有 `Delete`，保留核心對未完成讀音、候選及句尾的拒絕規則；沒有組字時交回宿主處理普通 Delete。成功刪除最後一字時，adapter 回傳 `discardComposingText`，讓 Service 用空字串替換標記範圍；單呼叫 Android `finishComposingText()` 會保留舊字，不能代表刪除已完成。
 
 實體 Enter／數字鍵盤 Enter 的 Down 由 IME 處理後，Service 也消耗對應的 Up。若核心要求普通 Return，只向原宿主送一次合成 Down／Up；此配對所有權須跨越因 Return 造成的欄位切換，不能在 `onFinishInput()` 提前清除。候選中的 Enter 維持按住不重複選字，放開時一起清除候選按鍵狀態；不因這項配對改變普通 Enter 的長按行為。
+
+浮動候選的 `requestCursorUpdates` 啟用與取消請求在背景執行，避免等待同一 App 主執行緒的回覆；以目前連線、宿主世代及請求世代排除過期工作。重試寬限從請求真正執行後開始，Service 銷毀時使待處理請求失效。這與首次文字位置快照的查詢用途不同。
 
 浮動候選窗由目前鍵盤 view 持有。`onCreateInputView()` 在覆寫 owner 前必須關閉舊窗並取消其 token 重試；`onConfigurationChanged()` 在 framework 重建 view 前先關閉浮窗、取消游標座標重試並清除舊 anchor，再以新 view 重建。隱藏、旋轉、重開或切換排列後最多保留目前的一個浮窗；這是 Android 視窗生命週期契約，不在 Rust 核心管理。
 
@@ -66,7 +74,7 @@ MJSR 自訂詞段落由 FE 的 `UserPhraseArchive`／`PhraseReadingCodec` 轉換
 
 ## 建置與少量串接驗證
 
-需要完整 JDK 17 以上（含 `javac` 與 JNI headers）、Android SDK 36.1／Build Tools 36.0.0、Python 3.11 以上、NDK `27.2.12479018`、CMake `3.22.1`，以及版控固定的 Rust toolchain 與 Android targets。
+需要完整 Amazon Corretto JDK 25（含 `javac` 與 JNI headers；修補基準及 Gradle daemon 選擇規則見 [Android 建置說明](../Source/Loaders/Android-IME/README.md#建置)）、Android SDK 36.1／Build Tools 36.0.0、Python 3.11 以上、NDK `27.2.12479018`、CMake `3.22.1`，以及版控固定的 Rust toolchain 與 Android targets。
 
 | APK ABI | Rust target |
 |---|---|
@@ -93,7 +101,10 @@ JVM tests 的 `buildGuanyinmaHostJNI` 建立目前主機架構的真 JNI library
 
 host JVM JNI、APK 四 ABI 編譯、Android runtime 與真正 IME 宿主輸入是不同證據層級；此文件不宣稱裝置／UI、Play 發布或其他平台已完成驗收。
 
-`PhysicalKeyboardRegressionInstrumentedTest` 為明確啟用的 Android runtime／宿主回歸，涵蓋候選目標、Delete 後接續輸入、Enter 按放、四法基本送字，以及垂直浮窗／水平浮窗／底部候選的直橫式、旋轉與重開。專用 restart 案例另檢查有前後文、句中游標及未完成讀音時重複重啟的冪等行為，並以 debug 宿主提供 null／文字不符快照，確認不重播舊組字。測試會修改設定及學習資料，只能在可丟棄且啟用硬體鍵盤的專用模擬器，以 `keykey.isolatedDevice=true` 執行；未給此參數會略過，不能算通過。各案例使用全新 App 資料，執行入口見 [Android README](../Source/Loaders/Android-IME/README.md#建置)。輸入事件經 InputDispatcher 注入，只驗證 Android 事件與宿主接合，不能替代真正 USB／藍牙鍵盤的傳輸及修飾鍵實測。
+`PhysicalKeyboardRegressionInstrumentedTest` 為明確啟用的 Android runtime／宿主回歸，涵蓋候選目標、Delete 後接續輸入、Enter 按放、四法基本送字，以及垂直浮窗／水平浮窗／底部候選的直橫式、旋轉與重開。專用 restart 案例另檢查有前後文、句中游標及未完成讀音時重複重啟的冪等行為，並以 debug 宿主提供 null／文字不符快照，確認不重播舊組字。測試會修改設定及學習資料，只能在可丟棄且啟用硬體鍵盤的專用模擬器，以 `keykey.isolatedDevice=true` 執行；未給此參數會略過，不能算通過。案例間透過現有重置學習入口隔離學習，保留同一案例內要驗證的學習與自訂詞；不在每案前清除 App 資料後立刻重新選取 IME，以免引入系統輸入法切換競態。執行入口見 [Android README](../Source/Loaders/Android-IME/README.md#建置)。輸入事件經 InputDispatcher 注入，只驗證 Android 事件與宿主接合，不能替代真正 USB／藍牙鍵盤的傳輸及修飾鍵實測。
+
+
+`OwnSelectionTrackerTest` 驗證自有回報、合併、反向選取、UTF-16、批次與拒絕操作的無 UI 契約。`CursorAnchorRequestsInstrumentedTest` 驗證同程序座標請求及過期工作；`InitialSelectionProbeInstrumentedTest` 使用真實同程序輸入欄位與 App 批次，確保未知位置的測試真的走到一次快照查詢。`KeyboardHideLifecycleInstrumentedTest` 驗證系統返回、真正觸控「▼」、重複回呼及重新開啟。這些宿主測試的 SDK 前置、跳過項目與無連線 fixture 必須明列，不能將全部略過當成通過。Android 的隱藏動畫可能先改 `WindowInsets` 可見旗標，必須等待 Service 與實際 IME 視窗均隱藏後，再檢查文字與組字；詳見 [模擬器測試計畫](ANDROID_VIRTUAL_DEVICE_TEST_PLAN.md)。
 
 ## 授權元件目錄
 

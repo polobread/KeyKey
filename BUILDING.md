@@ -324,7 +324,7 @@ Android FE 固定使用 Guanyinma Rust 單核心，不提供舊 Java 引擎或�
 ### 需求與建置
 
 - Android Studio
-- JDK 17 以上
+- 完整 Amazon Corretto JDK 25（含 JNI headers；安全基準與 daemon 規則見 [Android 建置說明](Source/Loaders/Android-IME/README.md#建置)）
 - Android SDK 36.1 與 Build Tools 36.0.0
 
 ```powershell
@@ -747,7 +747,7 @@ mirror workflow. See the [complete release guide](docs/WINDOWS_CERTUM_RELEASE.md
 
 ## Android
 
-Requirements: Android Studio, JDK 17 or later, Android SDK 36.1, and Build
+Requirements: Android Studio, a full patched Amazon Corretto JDK 25 (including JNI headers), Android SDK 36.1, and Build
 Tools 36.0.0, plus the pinned Rust toolchain, NDK and CMake described in the
 [Android adapter guide](docs/GUANYINMA_ANDROID_ADAPTER.md). The frontend uses
 Guanyinma exclusively; the Java input engine and core selector are removed.

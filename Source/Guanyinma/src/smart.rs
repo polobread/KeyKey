@@ -441,13 +441,15 @@ impl SmartState {
         chunks: &[crate::phonetic_suggestions::PhoneticChunk],
         options: &SmartOptions,
         learn: bool,
-        append: bool,
         raw: Option<&str>,
         effects: &mut Effects,
     ) -> Result<(), DatabaseError> {
         self.sync_model_options(options);
         self.cancel_mark_for_other_key(effects);
         self.candidates.clear();
+        // Desktop suggestions retain raw readings and insert at the caret;
+        // touch suggestions append their materialized words at the end.
+        let append = raw.is_none();
         let mut raw_start = 0;
         for chunk in chunks {
             let start = if append {
@@ -512,7 +514,6 @@ impl SmartState {
                 std::slice::from_ref(chunk),
                 options,
                 false,
-                true,
                 None,
                 effects,
             )?;

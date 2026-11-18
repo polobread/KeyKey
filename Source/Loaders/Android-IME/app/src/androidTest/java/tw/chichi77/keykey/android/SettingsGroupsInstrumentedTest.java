@@ -300,7 +300,7 @@ public final class SettingsGroupsInstrumentedTest {
     }
 
     @Test
-    public void keyboardProfileSelectorUsesRegisteredProfilesAndRestoresTheSavedChoice() {
+    public void keyboardProfileSelectorUsesRegisteredProfilesAndRestoresTheSavedChoice() throws Exception {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         Context context = instrumentation.getTargetContext();
         var preferences = CandidateWindowSettings.preferences(context);
@@ -324,6 +324,10 @@ public final class SettingsGroupsInstrumentedTest {
                     selector.setSelection(selected);
                 });
                 instrumentation.waitForIdleSync();
+                // Spinner dispatches its selected-item callback from layout;
+                // an idle main queue alone does not prove that callback ran.
+                IntegratedBottomControlsInstrumentedTest.await(() -> profiles.get(selected).id.equals(
+                        preferences.getString(KeyboardLayoutProfileSettings.KEY_LAYOUT, null)));
                 assertEquals(profiles.get(index).id,
                         preferences.getString(KeyboardLayoutProfileSettings.KEY_LAYOUT, null));
                 assertEquals("Visual profiles must not change Standard/Hsu input mapping",

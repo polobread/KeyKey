@@ -67,7 +67,7 @@ public final class IntegratedBottomControlsInstrumentedTest {
                     .putInt(keys[6], KeyboardSizeSettings.DEFAULT_PERCENT).commit();
             activity = instrumentation.startActivitySync(new Intent()
                     .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
             Activity host = activity;
             showEditorKeyboard(host, context);
             for (boolean integrated : new boolean[] {true, false, true, false}) {
@@ -172,14 +172,18 @@ public final class IntegratedBottomControlsInstrumentedTest {
             preferences.edit().putBoolean(key, false).commit();
             activity = instrumentation.startActivitySync(new Intent()
                     .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
             Activity host = activity;
             showEditorKeyboard(host, context);
+            awaitStableImeGeometry(host);
             int[] originalHeight = {0}; boolean[] captionBefore = {false};
             List<String> pending = new ArrayList<>(); String[] fieldBefore = {""};
             instrumentation.runOnMainSync(() -> {
                 BopomofoKeyboardView view = findKeyboard();
                 originalHeight[0] = view.getHeight();
+                Bundle initialGeometry = new Bundle();
+                initialGeometry.putString("keykey_caption_initial_geometry", captureHeight(host, false).json.toString());
+                instrumentation.sendStatus(0, initialGeometry);
                 BopomofoImeService service = (BopomofoImeService) view.getContext();
                 service.onKey("s");
                 pending.addAll(stripLabels(view));
@@ -214,27 +218,31 @@ public final class IntegratedBottomControlsInstrumentedTest {
                 instrumentation.sendStatus(0, captionEvidence);
             });
             longPressSettings();
-            // The API37 picker is visually present but can be omitted from the
-            // accessibility window tree. Cancel through the public global action;
-            // the still-visible keyboard and unchanged reading verify the result.
-            instrumentation.waitForIdleSync();
-            Thread.sleep(350);
-            assertTrue(instrumentation.getUiAutomation().performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK));
+            // The picker can be omitted from the API37 accessibility tree.
+            // Observe the real system window before Back and wait for the host
+            // to regain focus; the keyboard may remain shown underneath it.
+            cancelInputMethodPicker(host);
             await(() -> findKeyboard() != null && findKeyboard().isShown());
             instrumentation.runOnMainSync(() -> {
                 assertEquals("Cancelling the picker must preserve the reading", pending, stripLabels(findKeyboard()));
                 assertEquals(fieldBefore[0], findEditor(host.findViewById(android.R.id.content)).getText().toString());
                 KeyboardBottomControlsSettings.setEnabled(context, false);
             });
-            await(() -> findKeyboard() != null && findKeyboard().getHeight() == originalHeight[0]);
+            try {
+                await(() -> findKeyboard() != null && findKeyboard().getHeight() == originalHeight[0]);
+            } catch (AssertionError failure) {
+                String[] actual = {"no keyboard"};
+                instrumentation.runOnMainSync(() -> {
+                    if (findKeyboard() != null) actual[0] = captureHeight(host, false).json.toString();
+                });
+                throw new AssertionError("Original height=" + originalHeight[0] + "; settled actual=" + actual[0], failure);
+            }
             if (canHide) {
                 await(() -> findKeyboard().getRootWindowInsets().isVisible(WindowInsets.Type.captionBar()));
                 await(() -> !labels(findKeyboard()).contains("🌐"));
             }
             longPressSettings();
-            instrumentation.waitForIdleSync();
-            Thread.sleep(350);
-            assertTrue(instrumentation.getUiAutomation().performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK));
+            cancelInputMethodPicker(host);
             await(() -> findKeyboard() != null && findKeyboard().isShown());
             instrumentation.runOnMainSync(() -> {
                 assertEquals(pending, stripLabels(findKeyboard()));
@@ -311,7 +319,7 @@ public final class IntegratedBottomControlsInstrumentedTest {
                     .putString(keys[7], BopomofoKeyboardLayout.STANDARD.value).commit();
             activity = instrumentation.startActivitySync(new Intent()
                     .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
             Activity host = activity;
             originalRotation = host.getDisplay().getRotation();
             EditText editor = findEditor(host.findViewById(android.R.id.content));
@@ -324,16 +332,26 @@ public final class IntegratedBottomControlsInstrumentedTest {
             });
             await(() -> "你好".equals(editor.getText().toString()));
             var widths = new ArrayList<Integer>();
-            for (int rotation : new int[]{Surface.ROTATION_0, Surface.ROTATION_90,
-                    Surface.ROTATION_270, Surface.ROTATION_0}) {
-                boolean reopen = !widths.isEmpty() && rotation != Surface.ROTATION_270;
+            android.graphics.Point displaySize = new android.graphics.Point();
+            host.getDisplay().getRealSize(displaySize);
+            boolean naturalLandscape = (originalRotation == Surface.ROTATION_0
+                    || originalRotation == Surface.ROTATION_180)
+                    ? displaySize.x > displaySize.y : displaySize.y > displaySize.x;
+            int[] rotations = naturalLandscape
+                    ? new int[]{Surface.ROTATION_90, Surface.ROTATION_0,
+                            Surface.ROTATION_180, Surface.ROTATION_90}
+                    : new int[]{Surface.ROTATION_0, Surface.ROTATION_90,
+                            Surface.ROTATION_270, Surface.ROTATION_0};
+            for (int phaseIndex = 0; phaseIndex < rotations.length; phaseIndex++) {
+                int rotation = rotations[phaseIndex];
+                boolean reopen = phaseIndex > 0 && phaseIndex != 2;
                 if (reopen) {
                     instrumentation.runOnMainSync(() -> service.onKey("DISMISS"));
                     await(() -> !host.getWindow().getDecorView().getRootWindowInsets()
                             .isVisible(WindowInsets.Type.ime()));
                 }
                 assertTrue(instrumentation.getUiAutomation().setRotation(rotation));
-                int orientation = rotation == Surface.ROTATION_0
+                int orientation = phaseIndex == 0 || phaseIndex == rotations.length - 1
                         ? android.content.res.Configuration.ORIENTATION_PORTRAIT
                         : android.content.res.Configuration.ORIENTATION_LANDSCAPE;
                 await(() -> host.getDisplay().getRotation() == rotation
@@ -514,7 +532,7 @@ public final class IntegratedBottomControlsInstrumentedTest {
                     .putString(keys[5], KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER.id).commit();
             activity = instrumentation.startActivitySync(new Intent()
                     .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
             Activity host = activity;
             instrumentation.runOnMainSync(() -> findEditor(host.findViewById(android.R.id.content)).setText(""));
             showEditorKeyboard(host, context);
@@ -619,7 +637,7 @@ public final class IntegratedBottomControlsInstrumentedTest {
         assertTrue("Select KeyKey on the isolated device before this test", selected.contains(context.getPackageName()));
         Activity activity = instrumentation.startActivitySync(new Intent()
                 .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
         try {
             showEditorKeyboard(activity, context);
             instrumentation.runOnMainSync(() -> {
@@ -648,7 +666,7 @@ public final class IntegratedBottomControlsInstrumentedTest {
                 instrumentation.runOnMainSync(() -> ChineseInputMethodSettings.setMethod(context, method));
                 Activity activity = instrumentation.startActivitySync(new Intent()
                         .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
                 try {
                     instrumentation.runOnMainSync(() -> {
                         EditText editor = findEditor(activity.findViewById(android.R.id.content));
@@ -684,6 +702,71 @@ public final class IntegratedBottomControlsInstrumentedTest {
         }
     }
 
+    @Test public void restartedTouchUsesTheCurrentCaretAndReleasesAMovedMutableSuffix() throws Exception {
+        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
+        org.junit.Assume.assumeTrue("Use a disposable emulator with KeyKey selected",
+                "true".equals(InstrumentationRegistry.getArguments().getString("keykey.isolatedDevice")));
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        var preferences = CandidateWindowSettings.preferences(context);
+        Map<String, ?> previous = preferences.getAll();
+        String[] keys = {ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
+                BopomofoCompositionModeSettings.KEY_OMIT_TONE, BopomofoKeyboardLayoutSettings.KEY_LAYOUT};
+        ImeTestActivity host = null;
+        try {
+            preferences.edit().putString(keys[0], ChineseInputMethod.SMART.name())
+                    .putString(keys[1], BopomofoCompositionModeSettings.valueForMode(BopomofoCompositionMode.SMART))
+                    .putBoolean(keys[2], false).putString(keys[3], BopomofoKeyboardLayout.STANDARD.value).commit();
+            host = (ImeTestActivity) instrumentation.startActivitySync(new Intent()
+                    .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    .putExtra("initialSelectionUnknown", false)); // Public host extraction counter, known anchor.
+            ImeTestActivity activity = host;
+            showEditorKeyboard(activity, context);
+            EditText editor = findEditor(activity.findViewById(android.R.id.content));
+            instrumentation.runOnMainSync(() -> {
+                BopomofoImeService service = (BopomofoImeService) findKeyboard().getContext();
+                for (char key : "su3cl3".toCharArray()) service.onKey(String.valueOf(key));
+                assertEquals("你好", editor.getText().toString());
+                assertEquals("Known fresh typing adds no snapshot query", 0, activity.extractionProbeCalls.get());
+                android.view.inputmethod.EditorInfo stale = new android.view.inputmethod.EditorInfo();
+                stale.inputType = editor.getInputType(); stale.imeOptions = editor.getImeOptions();
+                stale.initialSelStart = stale.initialSelEnd = 0;
+                // Callback contract on the real current IC: rotation may replay
+                // the field's original EditorInfo, although its caret is now 2.
+                service.onStartInput(stale, true);
+                assertEquals("A restart uses exactly one shared full snapshot", 1, activity.extractionProbeCalls.get());
+                assertFalse(drawnKeyBounds(findKeyboard(), "你").isEmpty());
+                for (char key : "su3".toCharArray()) service.onKey(String.valueOf(key));
+                assertEquals("你好你", editor.getText().toString());
+                assertEquals("Subsequent known writes do not query again", 1, activity.extractionProbeCalls.get());
+                assertFalse("A synchronous own ACK must leave the new character editable",
+                        drawnKeyBounds(findKeyboard(), "你").isEmpty());
+                // Hold the application's public batch: the restart sees a real
+                // external caret before its selection callback reaches the IME.
+                editor.beginBatchEdit();
+                try {
+                    editor.setSelection(0);
+                    service.onStartInput(stale, true);
+                    assertEquals("你好你", editor.getText().toString());
+                    assertTrue("A moved suffix is released without deleting host text",
+                            drawnKeyBounds(findKeyboard(), "你").isEmpty());
+                } finally { editor.endBatchEdit(); }
+                for (char key : "su3".toCharArray()) service.onKey(String.valueOf(key));
+                assertEquals("你你好你", editor.getText().toString());
+            });
+        } finally {
+            if (host != null) { ImeTestActivity activity = host; instrumentation.runOnMainSync(activity::finish); }
+            var edit = preferences.edit();
+            for (String key : keys) {
+                edit.remove(key);
+                if (previous.get(key) instanceof Boolean value) edit.putBoolean(key, value);
+                else if (previous.get(key) instanceof String value) edit.putString(key, value);
+            }
+            edit.commit();
+        }
+    }
+
     @Test public void touchPinyinTypesSmartAndTraditionalInTheHost() throws Exception {
         org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
         org.junit.Assume.assumeTrue("Use a disposable emulator with KeyKey selected",
@@ -707,10 +790,11 @@ public final class IntegratedBottomControlsInstrumentedTest {
                     .remove(keys[6]).commit();
             activity = instrumentation.startActivitySync(new Intent()
                     .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
             Activity host = activity;
             instrumentation.runOnMainSync(() ->
                     host.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));
+            KeyboardBottomSpaceInstrumentedTest.rotateDisplayTo(context, Configuration.ORIENTATION_PORTRAIT);
             await(() -> host.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT);
             EditText editor = findEditor(host.findViewById(android.R.id.content));
             assertNotNull(editor);
@@ -736,6 +820,7 @@ public final class IntegratedBottomControlsInstrumentedTest {
             await(() -> labels(findKeyboard()).contains("漢語拼音"));
             instrumentation.runOnMainSync(() ->
                     host.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));
+            KeyboardBottomSpaceInstrumentedTest.rotateDisplayTo(context, Configuration.ORIENTATION_LANDSCAPE);
             await(() -> host.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE);
             showEditorKeyboard(host, context);
             await(() -> findKeyboard().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -782,7 +867,7 @@ public final class IntegratedBottomControlsInstrumentedTest {
                     .remove(keys[3]).commit();
             activity = instrumentation.startActivitySync(new Intent()
                     .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
             Activity host = activity;
             EditText editor = findEditor(host.findViewById(android.R.id.content));
             assertNotNull(editor);
@@ -942,9 +1027,16 @@ public final class IntegratedBottomControlsInstrumentedTest {
         String shifted = hostText[0].substring(prefix.length(), hostText[0].length() - tailReading.length());
         assertTrue(shifted.codePoints().allMatch(IntegratedBottomControlsInstrumentedTest::isHan));
         assertMarkedReading(editor, prefix + shifted, tailReading);
-        instrumentation.runOnMainSync(() ->
-                context.getSystemService(InputMethodManager.class).restartInput(editor));
-        instrumentation.waitForIdleSync();
+        android.view.inputmethod.InputConnection[] previous = {null};
+        instrumentation.runOnMainSync(() -> {
+            previous[0] = ((BopomofoImeService) findKeyboard().getContext()).getCurrentInputConnection();
+            context.getSystemService(InputMethodManager.class).restartInput(editor);
+        });
+        await(() -> {
+            BopomofoKeyboardView view = findKeyboard();
+            return view != null && ((BopomofoImeService) view.getContext()).getCurrentInputConnection() != null
+                    && ((BopomofoImeService) view.getContext()).getCurrentInputConnection() != previous[0];
+        });
         assertMarkedReading(editor, prefix + shifted, tailReading);
         instrumentation.runOnMainSync(() ->
                 ((BopomofoImeService) findKeyboard().getContext()).onKey("ENTER"));
@@ -982,7 +1074,12 @@ public final class IntegratedBottomControlsInstrumentedTest {
     }
 
     private static void assertMarkedReading(EditText editor, String prefix, String reading) throws Exception {
-        assertPinyinHostText(editor, prefix + reading);
+        await(() -> (prefix + reading).contentEquals(editor.getText())
+                && android.view.inputmethod.BaseInputConnection.getComposingSpanStart(editor.getText()) == prefix.length()
+                && android.view.inputmethod.BaseInputConnection.getComposingSpanEnd(editor.getText())
+                        == prefix.length() + reading.length()
+                && editor.getSelectionStart() == prefix.length() + reading.length()
+                && editor.getSelectionEnd() == prefix.length() + reading.length());
         InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
             assertEquals(prefix.length(), android.view.inputmethod.BaseInputConnection.getComposingSpanStart(
                     editor.getText()));
@@ -1016,8 +1113,27 @@ public final class IntegratedBottomControlsInstrumentedTest {
         // showSoftInput only serves the active editor; window focus alone is
         // insufficient when instrumentation has just restarted the IME process.
         await(() -> manager.isActive(editor[0]));
-        instrumentation.runOnMainSync(() -> manager.showSoftInput(editor[0], InputMethodManager.SHOW_IMPLICIT));
-        await(() -> findKeyboard() != null && findKeyboard().isShown() && findKeyboard().getHeight() > 0);
+        instrumentation.runOnMainSync(() -> manager.showSoftInput(editor[0], 0));
+        long retryUntil = SystemClock.uptimeMillis() + 10000;
+        long[] retryAt = {SystemClock.uptimeMillis() + 1000};
+        await(() -> {
+            BopomofoKeyboardView view = findKeyboard();
+            boolean current = view != null && view.isShown() && view.getHeight() > 0
+                    && ((BopomofoImeService) view.getContext()).getCurrentInputConnection() != null
+                    && ((BopomofoImeService) view.getContext()).getCurrentInputEditorInfo() != null
+                    && editor[0].getPrivateImeOptions().equals(((BopomofoImeService) view.getContext())
+                            .getCurrentInputEditorInfo().privateImeOptions)
+                    && view.getResources().getConfiguration().orientation
+                            == activity.getResources().getConfiguration().orientation;
+            if (current) return true;
+            long now = SystemClock.uptimeMillis();
+            if (now <= retryUntil && now >= retryAt[0] && activity.hasWindowFocus()
+                    && editor[0].hasFocus() && manager.isActive(editor[0])) {
+                manager.showSoftInput(editor[0], 0);
+                retryAt[0] = now + 1000;
+            }
+            return false;
+        });
     }
 
     static void await(BooleanSupplier condition) throws Exception {
@@ -1030,6 +1146,60 @@ public final class IntegratedBottomControlsInstrumentedTest {
             Thread.sleep(100);
         }
         fail("Timed out waiting for the requested IME state");
+    }
+
+    /** Observe real frames and host insets before using a height as a restoration baseline. */
+    static void awaitStableImeGeometry(Activity host) throws Exception {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        View[] observed = {null};
+        android.view.ViewTreeObserver.OnPreDrawListener[] listener = {null};
+        boolean[] settled = {false};
+        String[] previous = {null};
+        int[] equalFrames = {0};
+        long[] stableSince = {0};
+        instrumentation.runOnMainSync(() -> {
+            BopomofoKeyboardView view = findKeyboard();
+            assertNotNull(view);
+            observed[0] = view;
+            listener[0] = () -> {
+                View app = host.getWindow().getDecorView();
+                View ime = ((BopomofoImeService) view.getContext()).getWindow().getWindow().getDecorView();
+                var appInsets = app.getRootWindowInsets();
+                var imeInsets = view.getRootWindowInsets();
+                if (!view.isShown() || view.isLayoutRequested() || app.isLayoutRequested()
+                        || appInsets == null || imeInsets == null
+                        || !appInsets.isVisible(WindowInsets.Type.ime())
+                        || appInsets.getInsets(WindowInsets.Type.ime()).bottom <= 0) {
+                    previous[0] = null;
+                    equalFrames[0] = 0;
+                    settled[0] = false;
+                } else {
+                    int[] location = new int[2]; view.getLocationOnScreen(location);
+                    String geometry = location[0] + ":" + location[1] + ":" + view.getWidth()
+                            + ":" + view.getHeight() + ":" + view.getMeasuredHeight()
+                            + ":" + ime.getWidth() + ":" + ime.getHeight()
+                            + ":" + app.getWidth() + ":" + app.getHeight()
+                            + ":" + appInsets.getInsets(WindowInsets.Type.ime())
+                            + ":" + imeInsets.getInsets(WindowInsets.Type.navigationBars() | WindowInsets.Type.captionBar());
+                    if (geometry.equals(previous[0])) equalFrames[0]++;
+                    else {
+                        previous[0] = geometry;
+                        equalFrames[0] = 1;
+                        stableSince[0] = SystemClock.uptimeMillis();
+                    }
+                    settled[0] = equalFrames[0] >= 3 && SystemClock.uptimeMillis() - stableSince[0] >= 100;
+                }
+                if (!settled[0]) view.postInvalidateOnAnimation();
+                return true;
+            };
+            view.getViewTreeObserver().addOnPreDrawListener(listener[0]);
+            view.postInvalidateOnAnimation();
+        });
+        try {
+            await(() -> settled[0]);
+        } finally {
+            instrumentation.runOnMainSync(() -> observed[0].getViewTreeObserver().removeOnPreDrawListener(listener[0]));
+        }
     }
 
     private static boolean brieflyAwait(BooleanSupplier condition) throws Exception {
@@ -1098,6 +1268,47 @@ public final class IntegratedBottomControlsInstrumentedTest {
                     key.centerX(), key.centerY(), 0);
             try { assertTrue(view.onTouchEvent(event)); } finally { event.recycle(); }
         }
+    }
+
+    private static void cancelInputMethodPicker(Activity host) throws Exception {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        awaitInputMethodPicker(true);
+        assertTrue(instrumentation.getUiAutomation().performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK));
+        awaitInputMethodPicker(false);
+        await(host::hasWindowFocus);
+        Bundle evidence = new Bundle();
+        evidence.putString("keykey_picker_cancel", "systemDialogObserved=true, dialogGone=true, hostFocus=true");
+        instrumentation.sendStatus(0, evidence);
+    }
+
+    private static void awaitInputMethodPicker(boolean expectedVisible) throws Exception {
+        long deadline = SystemClock.uptimeMillis() + 10000;
+        String lastWindows = "";
+        while (SystemClock.uptimeMillis() < deadline) {
+            // Public shell diagnostics expose the WM type even when the system
+            // picker has no accessibility root. Do not block the application main
+            // thread or infer visibility from the keyboard underneath the dialog.
+            try (var input = new android.os.ParcelFileDescriptor.AutoCloseInputStream(
+                    InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                            .executeShellCommand("dumpsys window windows"));
+                    var output = new java.io.ByteArrayOutputStream()) {
+                byte[] buffer = new byte[8192];
+                for (int count; (count = input.read(buffer)) != -1;) output.write(buffer, 0, count);
+                lastWindows = output.toString(java.nio.charset.StandardCharsets.UTF_8.name());
+            }
+            boolean visible = false;
+            for (String window : lastWindows.split("\\n\\s*Window #\\d+ Window\\{")) {
+                if (window.contains("ty=INPUT_METHOD_DIALOG") && window.contains("mHasSurface=true")
+                        && window.contains("isOnScreen=true") && window.contains("isVisible=true")) {
+                    visible = true;
+                    break;
+                }
+            }
+            if (visible == expectedVisible) return;
+            Thread.sleep(100);
+        }
+        fail("The system input-method picker did not become " + (expectedVisible ? "visible" : "hidden")
+                + "; window diagnostics=" + lastWindows);
     }
 
     private static void longPressSettings() throws Exception {

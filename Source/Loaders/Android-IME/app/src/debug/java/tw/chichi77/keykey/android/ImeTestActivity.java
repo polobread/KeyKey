@@ -17,6 +17,11 @@ import android.widget.TextView;
 /** Debug-only host containing every editor shape supported by the IME test plan. */
 public final class ImeTestActivity extends Activity {
     private TextView result;
+    private boolean probeTextInitialized;
+    // Debug-only public InputConnection fixture for unknown initial selection.
+    final java.util.concurrent.atomic.AtomicInteger extractionProbeCalls = new java.util.concurrent.atomic.AtomicInteger();
+    final java.util.concurrent.atomic.AtomicInteger extractionProbeCallsOnMain = new java.util.concurrent.atomic.AtomicInteger();
+    final java.util.concurrent.atomic.AtomicLong extractionProbeMaxMillis = new java.util.concurrent.atomic.AtomicLong();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -213,12 +218,32 @@ public final class ImeTestActivity extends Activity {
                     EditorInfo outAttrs) {
                 android.view.inputmethod.InputConnection connection =
                         super.onCreateInputConnection(outAttrs);
+                EditText owner = this;
+                boolean[] initialBatchHeld = {connection != null
+                        && getIntent().getBooleanExtra("holdInitialSelectionUntilWrite", false)};
+                if (initialBatchHeld[0]) owner.beginBatchEdit();
+                if (getIntent().getBooleanExtra("initialSelectionUnknown", false)) {
+                    outAttrs.initialSelStart = -1;
+                    outAttrs.initialSelEnd = -1;
+                }
                 String behavior = getIntent().getStringExtra("cursorUpdates");
                 if (connection == null || (!("silent".equals(behavior)
                         || "reject".equals(behavior))
-                        && !getIntent().hasExtra("restartExtraction"))) return connection;
+                        && !getIntent().hasExtra("restartExtraction")
+                        && !getIntent().hasExtra("initialSelectionUnknown")
+                        && !initialBatchHeld[0])) return connection;
                 // Debug fault injection: an editor that never reports cursor geometry.
                 return new android.view.inputmethod.InputConnectionWrapper(connection, false) {
+                    @Override public boolean commitText(CharSequence text, int cursor) {
+                        boolean accepted = super.commitText(text, cursor);
+                        if (accepted && text.length() > 0 && initialBatchHeld[0]) {
+                            initialBatchHeld[0] = false;
+                            owner.postDelayed(() -> owner.endBatchEdit(),
+                                    getIntent().getIntExtra("releaseInitialBatchAfterCommitMs", 450));
+                        }
+                        return accepted;
+                    }
+
                     @Override
                     public boolean requestCursorUpdates(int mode) {
                         if (!("silent".equals(behavior) || "reject".equals(behavior))) {
@@ -231,14 +256,30 @@ public final class ImeTestActivity extends Activity {
                     @Override
                     public android.view.inputmethod.ExtractedText getExtractedText(
                             android.view.inputmethod.ExtractedTextRequest request, int flags) {
-                        String extraction = getIntent().getStringExtra("restartExtraction");
-                        if ("unavailable".equals(extraction)) return null;
-                        android.view.inputmethod.ExtractedText extracted = super.getExtractedText(request, flags);
-                        if ("mismatch".equals(extraction) && extracted != null && extracted.text != null) {
-                            // Change only this response, never the editor's actual text.
-                            extracted.text = "?".repeat(extracted.text.length());
+                        long start = android.os.SystemClock.uptimeMillis();
+                        extractionProbeCalls.incrementAndGet();
+                        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) extractionProbeCallsOnMain.incrementAndGet();
+                        try {
+                            String extraction = getIntent().getStringExtra("restartExtraction");
+                            if ("unavailable".equals(extraction)) return null;
+                            android.view.inputmethod.ExtractedText extracted = super.getExtractedText(request, flags);
+                            if (extracted != null && extracted.text != null) {
+                                if ("partial".equals(extraction)) {
+                                    extracted.partialStartOffset = 0; extracted.partialEndOffset = 0;
+                                } else if ("outside".equals(extraction)) {
+                                    extracted.selectionStart = extracted.selectionEnd = extracted.text.length() + 1;
+                                } else if ("overflow".equals(extraction)) {
+                                    extracted.startOffset = Integer.MAX_VALUE;
+                                }
+                            }
+                            if ("mismatch".equals(extraction) && extracted != null && extracted.text != null) {
+                                // Change only this response, never the editor's actual text.
+                                extracted.text = "?".repeat(extracted.text.length());
+                            }
+                            return extracted;
+                        } finally {
+                            extractionProbeMaxMillis.accumulateAndGet(android.os.SystemClock.uptimeMillis() - start, Math::max);
                         }
-                        return extracted;
                     }
 
                     @Override
@@ -249,9 +290,19 @@ public final class ImeTestActivity extends Activity {
             }
         };
         field.setHint(label + "測試");
+        // Identify the exact editor in asynchronous IME start/restart callbacks.
+        // A shown input view alone may still belong to the previous test host.
+        field.setId(android.view.View.generateViewId());
+        field.setPrivateImeOptions("keykey-test-editor-" + java.util.UUID.randomUUID());
         field.setInputType(inputType);
         field.setSingleLine(singleLine);
         field.setImeOptions(imeOptions);
+        if (!probeTextInitialized && getIntent().hasExtra("probeInitialText")) {
+            probeTextInitialized = true;
+            field.setText(getIntent().getStringExtra("probeInitialText"));
+            field.setSelection(getIntent().getIntExtra("probeSelectionStart", field.length()),
+                    getIntent().getIntExtra("probeSelectionEnd", field.length()));
+        }
         if (privateActionLabel != null) {
             field.setImeActionLabel(privateActionLabel, privateActionId);
         }

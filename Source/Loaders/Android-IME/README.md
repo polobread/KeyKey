@@ -309,9 +309,23 @@ Workflow 依序執行 release lint、單元測試、AAB 建置、簽章與共用
 
 ## 建置
 
-需求：Android Studio、JDK 17 以上、Android SDK 36.1／Build Tools 36.0.0、Python 3.11 以上、
+需求：Android Studio、完整 Amazon Corretto JDK 25（安全基準 `25.0.5.1.2`，含 `javac` 與 JNI headers）、Android SDK 36.1／Build Tools 36.0.0、Python 3.11 以上、
 NDK 27.2.12479018、CMake 3.22.1，以及版控指定的 Rust toolchain、同版本 `rust-src`／四個 Android targets，另需版控內預先產生的
-`Source/Distributions/Takao/CookedDatabase/KeyKey.db`。從 repo 根目錄可先驗證共用檔：
+`Source/Distributions/Takao/CookedDatabase/KeyKey.db`。
+
+Gradle 9.6.1 的 daemon 使用 JDK 25，Java 原始碼與輸出 bytecode 仍維持 17。
+`gradle/gradle-daemon-jvm.properties` 固定 Amazon vendor 與已修補的下載包；這份規則優先於
+`JAVA_HOME` 和 `org.gradle.java.home`。設定階段會拒絕低於 Java `25.0.5.1` 的舊 Corretto 快取，
+防止再次使用受 CVE-2026-114938 影響的建置 JVM。這是主機建置工具，手機執行時使用 Android 系統的 ART。
+
+Android Studio 的 Gradle JDK 應指向這份完整 JDK；只有 runtime、缺少 `include/jni.h` 的 JBR
+無法建立 host JNI。更新後先停止該建置環境的舊 daemon，再執行 `./gradlew --version`，同時核對
+Launcher JVM 與 Daemon JVM。CI 查詢最新 Corretto 25 並檢查實際修補版本。
+
+自動下載提供 macOS、Linux 的 arm64／x64 與 Windows x64。Corretto 尚無 Windows arm64
+套件，因此不提供該主機架構的自動下載；FreeBSD／一般 UNIX 不列為 Android SDK 建置主機。
+
+從 repo 根目錄可先驗證共用檔：
 
 ```sh
 python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \

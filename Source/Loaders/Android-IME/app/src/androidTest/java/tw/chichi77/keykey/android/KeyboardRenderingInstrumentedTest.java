@@ -168,7 +168,8 @@ public final class KeyboardRenderingInstrumentedTest {
                                             if (sharedSize < 0) sharedSize = size;
                                             assertEquals(profile.id + "/" + orientation + "/" + font + "/" + method + "/" + plane,
                                                     sharedSize, size, .01f);
-                                            var spaces = rendered.texts.stream().filter(t -> t.value.equals("空白")).toList();
+                                            var spaces = rendered.texts.stream().filter(t -> t.value.equals("空白"))
+                                                    .collect(java.util.stream.Collectors.toList());
                                             assertEquals(profile.split ? 2 : 1, spaces.size());
                                             for (var space : spaces) assertEquals("Space captions use the main font", sharedSize, space.size, .01f);
                                             for (var text : rendered.texts) {

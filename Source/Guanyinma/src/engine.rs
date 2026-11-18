@@ -1944,7 +1944,6 @@ impl InputSession {
                 &preview.chunks,
                 &self.config.smart,
                 false,
-                !is_desktop,
                 is_desktop.then_some(self.state.touch_phonetic.raw.as_str()),
                 &mut materialized,
             ) {
@@ -2095,7 +2094,6 @@ impl InputSession {
             &choice.chunks,
             &self.config.smart,
             learn,
-            append,
             (!append).then_some(self.state.touch_phonetic.raw.as_str()),
             effects,
         )?;

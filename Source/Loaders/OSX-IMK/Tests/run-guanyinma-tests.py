@@ -71,6 +71,10 @@ def main():
     dispatch = "isHandled = _context->handleKeyEvent(&key);"
     if controller.count(hook) != 1 or controller.index(hook) > controller.index(dispatch):
         raise RuntimeError("Native controller must prepare Rust keypad candidates before PV key dispatch")
+    reload_hook = "[OpenVanillaLoader sharedLoader]->syncSandwichConfig();"
+    event_start = controller.index("if (!OVCShouldEnterEngine(key))")
+    if reload_hook not in controller[event_start:controller.index(hook, event_start)]:
+        raise RuntimeError("Native controller must reload saved module settings before Rust event dispatch")
     before = digest(MODEL)
     if args.library:
         library = args.library.resolve(strict=True)

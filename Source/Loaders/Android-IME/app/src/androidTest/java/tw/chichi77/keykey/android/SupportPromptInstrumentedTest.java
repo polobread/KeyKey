@@ -37,8 +37,18 @@ public final class SupportPromptInstrumentedTest {
                     for (int index = 0; index < SUPPORT_WORDS.size(); index++) {
                         DrawnText word = canvas.single(SUPPORT_WORDS.get(index));
                         int cells = fixture.view.compositionCellCount();
-                        float position = cells - SUPPORT_WORDS.size() + index + 0.5f;
-                        assertEquals(fixture.view.getWidth() * position / cells, word.x, 1f);
+                        int slotIndex = cells - SUPPORT_WORDS.size() + index;
+                        float expectedX;
+                        if (profile.split) {
+                            float width = fixture.view.getWidth();
+                            float density = fixture.view.getResources().getDisplayMetrics().density;
+                            var slot = KeyboardLayoutGeometry.splitStripSlots(cells + 1, width / density)
+                                    .get(slotIndex);
+                            expectedX = width * (slot.left() + slot.right()) / 2f;
+                        } else {
+                            expectedX = fixture.view.getWidth() * (slotIndex + 0.5f) / cells;
+                        }
+                        assertEquals(expectedX, word.x, 1f);
                         fixture.tap(word.x, word.y);
                     }
                     assertTrue(fixture.events.isEmpty());

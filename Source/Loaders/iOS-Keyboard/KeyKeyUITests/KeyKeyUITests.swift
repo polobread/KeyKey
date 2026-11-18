@@ -138,12 +138,16 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["open-input-method-settings"].tap()
         app.segmentedControls["app-settings.composition-mode"].buttons["好打注音"].tap()
         app.segmentedControls["app-settings.keyboard-layout"].buttons["標準"].tap()
+        let omission = app.switches["app-settings.omit-tones"]
+        if omission.value as? String != "0" { omission.tap() }
+        XCTAssertEqual(omission.value as? String, "0")
         let toggle = app.switches["app-settings.space-selects-candidates"]
         XCTAssertTrue(toggle.exists)
         if toggle.value as? String != "0" { toggle.tap() }
         XCTAssertEqual(toggle.value as? String, "0")
         app.buttons["app-settings.reset-learning"].tap()
         app.alerts.buttons["重設"].tap()
+        app.buttons["app-settings.apply-to-keyboard"].tap()
         launchHostApp()
         XCTAssertTrue(revealField("message"))
         let output = field("message")
@@ -170,6 +174,7 @@ final class KeyKeyUITests: XCTestCase {
         let enabled = app.switches["app-settings.space-selects-candidates"]
         if enabled.value as? String != "1" { enabled.tap() }
         XCTAssertEqual(enabled.value as? String, "1")
+        app.buttons["app-settings.apply-to-keyboard"].tap()
         app.terminate()
         app.launch()
         app.buttons["open-input-method-settings"].tap()
@@ -190,6 +195,7 @@ final class KeyKeyUITests: XCTestCase {
         let restored = app.switches["app-settings.space-selects-candidates"]
         if restored.value as? String != "0" { restored.tap() }
         XCTAssertEqual(restored.value as? String, "0")
+        app.buttons["app-settings.apply-to-keyboard"].tap()
     }
 
     func testSharedSpaceSelectionAndIndependentDownArrow() {
@@ -1336,9 +1342,9 @@ final class KeyKeyUITests: XCTestCase {
         // XCTest's Return does not reach this iOS Simulator's raw responder.
         // The host bridge emits a complete Return HID press/release pair.
         typeHardwareEditorKey(.return)
-        XCTAssertTrue(waitForLayout { output.value as? String == "你郝媽" })
+        XCTAssertTrue(waitForLayout { output.value as? String == "你郝嗎" })
         typeHardwareEditorKey(.return)
-        XCTAssertEqual(output.value as? String, "你郝媽\n", "A plain Enter inserts one newline")
+        XCTAssertEqual(output.value as? String, "你郝嗎\n", "A plain Enter inserts one newline")
         keepKeyboardEvidence("Hardware editor right-hand selection, rotation and refocus", output: output)
     }
 
@@ -1551,8 +1557,40 @@ final class KeyKeyUITests: XCTestCase {
         let isPad = UIDevice.current.userInterfaceIdiom == .pad
         XCTAssertTrue(waitForLayout { abs(firstCandidate.frame.height - (isPad ? 38 : 32)) <= 0.5 })
 
-        XCUIDevice.shared.orientation = .landscapeLeft
         let output = app.textViews["hardware-editor.output"]
+        func assertPortraitWorkspaceVisible(_ phase: String) {
+            let viewport = app.scrollViews.firstMatch.frame
+            let footerTop = app.buttons["hardware-editor.clear"].frame.minY
+            for number in 1...9 {
+                let candidate = app.buttons["hardware-editor.candidate.\(number)"]
+                XCTAssertTrue(candidate.exists)
+                XCTAssertGreaterThanOrEqual(candidate.frame.minY, viewport.minY - 0.5)
+                XCTAssertLessThanOrEqual(candidate.frame.maxY, min(viewport.maxY, footerTop) + 0.5)
+            }
+            let page = app.staticTexts["hardware-editor.page"]
+            XCTAssertTrue(page.exists)
+            XCTAssertLessThanOrEqual(page.frame.maxY, min(viewport.maxY, footerTop) + 0.5)
+            for control in ["escape", "backspace", "enter", "left", "up", "down", "right", "space"] {
+                let button = app.buttons["hardware-editor.\(control)"]
+                XCTAssertTrue(button.exists)
+                XCTAssertTrue(button.isHittable)
+                XCTAssertLessThanOrEqual(button.frame.maxY, min(viewport.maxY, footerTop) + 0.5)
+            }
+            XCTAssertGreaterThan(output.frame.height, UIFont.preferredFont(forTextStyle: .body).lineHeight)
+            let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            screenshot.name = "Hardware keyboard editor portrait \(phase)"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+            print("PORTRAIT_WORKSPACE \(phase) output=\(output.frame) viewport=\(viewport) "
+                + "candidate9=\(app.buttons["hardware-editor.candidate.9"].frame) "
+                + "page=\(page.frame) space=\(app.buttons["hardware-editor.space"].frame) footerTop=\(footerTop)")
+        }
+        assertPortraitWorkspaceVisible("before rotation")
+        let originalPortraitOutputFrame = output.frame
+        let originalPortraitCandidateFrame = firstCandidate.frame
+        let originalPortraitSpaceFrame = app.buttons["hardware-editor.space"].frame
+
+        XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(waitForLayout { abs(firstCandidate.frame.height - (isPad ? 38 : 24)) <= 0.5 })
         let phrasePicker = app.buttons["hardware-editor.phrases"]
         let clear = app.buttons["hardware-editor.clear"]
@@ -1613,6 +1651,17 @@ final class KeyKeyUITests: XCTestCase {
         for control in ["left", "up", "down", "right", "space"] {
             XCTAssertTrue(app.buttons["hardware-editor.\(control)"].waitForExistence(timeout: 3))
             XCTAssertTrue(app.buttons["hardware-editor.\(control)"].isHittable)
+        }
+        assertPortraitWorkspaceVisible("after rotation")
+        for (actual, original) in [
+            (output.frame, originalPortraitOutputFrame),
+            (firstCandidate.frame, originalPortraitCandidateFrame),
+            (app.buttons["hardware-editor.space"].frame, originalPortraitSpaceFrame)
+        ] {
+            XCTAssertEqual(actual.minX, original.minX, accuracy: 0.5)
+            XCTAssertEqual(actual.minY, original.minY, accuracy: 0.5)
+            XCTAssertEqual(actual.width, original.width, accuracy: 0.5)
+            XCTAssertEqual(actual.height, original.height, accuracy: 0.5)
         }
     }
 
@@ -1952,12 +2001,19 @@ final class KeyKeyUITests: XCTestCase {
             return
         }
         try selectCompositionMode("好打注音")
+        app.buttons["SETTINGS"].tap()
+        app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
+        let omission = app.switches["keyboard-settings.omit-tones"]
+        if omission.value as? String != "0" { omission.tap() }
+        XCTAssertEqual(omission.value as? String, "0")
+        closeKeyboardSettings()
+        XCTAssertEqual(app.buttons.matching(identifier: "s").firstMatch.label, "ㄋ")
 
         let syllables = ["fu/3", "ru84", "ul4", "fm4", "s83",
                          "xu3", "j06", "sk7", "fm4", "c93"]
         for (index, syllable) in syllables.enumerated() {
             for key in syllable {
-                let button = app.buttons[String(key)]
+                let button = app.buttons.matching(identifier: String(key)).firstMatch
                 XCTAssertTrue(button.exists, "找不到注音鍵 \(key)")
                 button.tap()
             }
@@ -1981,7 +2037,7 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(waitForLayout {
             (output.value as? String) == "請假要去哪裡玩呢去"
         })
-        for key in "c93" { app.buttons[String(key)].tap() }
+        for key in "c93" { app.buttons.matching(identifier: String(key)).firstMatch.tap() }
         XCTAssertTrue(waitForLayout {
             (output.value as? String) == "請假要去哪裡玩呢去海"
         })
@@ -3531,6 +3587,18 @@ final class KeyKeyUITests: XCTestCase {
         // A centered sheet puts the text field's midpoint on Duo's reserved
         // fold. Its right quarter remains in the active display region.
         input.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.5)).tap()
+        // Older Simulator hosts can focus an empty field before showing its
+        // keyboard. Re-tap only that empty field; preserve existing text/caret.
+        let value = input.value as? String ?? ""
+        let empty = value.isEmpty || input.placeholderValue.map { value == $0 } == true
+        if empty && !waitForLayout(timeout: 2, condition: {
+            let status = app.buttons["SETTINGS"]
+            let keyboard = app.keyboards.firstMatch
+            return (status.exists && status.frame.intersects(app.frame))
+                || (keyboard.exists && keyboard.frame.intersects(app.frame))
+        }), input.exists, input.isHittable {
+            input.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.5)).tap()
+        }
     }
 
     private func field(_ identifier: String) -> XCUIElement {
@@ -3549,6 +3617,22 @@ final class KeyKeyUITests: XCTestCase {
         // identifies the extension in either composition mode and layout.
         let status = app.buttons["SETTINGS"]
         if status.exists { return true }
+        // XCTest can leave iPad's hardware-keyboard assistant visible while the
+        // software keyboard is collapsed. Use its normal Show Keyboard action;
+        // this neither grants a keyboard nor changes Simulator preferences.
+        if !app.keyboards.firstMatch.exists {
+            let assistant = app.otherElements["SystemInputAssistantView"]
+            let keyboard = assistant.buttons.matching(NSPredicate(
+                format: "label == '鍵盤' OR label == 'Keyboard'"
+            )).firstMatch
+            if assistant.exists && keyboard.exists && keyboard.isHittable {
+                keyboard.tap()
+                let show = app.buttons.matching(NSPredicate(
+                    format: "label == '顯示鍵盤' OR label == 'Show Keyboard'"
+                )).firstMatch
+                if show.waitForExistence(timeout: 3) && show.isHittable { show.tap() }
+            }
+        }
         dismissSystemKeyboardTip()
         if status.waitForExistence(timeout: 8) { return true }
 

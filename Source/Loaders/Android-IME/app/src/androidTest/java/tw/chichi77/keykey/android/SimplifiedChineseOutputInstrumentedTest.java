@@ -72,6 +72,8 @@ public final class SimplifiedChineseOutputInstrumentedTest {
 
     @Test
     public void simplifiedTouchSmartRolloverDoesNotDuplicateTheCommittedPrefix() throws Exception {
+        org.junit.Assume.assumeTrue("The live keyboard inspector requires Android 10 / API 29",
+                android.os.Build.VERSION.SDK_INT >= 29);
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         Context context = instrumentation.getTargetContext();
         String ime = Settings.Secure.getString(context.getContentResolver(),

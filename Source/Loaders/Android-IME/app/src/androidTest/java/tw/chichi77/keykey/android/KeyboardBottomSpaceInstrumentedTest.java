@@ -485,14 +485,16 @@ public final class KeyboardBottomSpaceInstrumentedTest {
         String[] keys = {KeyboardSizeSettings.KEY_PORTRAIT_SCALE, KeyboardSizeSettings.KEY_PORTRAIT_GAP,
                 KeyboardBottomControlsSettings.KEY_ENABLED};
         Activity activity = null;
+        var geometry = new ArrayList<String>();
         try {
             preferences.edit().putFloat(keys[0], 1f).putFloat(keys[1], 0f).putBoolean(keys[2], false).commit();
             activity = instrumentation.startActivitySync(new Intent()
                     .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
             Activity initial = activity;
             instrumentation.runOnMainSync(() ->
                     initial.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));
+            rotateDisplayTo(context, Configuration.ORIENTATION_PORTRAIT);
             // Rotation can recreate the host. Read insets from the resumed window.
             activity = awaitPortraitHost();
             Activity host = activity;
@@ -503,14 +505,33 @@ public final class KeyboardBottomSpaceInstrumentedTest {
                 context.getSystemService(InputMethodManager.class)
                         .showSoftInput(editor, InputMethodManager.SHOW_IMPLICIT);
             });
+            IntegratedBottomControlsInstrumentedTest.showEditorKeyboard(host, context);
+            IntegratedBottomControlsInstrumentedTest.await(() -> {
+                var keyboard = IntegratedBottomControlsInstrumentedTest.findKeyboard();
+                return keyboard != null && keyboard.mode() == BopomofoKeyboardView.Mode.PORTRAIT
+                        && keyboard.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT
+                        && host.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
+            });
             int flush = awaitImeHeight(host, -1);
             assertTrue("IME never opened", flush > 0);
+            geometry.add("initial: " + hostGeometry(host));
+            Thread.sleep(500);
+            geometry.add("initial+500ms: " + hostGeometry(host));
+            Thread.sleep(1000);
+            flush = awaitImeHeight(host, -1);
+            String before = hostGeometry(host);
+            geometry.add("before+1500ms: " + before);
+            captureGapEvidence(context, "settled-before-custom-gap");
             float gapDp = 22f;
             int gap = Math.round(gapDp * context.getResources().getDisplayMetrics().density);
             instrumentation.runOnMainSync(() ->
                     KeyboardSizeSettings.setSize(context, false, new KeyboardSizeSettings.Size(1f, gapDp)));
             int custom = awaitImeHeight(host, flush + gap);
-            assertEquals("Setting a custom gap must add exactly that much to the window", gap, custom - flush);
+            String after = hostGeometry(host);
+            geometry.add("after: " + after);
+            captureGapEvidence(context, "after-custom-gap");
+            assertEquals("Setting a custom gap must add exactly that much to the window; before="
+                    + before + "; after=" + after, gap, custom - flush);
             instrumentation.runOnMainSync(() -> context.getSystemService(InputMethodManager.class)
                     .hideSoftInputFromWindow(host.getWindow().getDecorView().getWindowToken(), 0));
             assertEquals(0, awaitImeHeight(host, 0));
@@ -532,6 +553,9 @@ public final class KeyboardBottomSpaceInstrumentedTest {
                 else if (previous.get(key) instanceof Float value) restore.putFloat(key, value);
             }
             restore.commit();
+            android.os.Bundle status = new android.os.Bundle();
+            status.putStringArrayList("keykey_live_bottom_gap_geometry", geometry);
+            instrumentation.sendStatus(0, status);
         }
     }
 
@@ -556,6 +580,7 @@ public final class KeyboardBottomSpaceInstrumentedTest {
             Activity initial = settings;
             instrumentation.runOnMainSync(() ->
                     initial.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));
+            rotateDisplayTo(context, Configuration.ORIENTATION_PORTRAIT);
             settings = awaitActivity(SettingsActivity.class, Configuration.ORIENTATION_PORTRAIT);
             Activity portraitEditor = openResizeControls(settings);
             instrumentation.runOnMainSync(() -> {
@@ -600,6 +625,7 @@ public final class KeyboardBottomSpaceInstrumentedTest {
             clickResizeControl(rotating, "恢復預設");
             instrumentation.runOnMainSync(() ->
                     rotating.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));
+            rotateDisplayTo(context, Configuration.ORIENTATION_LANDSCAPE);
             Activity landscapeEditor = awaitActivity(KeyboardResizeActivity.class,
                     Configuration.ORIENTATION_LANDSCAPE);
             awaitResizeControls(landscapeEditor);
@@ -642,6 +668,92 @@ public final class KeyboardBottomSpaceInstrumentedTest {
     }
 
     @Test
+    public void nonFiniteResizeCoordinatesPreserveTheLastValidHeightAndEndDragging() throws Exception {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        var preferences = CandidateWindowSettings.preferences(context);
+        String[] keys = {KeyboardSizeSettings.KEY_PORTRAIT_PERCENT, KeyboardSizeSettings.KEY_LANDSCAPE_PERCENT,
+                KeyboardSizeSettings.KEY_PORTRAIT_SCALE, KeyboardSizeSettings.KEY_LANDSCAPE_SCALE,
+                KeyboardSizeSettings.KEY_PORTRAIT_GAP, KeyboardSizeSettings.KEY_LANDSCAPE_GAP};
+        Map<String, ?> previous = preferences.getAll();
+        Activity[] activities = {null, null};
+        try {
+            var reset = preferences.edit();
+            for (String key : keys) reset.remove(key);
+            reset.commit();
+            activities[0] = openSettings(context);
+            activities[1] = openResizeControls(activities[0]);
+            Activity editor = activities[1];
+            int distance = Math.round(20 * context.getResources().getDisplayMetrics().density);
+            instrumentation.runOnMainSync(() -> {
+                var keyboard = resizeKeyboard(editor);
+                View handle = findResizeControl(editor, "拖曳鍵盤下緣");
+                var initial = keyboard.visibleTouchEdges();
+                for (float invalid : new float[]{Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}) {
+                    long time = SystemClock.uptimeMillis();
+                    dispatchResizeTouch(handle, time, MotionEvent.ACTION_DOWN, invalid);
+                    assertEquals(initial, keyboard.visibleTouchEdges());
+                    assertResizePaint(keyboard, true);
+                    dispatchResizeTouch(handle, time, MotionEvent.ACTION_CANCEL, invalid);
+                }
+                KeyboardEdgeGeometry lastValid = initial;
+                for (float invalidUp : new float[]{Float.NaN, Float.POSITIVE_INFINITY}) {
+                    findResizeControl(editor, "恢復預設").performClick();
+                    float startY = boundsOf(handle).centerY();
+                    long time = SystemClock.uptimeMillis();
+                    dispatchResizeTouch(handle, time, MotionEvent.ACTION_DOWN, startY);
+                    dispatchResizeTouch(handle, time, MotionEvent.ACTION_MOVE, startY - distance);
+                    lastValid = keyboard.visibleTouchEdges();
+                    assertEquals(distance, lastValid.bottom());
+                    for (float invalid : new float[]{Float.NaN, Float.NEGATIVE_INFINITY}) {
+                        dispatchResizeTouch(handle, time, MotionEvent.ACTION_MOVE, invalid);
+                        assertEquals(lastValid, keyboard.visibleTouchEdges());
+                    }
+                    assertResizePaint(keyboard, false);
+                    dispatchResizeTouch(handle, time, MotionEvent.ACTION_UP, invalidUp);
+                    assertEquals(lastValid, keyboard.visibleTouchEdges());
+                    assertResizePaint(keyboard, true);
+                }
+                float startY = boundsOf(handle).centerY();
+                long time = SystemClock.uptimeMillis();
+                dispatchResizeTouch(handle, time, MotionEvent.ACTION_DOWN, startY);
+                dispatchResizeTouch(handle, time, MotionEvent.ACTION_MOVE, startY - distance);
+                assertEquals(lastValid.bottom() + distance, keyboard.visibleTouchEdges().bottom());
+                dispatchResizeTouch(handle, time, MotionEvent.ACTION_CANCEL, Float.NaN);
+                assertEquals(lastValid, keyboard.visibleTouchEdges());
+                assertResizePaint(keyboard, true);
+                boolean landscape = keyboard.mode() == BopomofoKeyboardView.Mode.LANDSCAPE;
+                assertTrue(findResizeControl(editor, "完成").performClick());
+                assertEquals(distance / context.getResources().getDisplayMetrics().density,
+                        KeyboardSizeSettings.size(context, landscape).bottomGapDp(), .001f);
+                assertEquals(KeyboardSizeSettings.DEFAULT_SIZE, KeyboardSizeSettings.size(context, !landscape));
+            });
+        } finally {
+            instrumentation.runOnMainSync(() -> {
+                for (Activity activity : activities) if (activity != null) activity.finish();
+            });
+            var restore = preferences.edit();
+            for (String key : keys) {
+                restore.remove(key);
+                if (previous.get(key) instanceof Integer value) restore.putInt(key, value);
+                else if (previous.get(key) instanceof Float value) restore.putFloat(key, value);
+            }
+            restore.commit();
+        }
+    }
+
+    private static void dispatchResizeTouch(View handle, long down, int action, float screenY) {
+        int[] location = new int[2];
+        handle.getLocationOnScreen(location);
+        MotionEvent event = MotionEvent.obtain(down, SystemClock.uptimeMillis(), action,
+                location[0] + handle.getWidth() / 2f, screenY, 0);
+        event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+        event.offsetLocation(-location[0], -location[1]);
+        try { assertTrue(handle.dispatchTouchEvent(event)); }
+        finally { event.recycle(); }
+    }
+
+    @Test
     public void keyboardSettingsKeyOpensSettingsDirectly() throws Exception {
         org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
         org.junit.Assume.assumeTrue("Use a disposable emulator with KeyKey selected",
@@ -650,7 +762,7 @@ public final class KeyboardBottomSpaceInstrumentedTest {
         Context context = instrumentation.getTargetContext();
         Activity host = instrumentation.startActivitySync(new Intent()
                 .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
         Activity settings = null;
         try {
             IntegratedBottomControlsInstrumentedTest.showEditorKeyboard(host, context);
@@ -777,20 +889,18 @@ public final class KeyboardBottomSpaceInstrumentedTest {
     }
 
     private static void assertResizeKeycapsVisible(Activity editor, boolean expected) {
-        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
-            var keyboard = resizeKeyboard(editor);
-            boolean[] drew = new boolean[2];
-            keyboard.draw(new Canvas() {
-                @Override public void drawRoundRect(RectF bounds, float rx, float ry, Paint paint) {
-                    drew[0] = true;
-                }
-                @Override public void drawText(String text, float x, float y, Paint paint) {
-                    drew[1] = true;
-                }
-            });
-            assertEquals("Keycaps must only be hidden during a drag", expected, drew[0]);
-            assertEquals("Key labels must only be hidden during a drag", expected, drew[1]);
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() ->
+                assertResizePaint(resizeKeyboard(editor), expected));
+    }
+
+    private static void assertResizePaint(BopomofoKeyboardView keyboard, boolean expected) {
+        boolean[] drew = new boolean[2];
+        keyboard.draw(new Canvas() {
+            @Override public void drawRoundRect(RectF bounds, float rx, float ry, Paint paint) { drew[0] = true; }
+            @Override public void drawText(String text, float x, float y, Paint paint) { drew[1] = true; }
         });
+        assertEquals("Keycaps must only be hidden during a drag", expected, drew[0]);
+        assertEquals("Key labels must only be hidden during a drag", expected, drew[1]);
     }
 
     private static void sendResizeTouch(long down, int action, float x, float y) {
@@ -802,6 +912,73 @@ public final class KeyboardBottomSpaceInstrumentedTest {
         } finally {
             event.recycle();
         }
+    }
+
+    private static void captureGapEvidence(Context context, String label) throws java.io.IOException {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        if (!"true".equals(InstrumentationRegistry.getArguments().getString("keykey.captureEvidence"))) return;
+        android.graphics.Bitmap bitmap = instrumentation.getUiAutomation().takeScreenshot();
+        assertNotNull(bitmap);
+        java.io.File image = new java.io.File(context.getExternalFilesDir(null), "bottom-gap-" + label + ".png");
+        try (var output = new java.io.FileOutputStream(image)) {
+            assertTrue(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output));
+        } finally {
+            bitmap.recycle();
+        }
+    }
+
+    private static String hostGeometry(Activity host) {
+        String[] result = {""};
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            var keyboard = IntegratedBottomControlsInstrumentedTest.findKeyboard();
+            WindowInsets hostInsets = host.getWindow().getDecorView().getRootWindowInsets();
+            int[] location = new int[2];
+            if (keyboard != null) keyboard.getLocationOnScreen(location);
+            result[0] = "hostOrientation=" + host.getResources().getConfiguration().orientation
+                    + ", hostIme=" + (hostInsets == null ? -1 : hostInsets.getInsets(WindowInsets.Type.ime()).bottom)
+                    + ", hostNav=" + (hostInsets == null ? -1 : hostInsets.getInsets(WindowInsets.Type.navigationBars()).bottom)
+                    + ", keyboardMode=" + (keyboard == null ? null : keyboard.mode())
+                    + ", keyboardTop=" + location[1] + ", keyboardHeight=" + (keyboard == null ? -1 : keyboard.getHeight())
+                    + ", keyboardMeasured=" + (keyboard == null ? -1 : keyboard.getMeasuredHeight());
+            if (keyboard != null) {
+                for (String fieldName : new String[]{"systemBottomInset", "lastReservedHeight", "lastDesiredContentHeight",
+                        "lastDesiredBottomGap", "measuredHeightBudget", "lastWindowBounds", "measuredEdges"}) {
+                    try {
+                        var field = BopomofoKeyboardView.class.getDeclaredField(fieldName);
+                        field.setAccessible(true);
+                        result[0] += ", " + fieldName + "=" + field.get(keyboard);
+                    } catch (ReflectiveOperationException ignored) { }
+                }
+                View container = (View) keyboard.getParent();
+                int[] containerLocation = new int[2];
+                container.getLocationOnScreen(containerLocation);
+                View root = keyboard.getRootView();
+                int[] rootLocation = new int[2];
+                root.getLocationOnScreen(rootLocation);
+                result[0] += ", containerTop=" + containerLocation[1] + ", containerHeight=" + container.getHeight()
+                        + ", rootTop=" + rootLocation[1] + ", rootHeight=" + root.getHeight()
+                        + ", metrics=" + keyboard.getContext().getSystemService(android.view.WindowManager.class)
+                                .getCurrentWindowMetrics().getBounds();
+            }
+        });
+        return result[0];
+    }
+
+    static void rotateDisplayTo(Context context, int orientation) throws Exception {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        var display = context.getSystemService(android.view.WindowManager.class).getDefaultDisplay();
+        android.graphics.Point size = new android.graphics.Point();
+        display.getRealSize(size);
+        var displayMode = display.getMode();
+        boolean naturalLandscape = displayMode.getPhysicalWidth() > displayMode.getPhysicalHeight();
+        int rotation = (orientation == Configuration.ORIENTATION_LANDSCAPE) == naturalLandscape ? 0 : 1;
+        assertTrue(instrumentation.getUiAutomation().setRotation(rotation));
+        IntegratedBottomControlsInstrumentedTest.await(() -> {
+            android.graphics.Point actual = new android.graphics.Point();
+            display.getRealSize(actual);
+            return display.getRotation() == rotation
+                    && (actual.x > actual.y) == (orientation == Configuration.ORIENTATION_LANDSCAPE);
+        });
     }
 
     private static Activity awaitPortraitHost() throws InterruptedException {
@@ -880,7 +1057,7 @@ public final class KeyboardBottomSpaceInstrumentedTest {
 
     private static Activity openSettings(Context context) {
         return InstrumentationRegistry.getInstrumentation().startActivitySync(new Intent(context,
-                SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
     }
 
     private static LinearLayout settingsPage(Activity activity) {

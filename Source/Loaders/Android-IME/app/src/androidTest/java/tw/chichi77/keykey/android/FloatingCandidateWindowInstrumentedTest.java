@@ -5,9 +5,14 @@ import static org.junit.Assert.*;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.Rect;
+import android.graphics.PixelFormat;
+import android.hardware.display.DisplayManager;
+import android.hardware.display.VirtualDisplay;
+import android.media.ImageReader;
 import android.os.Build;
 import android.os.Binder;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
@@ -120,20 +125,28 @@ public final class FloatingCandidateWindowInstrumentedTest {
 
     @Test
     public void footerHeightIsReservedBeforeFittingCandidatesToSafeBounds() {
-        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R);
         onMain(() -> {
             for (CandidateWindowSettings.Layout layout : CandidateWindowSettings.Layout.values()) {
-                Fixture fixture = new Fixture();
-                float density = fixture.token.getResources().getDisplayMetrics().density;
-                fixture.safeHeight = Math.round(55 * density);
-                fixture.window.update(List.of("一", "二", "三", "四", "五", "六", "七", "八", "九"),
-                        0, layout, null, true);
-                assertTrue(fixture.parameters.height <= fixture.safeHeight);
-                assertTrue(fixture.parameters.y >= 0);
-                assertTrue(fixture.parameters.y + fixture.parameters.height <= fixture.safeHeight);
-                LinearLayout candidates = (LinearLayout) fixture.content.getChildAt(0);
-                assertTrue(candidates.getChildAt(0).getLayoutParams().height < Math.round(40 * density));
-                fixture.window.hide();
+                try (Fixture fixture = new Fixture()) {
+                    float density = fixture.token.getResources().getDisplayMetrics().density;
+                    fixture.safeHeight = Math.round(55 * density);
+                    fixture.window.update(List.of("一", "二", "三", "四", "五", "六", "七", "八", "九"),
+                            0, layout, null, true);
+                    assertTrue(fixture.parameters.height <= fixture.safeHeight);
+                    assertTrue(fixture.parameters.y >= 0);
+                    assertTrue(fixture.parameters.y + fixture.parameters.height <= fixture.safeHeight);
+                    LinearLayout candidates = (LinearLayout) fixture.content.getChildAt(0);
+                    assertTrue(candidates.getChildAt(0).getLayoutParams().height < Math.round(40 * density));
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                        assertTrue("legacy safe bounds must query the owned display",
+                                fixture.legacyBoundsQueries > 0);
+                        Log.i("KeyKeyFloatingTest", "legacy footer bounds: sdk="
+                                + Build.VERSION.SDK_INT + " layout=" + layout
+                                + " safeHeight=" + fixture.safeHeight
+                                + " windowHeight=" + fixture.parameters.height
+                                + " displayQueries=" + fixture.legacyBoundsQueries);
+                    }
+                }
             }
         });
     }
@@ -160,7 +173,7 @@ public final class FloatingCandidateWindowInstrumentedTest {
         }
     }
 
-    private static final class Fixture implements FloatingCandidateWindow.Listener {
+    private static final class Fixture implements FloatingCandidateWindow.Listener, AutoCloseable {
         final ArrayList<CandidateWindowSettings.Failure> failures = new ArrayList<>();
         final TokenView token;
         final FloatingCandidateWindow window;
@@ -168,6 +181,9 @@ public final class FloatingCandidateWindowInstrumentedTest {
         int attempts;
         int removals;
         Integer safeHeight;
+        VirtualDisplay legacyDisplay;
+        ImageReader legacySurface;
+        int legacyBoundsQueries;
         LinearLayout content;
         WindowManager.LayoutParams parameters;
         final ArrayList<Integer> selected = new ArrayList<>();
@@ -196,6 +212,22 @@ public final class FloatingCandidateWindowInstrumentedTest {
                             return new WindowMetrics(new Rect(0, 0, 600, safeHeight),
                                     new WindowInsets.Builder().build());
                         }
+                        if (method.getName().equals("getDefaultDisplay") && safeHeight != null) {
+                            if (legacyDisplay == null) {
+                                // Exercise the pre-30 Display.getRealMetrics path with public APIs.
+                                // OWN_CONTENT_ONLY keeps this private display from capturing the screen.
+                                legacySurface = ImageReader.newInstance(600, safeHeight,
+                                        PixelFormat.RGBA_8888, 2);
+                                legacyDisplay = base.getSystemService(DisplayManager.class)
+                                        .createVirtualDisplay("KeyKey footer bounds", 600, safeHeight,
+                                                base.getResources().getDisplayMetrics().densityDpi,
+                                                legacySurface.getSurface(),
+                                                DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+                                assertNotNull("could not create owned legacy bounds display", legacyDisplay);
+                            }
+                            legacyBoundsQueries++;
+                            return legacyDisplay.getDisplay();
+                        }
                         return method.invoke(real, args);
                     });
             Context context = new ContextWrapper(base) {
@@ -217,6 +249,18 @@ public final class FloatingCandidateWindowInstrumentedTest {
                 token.pending.remove(0).run();
             }
             assertTrue("window retry did not stop", token.pending.isEmpty());
+        }
+
+        @Override public void close() {
+            try {
+                window.hide();
+            } finally {
+                try {
+                    if (legacyDisplay != null) legacyDisplay.release();
+                } finally {
+                    if (legacySurface != null) legacySurface.close();
+                }
+            }
         }
 
         @Override public void onPress() {}

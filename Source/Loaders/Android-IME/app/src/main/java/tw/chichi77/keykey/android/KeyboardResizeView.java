@@ -172,7 +172,9 @@ final class KeyboardResizeView extends KeyboardInputView {
         int action = event.getActionMasked();
         if (action == MotionEvent.ACTION_DOWN) {
             if (drag == null) {
-                drag = dragFrom(top, event.getPointerId(0), screenY(event, 0));
+                float pointerY = screenY(event, 0);
+                if (!Float.isFinite(pointerY)) return true;
+                drag = dragFrom(top, event.getPointerId(0), pointerY);
                 keyboard.setResizeDragActive(true);
                 requestDisallowInterceptTouchEvent(true);
             }
@@ -187,8 +189,11 @@ final class KeyboardResizeView extends KeyboardInputView {
             int index = event.findPointerIndex(drag.pointer());
             if (action == MotionEvent.ACTION_POINTER_UP && index != event.getActionIndex()) return true;
             if (index >= 0) {
-                KeyboardEdgeGeometry next = drag.at(screenY(event, index));
-                if (!next.equals(drag.visible()) || !previewEdges.equals(drag.before())) preview(next);
+                float pointerY = screenY(event, index);
+                if (Float.isFinite(pointerY)) {
+                    KeyboardEdgeGeometry next = drag.at(pointerY);
+                    if (!next.equals(drag.visible()) || !previewEdges.equals(drag.before())) preview(next);
+                }
             }
             if (action != MotionEvent.ACTION_MOVE) endResizeDrag();
         }
