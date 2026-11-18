@@ -33,12 +33,13 @@ EngineResult Type(KeyKeyEngineSession& engine, const std::string& keys) {
     for (auto c : keys) { result = Character(engine, c); Check(result.handled, "Reading key rejected"); }
     return result;
 }
-void WriteSettings(const std::string& layout, const std::string& keys, int size, const char* omitTone = nullptr) {
+void WriteSettings(const std::string& layout, const std::string& keys, int size,
+    const char* omitTone = nullptr, const char* spaceCandidates = "true") {
     std::ofstream plist(SmartMandarinPreferencesPath(), std::ios::binary);
     plist << "<plist><dict><key>KeyboardLayout</key><string>" << layout
         << "</string><key>CandidateSelectionKeys</key><string>" << keys
         << "</string><key>ComposingTextBufferSize</key><string>" << size
-        << "</string><key>ShowCandidateListWithSpace</key><string>true</string>";
+        << "</string><key>ShowCandidateListWithSpace</key><string>" << spaceCandidates << "</string>";
     if (omitTone) plist << "<key>OmitTone</key><string>" << omitTone << "</string>";
     plist << "</dict></plist>";
     plist.close();
@@ -107,6 +108,14 @@ int main(int argc, char** argv) {
             Type(*engine, "sk");
             Check(Key(*engine, VK_RETURN, L'\r').committedText == L"請假要去哪裡" + chosen + L"呢",
                 "Cross-tone selection lost or duplicated text on continued input");
+
+            WriteSettings("Standard", "", 10, "true", "false");
+            Type(*engine, "skfmc931u0");
+            const auto firstTone = Key(*engine, VK_SPACE, L' ');
+            Check(firstTone.compositionText == L"呢去海邊" && firstTone.committedText.empty(),
+                "First-tone Space after mixed omitted readings inserted a literal space");
+            Check(Key(*engine, VK_RETURN, L'\r').committedText == L"呢去海邊",
+                "Mixed-tone first-tone confirmation changed the native committed text");
             std::cout << "Smart Mandarin tone omission and settings reload passed\n";
             return 0;
         }

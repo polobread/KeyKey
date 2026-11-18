@@ -63,6 +63,70 @@ fn opted_in_desktop_accepts_omitted_and_explicit_tones_on_all_layouts() {
 }
 
 #[test]
+fn mixed_omitted_readings_consume_first_tone_space_without_inserting_text() {
+    for (layout, raw) in [
+        (BopomofoLayout::Standard, "skfmc931u0"),
+        (BopomofoLayout::HanyuPinyin, "nequhai3bian"),
+    ] {
+        let mut input = session(layout, true);
+        input
+            .apply(InputOperation::SetSmartOptions {
+                options: SmartOptions {
+                    omit_tone: true,
+                    space_opens_candidates: false,
+                    ..SmartOptions::default()
+                },
+            })
+            .unwrap();
+        type_keys(&mut input, raw);
+        let completed = key(&mut input, Key::Space);
+        assert_eq!(completed.visible_text, "呢去海邊", "{layout:?}");
+        assert!(completed.effects.commit.is_empty());
+        assert!(!completed.phonetic_pending);
+        let first_tone = completed.readings.last().unwrap();
+        let opened = key(&mut input, Key::Down);
+        assert!(opened.candidates.iter().any(|text| text == "邊"));
+        assert!(opened
+            .candidate_spans
+            .iter()
+            .all(|candidate| candidate.query.ends_with(first_tone)));
+        key(&mut input, Key::Escape);
+        assert_eq!(key(&mut input, Key::Return).effects.commit, "呢去海邊");
+
+        type_keys(&mut input, raw);
+        key(&mut input, Key::Space);
+        key(&mut input, Key::Space);
+        assert_eq!(key(&mut input, Key::Return).effects.commit, "呢去海邊 ");
+    }
+}
+
+#[test]
+fn first_tone_space_keeps_incomplete_spelling_and_literal_spaces_after_explicit_tones() {
+    let mut input = session(BopomofoLayout::HanyuPinyin, true);
+    input
+        .apply(InputOperation::SetSmartOptions {
+            options: SmartOptions {
+                omit_tone: true,
+                space_opens_candidates: false,
+                ..SmartOptions::default()
+            },
+        })
+        .unwrap();
+    let before = type_keys(&mut input, "nihaon");
+    let rejected = key(&mut input, Key::Space);
+    assert!(rejected.effects.beep);
+    assert!(rejected.effects.commit.is_empty());
+    assert_eq!(rejected.reading, "n");
+    assert_eq!(rejected.visible_text, before.visible_text);
+    assert_eq!(key(&mut input, Key::Backspace).visible_text, "你好");
+    assert_eq!(key(&mut input, Key::Return).effects.commit, "你好");
+    input.apply(InputOperation::Reset).unwrap();
+    type_keys(&mut input, "ni3hao3");
+    key(&mut input, Key::Space);
+    assert_eq!(key(&mut input, Key::Return).effects.commit, "你好 ");
+}
+
+#[test]
 fn desktop_uses_native_selection_and_inserts_at_the_edited_caret() {
     let mut session = session(BopomofoLayout::Standard, true);
     type_keys(&mut session, "sucl");

@@ -2111,6 +2111,36 @@ impl InputSession {
         Ok(resolved)
     }
 
+    fn complete_desktop_first_tone(&mut self, effects: &mut Effects) -> Result<bool, EngineError> {
+        let pending = &self.state.touch_phonetic;
+        if self
+            .touch_grid_preview()
+            .is_none_or(|preview| preview.consumed != pending.raw.len())
+        {
+            return Ok(false);
+        }
+        let raw = format!("{} ", pending.raw);
+        // Parse the whole pending phrase with a first-tone delimiter on its
+        // final syllable. A partial match must not consume the user's Space.
+        let Some(choice) = suggestions_with_choices(
+            self.config.layout,
+            &raw,
+            &self.database,
+            &self.state.user_data,
+            self.config.learning.user_phrases,
+            &self.candidate_filter,
+            &pending.grid.locks,
+        )?
+        .into_iter()
+        .find(|choice| choice.consumed == raw.len()) else {
+            return Ok(false);
+        };
+        self.state.touch_phonetic.raw = raw;
+        self.state.touch_phonetic.grid.retained_preview = Some(choice);
+        self.accept_touch_grid_prefix(effects)?;
+        Ok(true)
+    }
+
     fn desktop_phonetic_key(
         &mut self,
         key: Key,
@@ -2127,6 +2157,14 @@ impl InputSession {
             Key::Escape => self.touch_phonetic_key(key, effects),
             Key::Space if self.touch_first_tone_query().is_some() => {
                 self.touch_phonetic_key(key, effects)
+            }
+            Key::Space if !self.config.smart.space_opens_candidates => {
+                if !self.complete_desktop_first_tone(effects)?
+                    && self.resolve_desktop_phonetics(effects)?
+                {
+                    self.key(key, modifiers, effects)?;
+                }
+                Ok(())
             }
             _ => {
                 if self.resolve_desktop_phonetics(effects)? {
