@@ -570,8 +570,20 @@ public final class KeyboardBottomSpaceInstrumentedTest {
                 KeyboardSizeSettings.KEY_PORTRAIT_GAP, KeyboardSizeSettings.KEY_LANDSCAPE_GAP,
         };
         Map<String, ?> previous = preferences.getAll();
+        String[] animationKeys = {"window_animation_scale", "transition_animation_scale",
+                "animator_duration_scale"};
+        String[] previousAnimations = new String[animationKeys.length];
+        for (int i = 0; i < animationKeys.length; i++) {
+            previousAnimations[i] = android.provider.Settings.Global.getString(
+                    context.getContentResolver(), animationKeys[i]);
+            assertTrue(previousAnimations[i] == null || previousAnimations[i].matches("[0-9.]+"));
+        }
         Activity settings = null;
         try {
+            // API 30 may report the new layout while SurfaceFlinger still
+            // rotates its input region. This case measures settled geometry,
+            // so suppress system transitions only for its duration.
+            for (String key : animationKeys) setResizeTestAnimation(context, key, "0");
             var reset = preferences.edit();
             for (String key : keys) reset.remove(key);
             reset.putInt(KeyboardSizeSettings.KEY_PORTRAIT_PERCENT, 110)
@@ -645,25 +657,35 @@ public final class KeyboardBottomSpaceInstrumentedTest {
             assertTrue(KeyboardSizeSettings.size(context, true).bottomGapDp() > 0);
             assertEquals(portrait, KeyboardSizeSettings.size(context, false));
         } finally {
-            if (settings != null) {
-                Activity current = settings;
-                instrumentation.runOnMainSync(() -> {
-                    for (Activity activity : List.copyOf(ActivityLifecycleMonitorRegistry.getInstance()
-                            .getActivitiesInStage(Stage.RESUMED))) {
-                        if (activity instanceof KeyboardResizeActivity || activity instanceof SettingsActivity) {
-                            activity.finish();
+            try {
+                if (settings != null) {
+                    Activity current = settings;
+                    instrumentation.runOnMainSync(() -> {
+                        for (Activity activity : List.copyOf(ActivityLifecycleMonitorRegistry.getInstance()
+                                .getActivitiesInStage(Stage.RESUMED))) {
+                            if (activity instanceof KeyboardResizeActivity || activity instanceof SettingsActivity) {
+                                activity.finish();
+                            }
                         }
-                    }
-                    current.finish();
-                });
+                        current.finish();
+                    });
+                }
+                SharedPreferences.Editor restore = preferences.edit();
+                for (String key : keys) {
+                    restore.remove(key);
+                    if (previous.get(key) instanceof Integer value) restore.putInt(key, value);
+                    if (previous.get(key) instanceof Float value) restore.putFloat(key, value);
+                }
+                restore.commit();
+            } finally {
+                List<Throwable> failures = new ArrayList<>();
+                for (int i = 0; i < animationKeys.length; i++) {
+                    try {
+                        setResizeTestAnimation(context, animationKeys[i], previousAnimations[i]);
+                    } catch (Throwable failure) { failures.add(failure); }
+                }
+                org.junit.runners.model.MultipleFailureException.assertEmpty(failures);
             }
-            SharedPreferences.Editor restore = preferences.edit();
-            for (String key : keys) {
-                restore.remove(key);
-                if (previous.get(key) instanceof Integer value) restore.putInt(key, value);
-                if (previous.get(key) instanceof Float value) restore.putFloat(key, value);
-            }
-            restore.commit();
         }
     }
 
@@ -869,6 +891,19 @@ public final class KeyboardBottomSpaceInstrumentedTest {
     @FunctionalInterface
     private interface WhileDragging {
         void verify() throws Exception;
+    }
+
+    private static void setResizeTestAnimation(Context context, String key, String value) throws Exception {
+        String command = value == null ? "settings delete global " + key
+                : "settings put global " + key + " " + value;
+        var automation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try (var input = new android.os.ParcelFileDescriptor.AutoCloseInputStream(
+                automation.executeShellCommand(command))) {
+            byte[] buffer = new byte[256];
+            while (input.read(buffer) >= 0) { /* Wait for the settings command to complete. */ }
+        }
+        IntegratedBottomControlsInstrumentedTest.await(() -> java.util.Objects.equals(value,
+                android.provider.Settings.Global.getString(context.getContentResolver(), key)));
     }
 
     private static void dragResizeHandle(Activity editor, Rect handle, int distance, WhileDragging verify) throws Exception {
