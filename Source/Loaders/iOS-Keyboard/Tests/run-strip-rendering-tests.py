@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run production composition, candidate, and function-button rendering in UIKit.
+"""Run production strips, keycaps, and resized keyboard typography in UIKit.
 
 Requires an explicitly selected, booted iOS Simulator and the pinned Rust
 toolchain. No product app, keyboard preference, or Xcode project is changed. Source declarations are read
@@ -473,17 +473,243 @@ def execute(source: Path, output: Path, device: str, core_archive: Path, archite
     return report
 
 
+
+LAYOUT_TESTS = r"""
+@MainActor
+private final class KeyboardLayoutChecks {
+    let container: UIView
+    init(container: UIView) { self.container = container }
+
+    func descendants<T: UIView>(_ view: UIView, of type: T.Type) -> [T] {
+        view.subviews.flatMap { child in
+            ((child as? T).map { [$0] } ?? [])
+                + descendants(child, of: type)
+        }
+    }
+
+    func run() async -> [[String: Any]] {
+        var results = [[String: Any]]()
+        let profiles: [KeyboardLayoutProfile] = [.standard, .aligned, .alignedSplit]
+        // Resize the real production view through phone rotation, tablet
+        // rotation, and narrow/wide inner-display transitions. This checks
+        // UIKit layout consumption, not an input-host orientation callback.
+        let displays: [(String, CGFloat, CGFloat, Bool)] = [
+            ("phone", 402, 874, false), ("tablet", 810, 1080, true),
+            ("wide-phone", 466, 1050, true)
+        ]
+        for profile in profiles {
+            for font in KeyboardKeyFontSize.allCases {
+                for (display, portraitWidth, landscapeWidth, regularHeight) in displays {
+                    let keyboard = KeyboardView(needsInputModeSwitch: false,
+                        layoutProfile: profile, fontSize: font)
+                    var state = KeyboardView.State()
+                    state.smartMode = true
+                    state.smartCells = ["你", "好"]
+                    state.smartEditableCount = 2
+                    keyboard.apply(state, force: true)
+                    container.addSubview(keyboard)
+                    for (index, landscape) in [false, true, false].enumerated() {
+                        let orientation: KeyboardLayoutProfile.Orientation = landscape ? .landscape : .portrait
+                        let metrics = profile.metrics(compactHeight: landscape && !regularHeight,
+                            isPad: display == "tablet", regularWidth: regularHeight)
+                        keyboard.setLayoutOrientation(orientation)
+                        keyboard.setMetrics(metrics)
+                        keyboard.frame = CGRect(x: 0, y: 100,
+                            width: landscape ? landscapeWidth : portraitWidth,
+                            height: metrics.contentHeight)
+                        keyboard.setNeedsLayout()
+                        keyboard.layoutIfNeeded()
+                        if index == 0 {
+                            // Start from a settled keyboard, matching the
+                            // already-visible view before a real rotation.
+                            keyboard.setNeedsLayout()
+                            keyboard.layoutIfNeeded()
+                        }
+                        try? await Task.sleep(for: .milliseconds(50))
+                        for gap in [0.0, 60.0, 0.0] {
+                            keyboard.setBottomGap(gap)
+                            // Observe native constraint-driven descendant layout,
+                            // without explicitly invalidating the outer keyboard.
+                            try? await Task.sleep(for: .milliseconds(100))
+                        let keys = descendants(keyboard, of: KeyboardKeyButton.self)
+                        let reference = keys.first { $0.accessibilityIdentifier == "b" }!
+                        let endpoints = KeyboardKeyTypography.endpoints(in: reference.bounds.size,
+                            capInset: reference.capInset)
+                        let expected = font.keyPointSize(normal: endpoints.normal, largeFit: endpoints.full)
+                        let actual = reference.glyph.font.pointSize / reference.glyphScale
+                        var failures = [String]()
+                        if abs(actual - expected) > 0.01 {
+                            failures.append("Final key bounds require \(expected)pt; rendered \(actual)pt")
+                        }
+                        if reference.bounds.width <= 0 || reference.bounds.height <= 0 {
+                            failures.append("Reference key has no final layout")
+                        }
+                        for button in keys where !button.isHidden {
+                            if button.frame.minY < -0.01 || button.frame.maxY > button.superview!.bounds.height + 0.01 {
+                                failures.append("Key exceeds its final row: \(button.accessibilityIdentifier ?? "?")")
+                            }
+                        }
+                        results.append(["role": "keyboard-layout-typography", "display": display,
+                            "profile": profile.id, "font": String(describing: font), "step": index, "bottomGap": gap,
+                            "landscape": landscape, "keyWidth": reference.bounds.width,
+                            "keyHeight": reference.bounds.height, "expectedPointSize": expected,
+                            "actualPointSize": actual, "passed": failures.isEmpty, "failures": failures])
+                        }
+                    }
+                    let reference = descendants(keyboard, of: KeyboardKeyButton.self)
+                        .first { $0.accessibilityIdentifier == "b" }!
+                    let originalFrame = keyboard.frame
+                    let frozenPointSize = reference.glyph.font.pointSize
+                    keyboard.setHeightDragPreview(true)
+                    keyboard.setBottomGap(60)
+                    keyboard.frame.size.height += 30
+                    try? await Task.sleep(for: .milliseconds(100))
+                    var hidden = false
+                    var ancestor: UIView? = reference
+                    while let view = ancestor {
+                        hidden = hidden || view.isHidden
+                        ancestor = view.superview
+                    }
+                    var frozenFailures = [String]()
+                    if !hidden { frozenFailures.append("Keycaps remained visible during height drag") }
+                    if abs(reference.glyph.font.pointSize - frozenPointSize) > 0.01 {
+                        frozenFailures.append("Hidden drag preview recalculated key typography")
+                    }
+                    results.append(["role": "height-drag-typography", "display": display,
+                        "profile": profile.id, "font": String(describing: font), "phase": "suspended",
+                        "passed": frozenFailures.isEmpty, "failures": frozenFailures])
+                    keyboard.setHeightDragPreview(false)
+                    keyboard.setBottomGap(0)
+                    keyboard.frame = originalFrame
+                    try? await Task.sleep(for: .milliseconds(100))
+                    let endpoints = KeyboardKeyTypography.endpoints(in: reference.bounds.size,
+                        capInset: reference.capInset)
+                    let expected = font.keyPointSize(normal: endpoints.normal, largeFit: endpoints.full)
+                    let actual = reference.glyph.font.pointSize / reference.glyphScale
+                    var resumedFailures = [String]()
+                    if abs(actual - expected) > 0.01 {
+                        resumedFailures.append("Released preview requires \(expected)pt; rendered \(actual)pt")
+                    }
+                    if keyboard.subviews.contains(where: \.isHidden) {
+                        resumedFailures.append("Keycap subtree stayed hidden after releasing height drag")
+                    }
+                    results.append(["role": "height-drag-typography", "display": display,
+                        "profile": profile.id, "font": String(describing: font), "phase": "resumed",
+                        "expectedPointSize": expected, "actualPointSize": actual,
+                        "passed": resumedFailures.isEmpty, "failures": resumedFailures])
+                    keyboard.removeFromSuperview()
+                }
+            }
+        }
+        return results
+    }
+}
+
+@main
+private final class LayoutRenderingApplication: UIResponder, UIApplicationDelegate {
+    var window: UIWindow?
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions options: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        let controller = UIViewController()
+        let window = UIWindow(frame: UIScreen.main.bounds)
+        window.rootViewController = controller
+        window.makeKeyAndVisible()
+        self.window = window
+        Task { @MainActor in
+            let cases = await KeyboardLayoutChecks(container: controller.view).run()
+            let failures = cases.filter { $0["passed"] as? Bool != true }.count
+            let report: [String: Any] = ["runToken": RUN_TOKEN, "cases": cases,
+                "caseCount": cases.count, "failedCount": failures,
+                "systemVersion": UIDevice.current.systemVersion,
+                "scope": "Production KeyboardView final UIKit row bounds, UIFont, and suspended height-drag previews; no input-host integration"]
+            let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("layout-rendering-report.json")
+            do {
+                try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
+                    .write(to: url, options: .atomic)
+                exit(failures == 0 ? 0 : 1)
+            } catch { exit(2) }
+        }
+        return true
+    }
+}
+"""
+
+
+def execute_layout(source: Path, output: Path, device: str | None, core_archive: Path,
+                   architecture: str, compile_only: bool = False) -> dict:
+    """Compile the entire production view, not a second layout implementation."""
+    output.mkdir(parents=True, exist_ok=True)
+    sdk = run("xcrun", "--sdk", "iphonesimulator", "--show-sdk-path", capture_output=True).stdout.strip()
+    target = f"{architecture}-apple-ios17.0-simulator"
+    engine_sources = sorted((IOS / "KeyKeyEngine/Sources/KeyKeyEngine").glob("*.swift"))
+    engine_object = output / "KeyKeyEngine.o"
+    module = output / "KeyKeyEngine.swiftmodule"
+    with (output / "engine-compile.log").open("w") as log:
+        run("xcrun", "--sdk", "iphonesimulator", "swiftc", "-sdk", sdk, "-target", target,
+            "-swift-version", "6", "-module-name", "KeyKeyEngine", "-parse-as-library",
+            "-emit-module", "-emit-module-path", str(module), "-emit-object", "-whole-module-optimization",
+            "-module-cache-path", str(output / "ModuleCache"), "-I", str(C_MODULE),
+            *map(str, engine_sources), "-o", str(engine_object), stdout=log, stderr=subprocess.STDOUT)
+    token = str(uuid.uuid4())
+    support_sources = [IOS / "Keyboard/Palette.swift", IOS / "Keyboard/EnterGlyph.swift"]
+    swift = output / "KeyboardLayoutRendering.swift"
+    swift.write_text(source.read_text() + "\n" + "\n".join(path.read_text() for path in support_sources)
+                     + "\nlet RUN_TOKEN = " + json.dumps(token) + "\n" + LAYOUT_TESTS)
+    app = output / "KeyKeyLayoutRenderingTests.app"
+    app.mkdir(exist_ok=True)
+    executable = app / "KeyKeyLayoutRenderingTests"
+    with (output / "compile.log").open("w") as log:
+        run("xcrun", "--sdk", "iphonesimulator", "swiftc", "-sdk", sdk, "-target", target,
+            "-swift-version", "6", "-module-cache-path", str(output / "ModuleCache"), "-parse-as-library",
+            "-I", str(output), "-I", str(C_MODULE), str(swift), str(engine_object), str(core_archive),
+            "-lsqlite3", "-liconv", "-framework", "UIKit", "-o", str(executable),
+            stdout=log, stderr=subprocess.STDOUT)
+    identifier = BUNDLE_ID + ".layout"
+    (app / "Info.plist").write_bytes(plistlib.dumps({
+        "CFBundleIdentifier": identifier, "CFBundleName": "KeyKeyLayoutRenderingTests",
+        "CFBundleExecutable": executable.name, "CFBundlePackageType": "APPL",
+        "CFBundleVersion": "1", "CFBundleShortVersionString": "1.0",
+        "MinimumOSVersion": "17.0", "LSRequiresIPhoneOS": True,
+        "UILaunchScreen": {}, "UIUserInterfaceStyle": "Light"
+    }))
+    run("codesign", "--force", "--sign", "-", str(app), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    metadata = {"source": str(source), "sourceSHA256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        "generatedSHA256": hashlib.sha256(swift.read_bytes()).hexdigest(),
+        "executableSHA256": hashlib.sha256(executable.read_bytes()).hexdigest(), "sdk": sdk,
+        "supportSourceSHA256": {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
+                                for path in support_sources + engine_sources},
+        "runnerSHA256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
+    if compile_only:
+        metadata.update({"compiledOnly": True, "scope": "Build evidence only; UIKit runtime not executed"})
+        (output / "build-report.json").write_text(json.dumps(metadata, indent=2) + "\n")
+        return metadata
+    run("xcrun", "simctl", "install", device, str(app))
+    with (output / "runtime.log").open("w") as log:
+        launched = subprocess.run(["xcrun", "simctl", "launch", "--console", "--terminate-running-process",
+            device, identifier], text=True, stdout=log, stderr=subprocess.STDOUT, timeout=300)
+    container = Path(run("xcrun", "simctl", "get_app_container", device, identifier, "data", capture_output=True).stdout.strip())
+    report = json.loads((container / "Documents/layout-rendering-report.json").read_text())
+    if report["runToken"] != token:
+        raise RuntimeError("Simulator returned a layout report from an earlier run")
+    report.update(metadata | {"device": device, "simctlExitCode": launched.returncode})
+    (output / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+    print(f"{source.name}: {report['caseCount']} full-view layout cases, {report['failedCount']} failed")
+    return report
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--device", required=True, help="Explicit booted iOS Simulator UDID (not a real device)")
+    parser.add_argument("--device", help="Explicit booted iOS Simulator UDID (not a real device)")
+    parser.add_argument("--compile-only", action="store_true", help="Compile the production full-view regression without booting or accessing Simulator")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--negative-control", type=Path, help="Optional pre-fix KeyboardView.swift; must fail")
     args = parser.parse_args()
     output = args.output or Path(tempfile.mkdtemp(prefix="keykey-strip-rendering-"))
-    devices = json.loads(run("xcrun", "simctl", "list", "devices", "available", "--json", capture_output=True).stdout)
-    matches = [item for group in devices["devices"].values() for item in group if item["udid"] == args.device]
-    if len(matches) != 1 or matches[0]["state"] != "Booted":
-        parser.error("--device must identify one already booted, available Simulator")
+    if not args.compile_only:
+        devices = json.loads(run("xcrun", "simctl", "list", "devices", "available", "--json", capture_output=True).stdout)
+        matches = [item for group in devices["devices"].values() for item in group if item["udid"] == args.device]
+        if len(matches) != 1 or matches[0]["state"] != "Booted":
+            parser.error("--device must identify one already booted, available Simulator")
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     core_output = output / "Guanyinma"
@@ -492,13 +718,22 @@ def main() -> int:
         run("env", "PLATFORM_NAME=iphonesimulator", f"ARCHS={architecture}",
             f"GUANYINMA_OUTPUT_DIR={core_output}", "bash", str(CORE_BUILDER), stdout=log, stderr=subprocess.STDOUT)
     core_archive = core_output / "libguanyinma.a"
+    if args.compile_only:
+        execute_layout(BUTTON_SOURCE, output / "layout-compile", None, core_archive, architecture, compile_only=True)
+        return 0
     reports = {}
     if args.negative_control:
         reports["negativeControl"] = execute(args.negative_control.resolve(), output / "negative-control",
             args.device, core_archive, architecture)
     reports["current"] = execute(BUTTON_SOURCE, output / "current", args.device, core_archive, architecture)
+    if args.negative_control:
+        reports["negativeControlLayout"] = execute_layout(args.negative_control.resolve(), output / "negative-control-layout",
+            args.device, core_archive, architecture)
+    reports["currentLayout"] = execute_layout(BUTTON_SOURCE, output / "current-layout", args.device, core_archive, architecture)
     (output / "summary.json").write_text(json.dumps(reports, ensure_ascii=False, indent=2) + "\n")
-    return 1 if reports["current"]["failedCount"] or (args.negative_control and reports["negativeControl"]["failedCount"] == 0) else 0
+    current_failed = reports["current"]["failedCount"] + reports["currentLayout"]["failedCount"]
+    negative_failed = sum(reports[key]["failedCount"] for key in ["negativeControl", "negativeControlLayout"] if key in reports)
+    return 1 if current_failed or (args.negative_control and negative_failed == 0) else 0
 
 
 if __name__ == "__main__":

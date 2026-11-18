@@ -125,6 +125,8 @@ void checkDefaultAndDeferredSettings() {
     fcitx::RawConfig raw;
     defaults.save(raw);
     require(raw.get("InputCore") == nullptr, "Removed core selector remains in configuration");
+    require(!sessionSettings(defaults, "chichi77-keykey-bopomofo").smart.omitTone,
+            "Smart tone omission must default to off");
     Fixture f;
     f.config.smartMode = false;
     f.request();
@@ -139,6 +141,31 @@ void checkDefaultAndDeferredSettings() {
     f.character('s');
     require(f.state.usesGuanyinma() && !f.state.settingsPending(), "Quiet new event did not apply settings");
     require(f.allCommitted() == committed, "Settings change replayed a commit");
+}
+
+void checkSmartToneOmission() {
+    fcitx::RawConfig raw;
+    raw.setValueByPath("SmartMandarin/OmitTone", "True");
+    KeyKeyConfig enabled;
+    enabled.load(raw);
+    Fixture f;
+    f.config = sessionSettings(enabled, "chichi77-keykey-bopomofo");
+    f.request();
+
+    f.type("sucl");
+    require(f.preedit() == "你好" && f.allCommitted().empty(),
+            "Fcitx did not show Smart Mandarin from untoned input");
+
+    KeyKeyConfig defaults;
+    f.config = sessionSettings(defaults, "chichi77-keykey-bopomofo");
+    f.request();
+    require(f.state.settingsPending() && f.preedit() == "你好",
+            "Turning off tone omission interrupted the old session");
+    require(f.key(linux_ime::KeyCode::Enter) && f.allCommitted() == "你好",
+            "Enter did not commit the untoned Smart Mandarin composition once");
+    f.type("su3cl3");
+    require(!f.state.settingsPending() && f.preedit() == "你好",
+            "Explicit tones did not work after the deferred preference applied");
 }
 
 void checkCandidateOwnershipAndOneCommit() {
@@ -433,6 +460,7 @@ void checkSavedPreferenceMapping() {
     raw.setValueByPath("AssociatedPhrases/history", "True");
     raw.setValueByPath("UseUserPhrases", "False");
     raw.setValueByPath("SmartMandarin/ComposingTextBufferSize", "20");
+    raw.setValueByPath("SmartMandarin/OmitTone", "True");
     raw.setValueByPath("SmartMandarin/CandidateSelectionKeys", "asdfzxcv");
     raw.setValueByPath("SmartMandarin/SelectionReturnsToEnd", "True");
     raw.setValueByPath("SmartMandarin/ShiftKeyAlwaysCommitUppercaseCharacters", "True");
@@ -459,7 +487,8 @@ void checkSavedPreferenceMapping() {
     auto settings = sessionSettings(restored, "chichi77-keykey-bopomofo");
     require(!settings.smartMode && settings.traditionalSelectionKeys == "asdfghjk" && settings.ignoreCapsLockInChinese &&
             !settings.literalKeypad && !settings.userPhrases, "General/traditional preferences did not round-trip into Rust settings");
-    require(settings.smart.maxCompletedSyllables == 20 && settings.smart.candidateSelectionKeys == "asdfzxcv" &&
+    require(settings.smart.omitTone && settings.smart.maxCompletedSyllables == 20 &&
+            settings.smart.candidateSelectionKeys == "asdfzxcv" &&
             settings.smart.selectionReturnsToEnd && settings.smart.shiftAlwaysUppercase && !settings.smart.useBigrams &&
             !settings.smart.learnBigrams && !settings.smart.learnCandidateOverrides, "Smart preferences did not map into Rust settings");
     require(settings.table.composeWhileTyping && !settings.table.clearOnError && settings.table.learnSelection &&
@@ -587,7 +616,7 @@ void checkSettingsPresentationAndStorage() {
                                     "ToggleInputModeWithShift", "PlaySoundOnTypingError", "TraditionalToSimplified"});
     requireOrder(phoneticType, {"BopomofoMode", "BopomofoLayout", "UseAllUnicodeCharacters",
                                      "TraditionalSelectionKeys", "SmartMandarin"});
-    requireOrder(smartType, {"ShowCandidateListWithSpace", "CandidateCursorAtEndOfTargetBlock",
+    requireOrder(smartType, {"ShowCandidateListWithSpace", "OmitTone", "CandidateCursorAtEndOfTargetBlock",
                                           "CandidateSelectionKeys", "ComposingTextBufferSize", "ClearComposingTextWithEsc",
                                           "SelectionReturnsToEnd", "ShiftKeyAlwaysCommitUppercaseCharacters",
                                           "UseBigrams", "LearnCandidateOverrides", "LearnBigrams"});
@@ -718,6 +747,7 @@ void checkReentrantContextDestruction() {
 int main() {
     try {
         checkDefaultAndDeferredSettings();
+        checkSmartToneOmission();
         checkCandidateOwnershipAndOneCommit();
         checkStaleViewAndPageClick();
         checkClientUnfocusCommitAndRepeatedReset();

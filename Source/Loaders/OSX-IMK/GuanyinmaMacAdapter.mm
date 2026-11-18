@@ -178,6 +178,7 @@ static NSDictionary* Configuration(const std::string& identifier,
         NSMutableDictionary* options = [NSMutableDictionary dictionaryWithObjectsAndKeys:
             Boolean(true), @"use_bigrams",
             Boolean(ConfigBool(config, "ShowCandidateListWithSpace", true)), @"space_opens_candidates",
+            Boolean(ConfigBool(config, "OmitTone", false)), @"omit_tone",
             Boolean(ConfigBool(config, "CandidateCursorAtEndOfTargetBlock", false)), @"candidate_cursor_at_end",
             Boolean(ConfigBool(config, "ClearComposingTextWithEsc", false)), @"clear_composing_with_escape",
             Boolean(ConfigBool(config, "ShiftKeyAlwaysCommitUppercaseCharacters", false)), @"shift_always_uppercase",
@@ -378,7 +379,7 @@ public:
     {
         static const char* const keys[] = {
             "KeyboardLayout", "CandidateSelectionKeys", "UseCharactersSupportedByEncoding",
-            "CandidateCursorAtEndOfTargetBlock", "ShowCandidateListWithSpace",
+            "CandidateCursorAtEndOfTargetBlock", "ShowCandidateListWithSpace", "OmitTone",
             "ClearComposingTextWithEsc", "ClearComposingTextWithEscUserChoice",
             "ComposingTextBufferSize", "ShiftKeyAlwaysCommitUppercaseCharacters",
             "MaximumRadicalLength", "ShouldCommitAtMaximumRadicalLength",

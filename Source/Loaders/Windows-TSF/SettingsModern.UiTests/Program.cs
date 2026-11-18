@@ -370,12 +370,14 @@ internal static class Program
             var apply = Control<Button>(window, "ApplyButton");
             var keys = Control<ComboBox>(window, "CandidateSelectionKeys");
             var size = Control<Slider>(window, "ComposingTextBufferSize");
-            Check((string)keys.SelectedItem == "12345678" && size.Value == 10 &&
+            var omitTone = Control<CheckBox>(window, "OmitTone");
+            Check((string)keys.SelectedItem == "12345678" && size.Value == 10 && omitTone.IsChecked == false &&
                 Control<CheckBox>(window, "ShowCandidateListWithSpace").IsChecked == false &&
                 Control<CheckBox>(window, "SimplifiedChineseOutput").IsChecked == false,
                 "Smart defaults changed");
             keys.SelectedIndex = 1;
             size.Value = 15;
+            omitTone.IsChecked = true;
             apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(status.Text.Contains("至少顯示一種"), "Empty mode selection was not rejected");
             Control<CheckBox>(window, "ShowSimplex").IsChecked = true;
@@ -397,8 +399,8 @@ internal static class Program
                   Value(cangjieSaved, "ComposeWhileTyping") == "true",
                   "Cangjie prefix choices did not persist");
             var smart = XDocument.Load(Path.Combine(directory, "com.polobread.chichi77-keykey.windows.SmartMandarin.plist"));
-            Check(Value(smart, "CandidateSelectionKeys") == "asdfghjk" && Value(smart, "ComposingTextBufferSize") == "15",
-                "Advanced settings did not persist");
+            Check(Value(smart, "CandidateSelectionKeys") == "asdfghjk" && Value(smart, "ComposingTextBufferSize") == "15" &&
+                Value(smart, "OmitTone") == "true", "Advanced settings did not persist");
             var phraseText = Control<TextBox>(window, "PhraseText");
             var phraseReading = Control<TextBox>(window, "PhraseReading");
             phraseReading.Text = "手動讀音";
@@ -450,18 +452,21 @@ internal static class Program
                   Control<CheckBox>(reopened, "SimplexClearOnError").IsChecked == false,
                 "Settings did not survive reopening");
             Check((string)Control<ComboBox>(reopened, "CandidateSelectionKeys").SelectedItem == "asdfghjk" &&
-                Control<Slider>(reopened, "ComposingTextBufferSize").Value == 15, "Advanced settings did not reopen");
+                Control<Slider>(reopened, "ComposingTextBufferSize").Value == 15 &&
+                Control<CheckBox>(reopened, "OmitTone").IsChecked == true, "Advanced settings did not reopen");
             Control<DataGrid>(reopened, "UserPhrases").SelectedItem =
                 Control<DataGrid>(reopened, "UserPhrases").Items.Cast<PhraseRow>().Single(p => p.Text == "銀航");
             Check(Control<TextBox>(reopened, "PhraseReading").Text == "ㄧㄣˊ,ㄏㄤˊ",
                 "Saved reading lost on reopen selection");
             Control<RadioButton>(reopened, "DefaultChineseMode").IsChecked = true;
+            Control<CheckBox>(reopened, "OmitTone").IsChecked = false;
             Control<Button>(reopened, "ApplyButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(Control<TextBlock>(reopened, "Status").Text == "設定已套用", "Restore Chinese startup mode failed");
             reopened.Close();
             var chineseReopened = new MainWindow();
-            Check(Control<RadioButton>(chineseReopened, "DefaultChineseMode").IsChecked == true,
-                "Chinese startup mode did not survive reopening");
+            Check(Control<RadioButton>(chineseReopened, "DefaultChineseMode").IsChecked == true &&
+                Control<CheckBox>(chineseReopened, "OmitTone").IsChecked == false,
+                "Chinese startup mode or disabled tone omission did not survive reopening");
             VerifyUpdateShutdownProtection(chineseReopened);
             VerifyDiagnosticSwitch(chineseReopened);
             chineseReopened.Close();

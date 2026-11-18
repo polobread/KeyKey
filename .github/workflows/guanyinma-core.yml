@@ -63,6 +63,35 @@ jobs:
         if: matrix.platform == 'windows'
         with:
           arch: x64
+      - name: Set up patched Corretto JDK 25
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: corretto
+          java-version: '25'
+          check-latest: true
+
+      - name: Verify patched Android Java runtime
+        if: matrix.platform == 'android'
+        shell: bash
+        run: |
+          python3 - <<'PYTHON'
+          import re
+          import subprocess
+
+          settings = subprocess.check_output(
+              ["java", "-XshowSettings:properties", "-version"],
+              stderr=subprocess.STDOUT, text=True)
+          values = dict(re.findall(
+              r"(?m)^\s*(java\.(?:version|runtime\.version|vendor)) = (.+)$", settings))
+          version = values.get("java.version", "")
+          if (not re.fullmatch(r"25(?:\.\d+)+", version)
+                  or tuple(map(int, version.split("."))) < (25, 0, 5, 1)
+                  or "Amazon" not in values.get("java.vendor", "")):
+              raise SystemExit("Android builds require patched Amazon Corretto 25.0.5.1 or later")
+          print(values["java.vendor"], values["java.runtime.version"])
+          PYTHON
+
       - name: Prepare native dependencies or headless emulator permissions
         if: matrix.platform == 'linux' || matrix.platform == 'android'
         run: '"$PYTHON" Source/Guanyinma/tools/ci/prepare-host.py "${{ matrix.platform }}"'

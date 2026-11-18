@@ -300,6 +300,7 @@ final class KeyboardView: UIView {
     private func buildKeyRows() -> [UIView] {
         currentKeyRows.enumerated().map { rowIndex, row in
             let stack = KeyboardRow()
+            stack.didLayout = { [weak self] in self?.updateKeyTypography() }
             var keys: [KeyView] = []
             for columnIndex in row.indices {
                 let button = KeyboardKeyButton(type: .system)
@@ -506,7 +507,12 @@ final class KeyboardView: UIView {
 
     private var cachedKeyTypography: (size: CGSize, inset: CGFloat, normal: Double, full: Double)?
 
+    private var updatingKeyTypography = false
+
     private func updateKeyTypography() {
+        guard !heightDragPreviewActive, !updatingKeyTypography else { return }
+        updatingKeyTypography = true
+        defer { updatingKeyTypography = false }
         // Use the physical ㄖ slot even on a plane without that character.
         // Measuring the same geometry prevents a mode switch changing font size.
         let rows = layoutProfile.resolvedRows(orientation: layoutOrientation,
@@ -514,7 +520,6 @@ final class KeyboardView: UIView {
         guard let row = rows.firstIndex(where: { $0.contains("b") }),
               let column = rows[row].firstIndex(of: "b"), keyRows.indices.contains(row) else { return }
         let host = keyRows[row]
-        host.layoutIfNeeded()
         let frames = layoutProfile.keyRowGeometry(for: rows, plane: .bopomofo, rowIndex: row)
             .frames(width: host.bounds.width, height: host.bounds.height, spacing: layoutProfile.keySpacing)
         let slot = column + (layoutProfile.splitGeometry.map { column >= $0.keySplit - 1 ? 1 : 0 } ?? 0)
@@ -1086,6 +1091,8 @@ extension KeyboardView: UIInputViewAudioFeedback {
 /// accessibility, backspace repeat and the active composition during a switch.
 @MainActor
 private final class KeyboardRow: UIView {
+    // Auto Layout may resize this row without laying out the outer keyboard.
+    var didLayout: (() -> Void)?
     private var spacing: Double
     private var items: [UIView] = []
     private var weights: [Double] = []
@@ -1125,6 +1132,7 @@ private final class KeyboardRow: UIView {
                 width: bounds.width, height: bounds.height, weights: weights,
                 splitIndex: splitIndex, spacing: spacing)
         for (item, frame) in zip(items, frames) { item.frame = frame }
+        didLayout?()
     }
 }
 

@@ -174,6 +174,7 @@ FCITX_CONFIGURATION(
 FCITX_CONFIGURATION(
     SmartMandarinConfig,
     fcitx::Option<bool> showCandidateListWithSpace{this, "ShowCandidateListWithSpace", "空白鍵開啟候選", false};
+    fcitx::Option<bool> omitTone{this, "OmitTone", "省略聲調", false};
     fcitx::Option<bool> candidateCursorAtEndOfTargetBlock{this, "CandidateCursorAtEndOfTargetBlock", "選字目標在游標前方（取消為後方）", false};
     fcitx::Option<std::string, SelectionKeysConstrain, fcitx::DefaultMarshaller<std::string>, SelectionKeysAnnotation> candidateSelectionKeys{this, "CandidateSelectionKeys", "選字鍵", "123456789"};
     fcitx::Option<int, fcitx::IntConstrain> maxCompletedSyllables{this, "ComposingTextBufferSize", "組字長度（音節）", 10, fcitx::IntConstrain(10, 20)};
@@ -371,6 +372,7 @@ linux_ime::GuanyinmaConfig sessionSettings(const KeyKeyConfig &config, const std
         : layout == "HanyuPinyin" ? linux_ime::BopomofoLayout::HanyuPinyin : linux_ime::BopomofoLayout::Standard;
     const auto &smart = *config.smartMandarin;
     settings.smart.showCandidateListWithSpace = *smart.showCandidateListWithSpace;
+    settings.smart.omitTone = *smart.omitTone;
     settings.smart.candidateCursorAtEndOfTargetBlock = *smart.candidateCursorAtEndOfTargetBlock;
     settings.smart.clearComposingTextWithEsc = *smart.clearComposingTextWithEsc;
     settings.smart.maxCompletedSyllables = static_cast<std::size_t>(*smart.maxCompletedSyllables);

@@ -604,7 +604,7 @@
             </subviews>
         </customView>
         <customView id="379" userLabel="Phonetic View">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="355"/>
+            <rect key="frame" x="0.0" y="0.0" width="480" height="375"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <textField verticalHuggingPriority="750" id="924">
@@ -742,7 +742,7 @@
                     </connections>
                 </matrix>
                 <popUpButton imageHugsTitle="YES" verticalHuggingPriority="750" id="776" customClass="TakaoKeyboardLayoutPopUpButton">
-                    <rect key="frame" x="149" y="291" width="314" height="26"/>
+                    <rect key="frame" x="149" y="311" width="314" height="26"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <popUpButtonCell key="cell" type="push" title="Standard" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="784" id="779">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
@@ -820,7 +820,7 @@
                     </textFieldCell>
                 </textField>
                 <button imageHugsTitle="YES" id="788">
-                    <rect key="frame" x="150" y="272" width="296" height="18"/>
+                    <rect key="frame" x="150" y="292" width="296" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <buttonCell key="cell" type="check" title="Clear composing text with Esc key." bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="791">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -831,7 +831,7 @@
                     </connections>
                 </button>
                 <button imageHugsTitle="YES" id="787">
-                    <rect key="frame" x="150" y="252" width="287" height="18"/>
+                    <rect key="frame" x="150" y="272" width="287" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <buttonCell key="cell" type="check" title="Show candidate list with Space key." bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="792">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -841,8 +841,19 @@
                         <action selector="writePreference:" target="808" id="813"/>
                     </connections>
                 </button>
+                <button imageHugsTitle="YES" id="smart-omit-tone">
+                    <rect key="frame" x="150" y="252" width="287" height="18"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="check" title="Omit tones" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="smart-omit-tone-cell">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="writePreference:" target="808" id="smart-omit-tone-action"/>
+                    </connections>
+                </button>
                 <textField verticalHuggingPriority="750" id="785">
-                    <rect key="frame" x="41" y="273" width="102" height="17"/>
+                    <rect key="frame" x="41" y="293" width="102" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="When Typing:" id="786">
                         <font key="font" metaFont="system"/>
@@ -851,7 +862,7 @@
                     </textFieldCell>
                 </textField>
                 <textField verticalHuggingPriority="750" id="777">
-                    <rect key="frame" x="28" y="298" width="114" height="17"/>
+                    <rect key="frame" x="28" y="318" width="114" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="Keyboard Layout:" id="778">
                         <font key="font" metaFont="system"/>
@@ -860,7 +871,7 @@
                     </textFieldCell>
                 </textField>
                 <textField verticalHuggingPriority="750" id="767">
-                    <rect key="frame" x="17" y="323" width="192" height="17"/>
+                    <rect key="frame" x="17" y="343" width="192" height="17"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="Smart Phonetic Input Method" id="768">
                         <font key="font" metaFont="system"/>
@@ -869,7 +880,7 @@
                     </textFieldCell>
                 </textField>
                 <box autoresizesSubviews="NO" verticalHuggingPriority="750" boxType="separator" id="766">
-                    <rect key="frame" x="214" y="324" width="246" height="5"/>
+                    <rect key="frame" x="214" y="344" width="246" height="5"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                 </box>
             </subviews>
@@ -1513,6 +1524,7 @@
                 <outlet property="_clearComposingTextWithEscCheckBox" destination="788" id="959"/>
                 <outlet property="_composingTextBufferSizeSlider" destination="915" id="963"/>
                 <outlet property="_keyboardLayoutPopUpButton" destination="776" id="957"/>
+                <outlet property="_omitToneCheckBox" destination="smart-omit-tone" id="smart-omit-tone-outlet"/>
                 <outlet property="_selectionKeyComboBox" destination="866" id="962"/>
                 <outlet property="_showCandidateListWithSpaceCheckBox" destination="787" id="960"/>
                 <outlet property="_useCharactersSupportedByEncodingCheckBox" destination="793" id="958"/>

@@ -6,7 +6,7 @@ Guanyinma 共用 Rust 核心位於 `Source/Guanyinma`，目前提供唯讀 DB、
 其獨立建置／單元及 C consumer 驗證見 [Guanyinma README](Source/Guanyinma/README.md)，
 移植範圍見 [實作計畫](docs/GUANYINMA_IMPLEMENTATION_PLAN.md)。完整 Guanyinma 核心 CI 統一由 `guanyinma-core.yml` 負責；平台 workflow 編譯／連結核心後只跑少量 FE 串接冒煙，沿用該平台原有建置與發布流程。六平台固定使用 Guanyinma 單核心；macOS 保留原生 FE，見 [Guanyinma 接合](docs/GUANYINMA_MACOS_ADAPTER.md)。六平台 workflow 接線與分工表見 [核心 README](Source/Guanyinma/README.md#測試範圍與分工)。
 
-Android 產品原始碼版號為 **1.5.2**，其他五個平台為 **1.5.1**。桌面資產在 [1.5.1 Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.1) 發布並上傳後提供。iOS、Android 的可下載版本以 App Store、Google Play 頁面為準。
+六平台產品原始碼版號為 **1.5.2**。桌面資產在 [1.5.1 Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.1) 發布並上傳後提供。iOS、Android 的可下載版本以 App Store、Google Play 頁面為準。
 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 的安裝流程見 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。FreeBSD 透過 ports／pkg 安裝，套件可能較晚上架，詳見 [FreeBSD 安裝指南](FREEBSD_INSTALL.md)。
 共用好打注音模型為 **1.5.0**。發布主軸、資料升級與各平台驗收／簽章交付條件集中於 [1.5.1 發布準備](docs/CROSS_PLATFORM_V1_5_1_RELEASE.md)，不能以本文件的建置指令代替實際驗收。
 Linux／FreeBSD 開發來源只使用 Guanyinma Rust 核心；接合、設定與聚焦驗證見
@@ -324,7 +324,7 @@ Android FE 固定使用 Guanyinma Rust 單核心，不提供舊 Java 引擎或�
 ### 需求與建置
 
 - Android Studio
-- JDK 17 以上
+- 完整 Amazon Corretto JDK 25（含 JNI headers；安全基準與 daemon 規則見 [Android 建置說明](Source/Loaders/Android-IME/README.md#建置)）
 - Android SDK 36.1 與 Build Tools 36.0.0
 
 ```powershell
@@ -747,7 +747,7 @@ mirror workflow. See the [complete release guide](docs/WINDOWS_CERTUM_RELEASE.md
 
 ## Android
 
-Requirements: Android Studio, JDK 17 or later, Android SDK 36.1, and Build
+Requirements: Android Studio, a full patched Amazon Corretto JDK 25 (including JNI headers), Android SDK 36.1, and Build
 Tools 36.0.0, plus the pinned Rust toolchain, NDK and CMake described in the
 [Android adapter guide](docs/GUANYINMA_ANDROID_ADAPTER.md). The frontend uses
 Guanyinma exclusively; the Java input engine and core selector are removed.
@@ -824,7 +824,7 @@ verified signing inputs. The local release tool verifies those CI inputs, signs
 and repackages them, then publishes only after manual acceptance and approval;
 it does not rebuild the product. The tag must match the
 platform's source version at that tag and can be created on the Release page.
-The product source version is `1.5.2` on Android and `1.5.1` on the other five platforms. Desktop assets become available after upload; mobile store and FreeBSD package availability must be checked separately. See the
+The product source version is `1.5.2` on all six platforms. Desktop assets become available after upload; mobile store and FreeBSD package availability must be checked separately. See the
 [release preparation guide](docs/CROSS_PLATFORM_V1_5_1_RELEASE.md) for migration,
 platform acceptance, signing, and publication requirements.
 The test channel uses the generic `vX.Y.Z-betaN` format: X.Y.Z matches the product

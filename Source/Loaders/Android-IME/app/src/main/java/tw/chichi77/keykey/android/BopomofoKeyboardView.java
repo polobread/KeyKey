@@ -417,7 +417,12 @@ final class BopomofoKeyboardView extends View {
         if (systemBottomInset == bottom) return;
         systemBottomInset = bottom;
         if (isTouchMode()) {
+            // Invalidate this view and its ancestors immediately. Insets can
+            // also arrive inside a traversal before isInLayout() becomes true;
+            // remeasure the attached window in the next traversal so its old
+            // allocated height is not mistaken for a new upstream limit.
             requestLayout();
+            if (isAttachedToWindow()) post(this::requestLayout);
             invalidate();
         }
     }
@@ -598,15 +603,17 @@ final class BopomofoKeyboardView extends View {
         textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
         textPaint.setFakeBoldText(index < smartEditableCount);
         boolean splitTouch = isTouchMode() && layoutProfile.split;
-        if (isTouchMode() && (!fontSize.showsHints() || splitTouch)) {
+        boolean fittedTouchText = isTouchMode() && (!fontSize.showsHints() || splitTouch);
+        if (fittedTouchText) {
             fitStripText(textPaint, value, cell, textPaint.getTextSize());
         }
         float availableWidth = Math.max(1, cell.width() - dp(4));
         float measuredWidth = textPaint.measureText(value);
         if (measuredWidth > availableWidth) {
             float fittedSize = textPaint.getTextSize() * availableWidth / measuredWidth;
-            // Split touch cells and hardware reading tails must fit their own slot.
-            textPaint.setTextSize(usesHardwareSmartTwoRows() || splitTouch
+            // A touch label already fitted to its cell must never grow back to the
+            // normal minimum size when older font metrics round its width up.
+            textPaint.setTextSize(fittedTouchText || usesHardwareSmartTwoRows() || splitTouch
                     ? fittedSize : Math.max(dp(8), fittedSize));
         }
         canvas.drawText(value, cell.centerX(), textBaseline(cell, textPaint), textPaint);

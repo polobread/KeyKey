@@ -8,6 +8,8 @@ file for terms.
 #import "TakaoSmartPhonetic.h"
 #import "TakaoHelper.h"
 
+static NSString *const OmitToneKey = @"OmitTone";
+
 @implementation TakaoSmartPhonetic
 
 - (void)dealloc
@@ -53,6 +55,8 @@ file for terms.
 	else
 		[_showCandidateListWithSpaceCheckBox setIntValue:0];	
 	
+	[_omitToneCheckBox setIntValue:[[_phoneticDictionary objectForKey:OmitToneKey] boolValue]];
+
 	NSString *candidateCursorAtEndOfTargetBlock =  [_phoneticDictionary valueForKey:@"CandidateCursorAtEndOfTargetBlock"];
 	if ([candidateCursorAtEndOfTargetBlock isEqualToString:@"true"])
 		[_candidateCursorAtEndOfTargetBlockMatrix selectCellAtRow:1 column:0];
@@ -79,6 +83,7 @@ file for terms.
 	[_phoneticDictionary setValue:@"" forKey:@"UseCharactersSupportedByEncoding"];
 	[_phoneticDictionary setValue:@"false" forKey:@"ClearComposingTextWithEsc"];
 	[_phoneticDictionary setValue:@"true" forKey:@"ShowCandidateListWithSpace"];		
+	[_phoneticDictionary setValue:@"false" forKey:OmitToneKey];
 	[_phoneticDictionary setValue:@"false" forKey:@"CandidateCursorAtEndOfTargetBlock"];
 	[_phoneticDictionary setValue:@"12345678" forKey:@"CandidateSelectionKeys"];
 	[_phoneticDictionary setValue:@"10" forKey:@"ComposingTextBufferSize"];	
@@ -130,6 +135,8 @@ file for terms.
 	else
 		[_phoneticDictionary setValue:@"false" forKey:@"ShowCandidateListWithSpace"];
 	
+	[_phoneticDictionary setValue:[_omitToneCheckBox intValue] ? @"true" : @"false" forKey:OmitToneKey];
+
 	if ([[_candidateCursorAtEndOfTargetBlockMatrix selectedCell] tag])
 		[_phoneticDictionary setValue:@"true" forKey:@"CandidateCursorAtEndOfTargetBlock"];
 	else

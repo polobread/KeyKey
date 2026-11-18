@@ -105,7 +105,8 @@
             </StackPanel>
           </GroupBox>
           <GroupBox Header="好打注音進階設定"><StackPanel>
-            <CheckBox x:Name="ShowCandidateListWithSpace" Content="空白鍵開啟候選" Margin="0,0,0,12" />
+            <CheckBox x:Name="ShowCandidateListWithSpace" Content="空白鍵開啟候選" Margin="0,0,0,8" />
+            <CheckBox x:Name="OmitTone" Content="省略聲調" Margin="0,0,0,12" />
             <CheckBox x:Name="CandidateCursorAtEndOfTargetBlock" Content="選字目標在游標前方" Margin="0,0,0,8" />
             <TextBlock Text="例如「今天｜天氣」：勾選時選前方的「今天」，取消時選後方的「天氣」。這是候選目標，不是選字後游標位置。" Opacity="0.7" Margin="0,0,0,12" />
             <TextBlock Text="選字按鍵" />

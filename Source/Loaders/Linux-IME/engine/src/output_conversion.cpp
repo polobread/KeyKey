@@ -90,11 +90,11 @@ std::string toSimplifiedChinese(const std::string &text,
 
 
 bool SmartMandarinPreferences::operator==(const SmartMandarinPreferences &o) const noexcept {
-    return std::tie(showCandidateListWithSpace, candidateCursorAtEndOfTargetBlock,
+    return std::tie(showCandidateListWithSpace, omitTone, candidateCursorAtEndOfTargetBlock,
                     clearComposingTextWithEsc, maxCompletedSyllables,
                     candidateSelectionKeys, selectionReturnsToEnd, shiftAlwaysUppercase,
                     useBigrams, learnCandidateOverrides, learnBigrams) ==
-           std::tie(o.showCandidateListWithSpace, o.candidateCursorAtEndOfTargetBlock,
+           std::tie(o.showCandidateListWithSpace, o.omitTone, o.candidateCursorAtEndOfTargetBlock,
                     o.clearComposingTextWithEsc, o.maxCompletedSyllables,
                     o.candidateSelectionKeys, o.selectionReturnsToEnd, o.shiftAlwaysUppercase,
                     o.useBigrams, o.learnCandidateOverrides, o.learnBigrams);

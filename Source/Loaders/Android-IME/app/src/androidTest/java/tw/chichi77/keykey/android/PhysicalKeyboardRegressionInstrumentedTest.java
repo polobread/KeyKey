@@ -51,12 +51,42 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
     private Activity activity;
     private EditText editor;
     private InputDevice keyboard;
+    private BopomofoImeService activeService;
+    private final java.util.Map<Integer, Long> keyDownTimes = new java.util.HashMap<>();
     private String floating;
     private int rotation;
 
-    @Before public void requireIsolatedDevice() {
+    @Before public void requireIsolatedDevice() throws Exception {
         assumeTrue("Run only on an explicitly selected disposable device",
                 "true".equals(InstrumentationRegistry.getArguments().getString("keykey.isolatedDevice")));
+        instrumentation.waitForIdleSync();
+        // Let the previous host finish normally before resetting persisted learning.
+        // Never clear its composition or acknowledge effects on its behalf.
+        await(this::imeLearningIsQuiet);
+        main(() -> {
+            // Match Settings' supported reset. On main, its preference notification
+            // refreshes an existing quiet FE before this operation returns.
+            try (UserPhraseRepository data = UserPhraseRepository.open(context)) {
+                data.resetSmartLearning();
+            }
+            return true;
+        });
+        instrumentation.waitForIdleSync();
+        await(this::imeLearningIsQuiet);
+    }
+
+    private boolean imeLearningIsQuiet() {
+        // Adapter-only cases also run on older Android releases without this inspector.
+        if (android.os.Build.VERSION.SDK_INT < 29) return true;
+        for (View root : WindowInspector.getGlobalWindowViews()) {
+            BopomofoKeyboardView view = keyboardView(root);
+            if (view == null || !(view.getContext() instanceof BopomofoImeService service)) continue;
+            HostInputEngine current = (HostInputEngine) field(service, "engine");
+            if (current != null && (current.hasComposition() || current.hasPendingPhoneticReading()
+                    || !current.displayedCandidates().isEmpty()
+                    || (Boolean) field(current, "pendingHostEffects"))) return false;
+        }
+        return true;
     }
 
     @Test public void adapterSelectsTheRightHandTargetAtEveryCursorPosition() throws Exception {
@@ -159,6 +189,7 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
             int keyboardHeight = main(() -> keyboardView().getHeight());
             tapHardwareLanguage();
             await(() -> popupControl("文字輸出：繁體", true) != null);
+            captureHardwareEvidence(twoRows ? "two-row-quick-panel" : "single-row-quick-panel");
             assertSame(connection, main(() -> service().getCurrentInputConnection()));
             assertEquals(keyboardHeight, (int) main(() -> keyboardView().getHeight()));
             assertTrue(main(() -> engine().hasComposition()));
@@ -216,6 +247,16 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
         }
     }
 
+    private void captureHardwareEvidence(String label) throws java.io.IOException {
+        if (!"true".equals(InstrumentationRegistry.getArguments().getString("keykey.captureEvidence"))) return;
+        var bitmap = instrumentation.getUiAutomation().takeScreenshot();
+        assertNotNull(bitmap);
+        File image = new File(context.getExternalFilesDir(null), "physical-" + label + ".png");
+        try (var output = new java.io.FileOutputStream(image)) {
+            assertTrue(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output));
+        } finally { bitmap.recycle(); }
+    }
+
     private void openSettingsAndReturnToEditor() throws Exception {
         if (main(() -> popupControl("設定", false) == null)) tapHardwareLanguage();
         Instrumentation.ActivityMonitor monitor = instrumentation.addMonitor(
@@ -226,12 +267,41 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
             settings = instrumentation.waitForMonitorWithTimeout(monitor, 7000);
             assertNotNull("The panel must open the existing settings screen", settings);
             await(settings::hasWindowFocus);
+            recordSettingsReturn(settings, "before-system-back");
+            Activity openedSettings = settings;
+            boolean settingsHadIme = main(() -> {
+                var insets = openedSettings.getWindow().getDecorView().getRootWindowInsets();
+                return insets != null && insets.isVisible(android.view.WindowInsets.Type.ime());
+            });
             assertTrue(instrumentation.getUiAutomation().performGlobalAction(
                     AccessibilityService.GLOBAL_ACTION_BACK));
-            // The editor can regain focus before the closing activity lets taps through.
-            await(settings::isDestroyed);
-            await(() -> activity.hasWindowFocus() && editor.hasFocus());
+            // Returning to the editor is the contract; Android may retain the
+            // closing Activity instance after its window no longer owns input.
+            Activity closingSettings = settings;
+            await(() -> activity.hasWindowFocus() || closingSettings.isFinishing()
+                    || !closingSettings.getWindow().getDecorView().getRootWindowInsets()
+                            .isVisible(android.view.WindowInsets.Type.ime()));
+            recordSettingsReturn(settings, "after-system-back");
+            // Android first dismisses a visible hardware IME strip. Only send
+            // the navigation Back after that happened while Settings stayed open.
+            if (settingsHadIme && main(() -> closingSettings.hasWindowFocus() && !closingSettings.isFinishing()
+                    && !closingSettings.getWindow().getDecorView().getRootWindowInsets()
+                            .isVisible(android.view.WindowInsets.Type.ime()))) {
+                assertTrue(instrumentation.getUiAutomation().performGlobalAction(
+                        AccessibilityService.GLOBAL_ACTION_BACK));
+                recordSettingsReturn(settings, "after-settings-navigation-back");
+            }
+            try {
+                await(() -> !closingSettings.hasWindowFocus()
+                        && activity.hasWindowFocus() && editor.hasFocus());
+            } catch (AssertionError error) {
+                recordSettingsReturn(settings, "return-timeout");
+                throw error;
+            }
+            await(() -> !closingSettings.getWindow().getDecorView().isAttachedToWindow()
+                    || !closingSettings.getWindow().getDecorView().isShown());
             showKeyboard();
+            awaitKeyboardFrame();
             assertNull(main(() -> popupControl("設定", false)));
             tapHardwareLanguage();
             await(() -> popupControl("設定", false) != null);
@@ -242,6 +312,26 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
                 main(() -> { openedSettings.finish(); return true; });
             }
         }
+    }
+
+    private void recordSettingsReturn(Activity settings, String stage) {
+        String details = main(() -> {
+            var resumed = new ArrayList<String>();
+            for (Activity item : androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+                    .getInstance().getActivitiesInStage(androidx.test.runner.lifecycle.Stage.RESUMED)) {
+                resumed.add(item.getClass().getSimpleName() + ":focused=" + item.hasWindowFocus());
+            }
+            var insets = settings.getWindow().getDecorView().getRootWindowInsets();
+            return "stage=" + stage + ", resumed=" + resumed
+                    + ", settingsFocus=" + settings.hasWindowFocus()
+                    + ", settingsFinishing=" + settings.isFinishing()
+                    + ", settingsDestroyed=" + settings.isDestroyed()
+                    + ", settingsImeVisible=" + (insets != null && insets.isVisible(android.view.WindowInsets.Type.ime()))
+                    + ", hostFocus=" + activity.hasWindowFocus() + ", editorFocus=" + editor.hasFocus();
+        });
+        Bundle status = new Bundle();
+        status.putString("keykey_settings_return", details);
+        instrumentation.sendStatus(0, status);
     }
 
     private void chooseQuickInputMethod(String current, String next) throws Exception {
@@ -499,7 +589,7 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
         int selected = main(() -> engine().displayedCandidates().indexOf("郝"));
         assertTrue("The right-hand 好 must be the candidate target", selected >= 0);
         key(KeyEvent.KEYCODE_1 + selected); expectText("你郝");
-        type("a8 "); expectText("你郝媽");
+        type("a8 "); expectText("你郝嗎");
         record("middle-selection-and-insertion-target-the-right-hand-word");
         key(KeyEvent.KEYCODE_DPAD_LEFT); key(KeyEvent.KEYCODE_DEL); expectText("你媽");
         record("middle-backspace-removes-the-left-hand-word");
@@ -543,6 +633,37 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
         key(KeyEvent.KEYCODE_ENTER);
         assertFalse(main(() -> engine().hasComposition()));
         assertTrue(main(editor::hasFocus)); record("next-enter-confirms-after-release");
+    }
+
+    @Test public void candidateReplacementStillHonorsTheNextRealHostCursorAndRangeChange() throws Exception {
+        prepareHost("off", 0);
+        try {
+            fresh("smart"); type("su3cl3"); expectText("你好");
+            key(KeyEvent.KEYCODE_DPAD_LEFT); key(KeyEvent.KEYCODE_DPAD_DOWN);
+            int selected = main(() -> engine().displayedCandidates().indexOf("郝"));
+            assertTrue(selected >= 0);
+            key(KeyEvent.KEYCODE_1 + selected); expectText("你郝");
+            key(KeyEvent.KEYCODE_DPAD_LEFT);
+            await(() -> editor.getSelectionStart() == 1 && editor.getSelectionEnd() == 1);
+            // These are genuine TextView/IMM notifications, not a fabricated
+            // call to onUpdateSelection. A stale implicit-end intent must not
+            // swallow the application's next cursor or range operation.
+            main(() -> { editor.setSelection(2); return true; });
+            await(() -> !engine().hasComposition());
+            expectText("你郝");
+            record("candidate-replacement-then-real-host-cursor");
+
+            fresh("smart"); type("su3cl3");
+            String before = text();
+            assertEquals(2, before.length());
+            assertTrue(main(() -> engine().hasComposition()));
+            main(() -> { editor.setSelection(0, 1); return true; });
+            await(() -> !engine().hasComposition());
+            expectText(before);
+            record("real-host-range-is-not-an-own-selection-ack");
+        } finally {
+            if (activity != null) main(() -> { activity.finish(); return true; });
+        }
     }
 
     @Test public void repeatedRestartsPreserveTheOwnedRangeAndCaret() throws Exception {
@@ -624,25 +745,107 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
     }
 
     private void fresh(String method) throws Exception {
+        InputConnection previous = main(() -> activeService == null
+                ? null : activeService.getCurrentInputConnection());
         if (activity != null) main(() -> { activity.finish(); return true; });
         activity = instrumentation.startActivitySync(new Intent()
                 .setClassName(context, context.getPackageName() + ".ImeTestActivity")
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 .putExtra("floating", floating).putExtra("method", method));
         editor = main(() -> findEditors(activity.findViewById(android.R.id.content)).get(0));
-        showKeyboard();
+        showKeyboard(previous);
         assertTrue(main(() -> (Boolean) field(service(), "hardwareKeyboard")));
         if (main(() -> engine().isEnglishMode())) chord(KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.KEYCODE_SPACE);
         if (main(() -> engine().isHardwareFullWidth())) chord(KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.KEYCODE_SPACE);
     }
 
-    private void showKeyboard() throws Exception {
-        await(activity::hasWindowFocus);
-        main(() -> { editor.requestFocus(); return true; });
-        InputMethodManager manager = context.getSystemService(InputMethodManager.class);
-        await(() -> manager.isActive(editor));
-        main(() -> { manager.showSoftInput(editor, InputMethodManager.SHOW_IMPLICIT); return true; });
-        await(() -> keyboardView() != null && keyboardView().isShown());
+    private void showKeyboard() throws Exception { showKeyboard(null); }
+
+    private void showKeyboard(InputConnection previous) throws Exception {
+        try {
+            await(activity::hasWindowFocus);
+            main(() -> { editor.requestFocus(); return true; });
+            InputMethodManager manager = context.getSystemService(InputMethodManager.class);
+            await(() -> manager.isActive(editor));
+            // This test explicitly opens the hardware strip, like tapping
+            // the system keyboard button. am instrument restarts the target
+            // process, so a cold IME may bind after the first show request.
+            main(() -> { manager.showSoftInput(editor, 0); return true; });
+            long retryUntil = SystemClock.uptimeMillis() + 10000;
+            long[] retryAt = {SystemClock.uptimeMillis() + 1000};
+            await(() -> {
+                BopomofoKeyboardView view = keyboardView();
+                if (view != null && view.isShown()) {
+                    BopomofoImeService service = (BopomofoImeService) view.getContext();
+                    if (service.getCurrentInputConnection() != null
+                            && service.getCurrentInputConnection() != previous
+                            && service.getCurrentInputEditorInfo() != null
+                            && editor.getPrivateImeOptions().equals(
+                                    service.getCurrentInputEditorInfo().privateImeOptions)
+                            && activity.hasWindowFocus() && manager.isActive(editor)) {
+                        activeService = service;
+                        return true;
+                    }
+                }
+                long now = SystemClock.uptimeMillis();
+                if (now <= retryUntil && now >= retryAt[0] && activity.hasWindowFocus()
+                        && editor.hasFocus() && manager.isActive(editor)) {
+                    manager.showSoftInput(editor, 0);
+                    retryAt[0] = now + 1000;
+                }
+                return false;
+            });
+        } catch (AssertionError error) {
+            recordHostReadiness(previous);
+            throw error;
+        }
+    }
+
+    private void awaitKeyboardFrame() throws Exception {
+        var drawn = new java.util.concurrent.CountDownLatch(1);
+        main(() -> {
+            BopomofoKeyboardView view = keyboardView();
+            assertNotNull(view);
+            view.getViewTreeObserver().addOnPreDrawListener(new android.view.ViewTreeObserver.OnPreDrawListener() {
+                @Override public boolean onPreDraw() {
+                    if (view.isShown() && view.getHeight() > 0 && !view.isLayoutRequested()) {
+                        view.getViewTreeObserver().removeOnPreDrawListener(this);
+                        drawn.countDown();
+                    }
+                    return true;
+                }
+            });
+            view.invalidate();
+            return true;
+        });
+        assertTrue("The current IME frame must settle before tapping its controls",
+                drawn.await(3, java.util.concurrent.TimeUnit.SECONDS));
+    }
+
+    private void recordHostReadiness(InputConnection previous) {
+        String details = main(() -> {
+            var manager = context.getSystemService(InputMethodManager.class);
+            BopomofoKeyboardView found = null;
+            for (View root : WindowInspector.getGlobalWindowViews()) {
+                BopomofoKeyboardView candidate = keyboardView(root);
+                if (candidate != null) { found = candidate; break; }
+            }
+            String state = "hostFocus=" + activity.hasWindowFocus() + ", editorFocus=" + editor.hasFocus()
+                    + ", managerActive=" + manager.isActive(editor) + ", desiredEditor=" + editor.getPrivateImeOptions()
+                    + ", keyboard=" + found;
+            if (found != null) {
+                BopomofoImeService service = (BopomofoImeService) found.getContext();
+                var info = service.getCurrentInputEditorInfo();
+                state += ", viewShown=" + found.isShown() + ", viewHeight=" + found.getHeight()
+                        + ", currentEditor=" + (info == null ? null : info.privateImeOptions)
+                        + ", hasConnection=" + (service.getCurrentInputConnection() != null)
+                        + ", oldConnection=" + (service.getCurrentInputConnection() == previous);
+            }
+            return state;
+        });
+        Bundle status = new Bundle();
+        status.putString("keykey_host_readiness_failure", details);
+        instrumentation.sendStatus(0, status);
     }
 
     private List<EditText> editors() { return findEditors(activity.findViewById(android.R.id.content)); }
@@ -667,7 +870,10 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
         }
         return null;
     }
-    private BopomofoImeService service() { return (BopomofoImeService) keyboardView().getContext(); }
+    private BopomofoImeService service() {
+        assertNotNull("Wait for the current host connection before reading the service", activeService);
+        return activeService;
+    }
     private InputEngine engine() { return (InputEngine) field(service(), "engine"); }
     private static Object field(Object owner, String name) {
         try { Field field = owner.getClass().getDeclaredField(name); field.setAccessible(true); return field.get(owner); }
@@ -688,19 +894,60 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
     private void expectText(String expected) throws Exception {
         try { await(() -> editor.getText().toString().equals(expected)); }
         catch (AssertionError error) {
+            try { record("text-assertion-failure"); }
+            catch (Exception diagnostic) { error.addSuppressed(diagnostic); }
             throw new AssertionError("Expected text <" + expected + "> but was <" + text()
                     + ">, editorFocus=" + main(editor::hasFocus), error);
         }
     }
     private void type(String text) throws Exception {
         KeyEvent[] events = keyboard.getKeyCharacterMap().getEvents(text.toCharArray()); assertNotNull(events);
+        // getEvents can choose a command chord even when an ordinary printable
+        // stroke exists (qwerty2 chooses Shift+Alt+K for ~). Those Alt/Ctrl/Meta
+        // chords deliberately belong to the host, not the IME text path.
+        if (java.util.Arrays.stream(events).anyMatch(PhysicalKeyboardRegressionInstrumentedTest::commandModifier)) {
+            var printable = new ArrayList<KeyEvent>();
+            for (char character : text.toCharArray()) {
+                KeyEvent[] mapped = keyboard.getKeyCharacterMap().getEvents(new char[]{character});
+                assertNotNull(mapped);
+                if (java.util.Arrays.stream(mapped).anyMatch(PhysicalKeyboardRegressionInstrumentedTest::commandModifier)) {
+                    mapped = ordinaryPrintableStroke(character);
+                }
+                printable.addAll(java.util.Arrays.asList(mapped));
+            }
+            events = printable.toArray(new KeyEvent[0]);
+        }
         for (KeyEvent event : events) inject(event.getAction(), event.getKeyCode(), event.getMetaState());
         instrumentation.waitForIdleSync(); Thread.sleep(80);
     }
+    private static boolean commandModifier(KeyEvent event) {
+        return event.isAltPressed() || event.isCtrlPressed() || event.isMetaPressed();
+    }
+    private KeyEvent[] ordinaryPrintableStroke(char character) {
+        int shift = KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON;
+        for (int meta : new int[]{0, shift}) {
+            for (int code = 0; code <= KeyEvent.getMaxKeyCode(); code++) {
+                if (keyboard.getKeyCharacterMap().get(code, meta) != character) continue;
+                var events = new ArrayList<KeyEvent>();
+                if (meta != 0) events.add(new KeyEvent(0, 0, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT, 0, meta));
+                events.add(new KeyEvent(0, 0, KeyEvent.ACTION_DOWN, code, 0, meta));
+                events.add(new KeyEvent(0, 0, KeyEvent.ACTION_UP, code, 0, meta));
+                if (meta != 0) events.add(new KeyEvent(0, 0, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT, 0, 0));
+                return events.toArray(new KeyEvent[0]);
+            }
+        }
+        throw new AssertionError("The attached key map has no ordinary printable stroke for " + character);
+    }
     private void inject(int action, int code, int meta) throws Exception {
         long now = SystemClock.uptimeMillis();
-        assertTrue(instrumentation.getUiAutomation().injectInputEvent(new KeyEvent(now, now, action, code, 0,
-                meta, keyboard.getId(), 0, 0, InputDevice.SOURCE_KEYBOARD), true)); Thread.sleep(8);
+        // InputDispatcher expects a press and its release to share downTime.
+        // Keep the original 8ms cadence while matching real hardware pairs.
+        if (action == KeyEvent.ACTION_DOWN) keyDownTimes.put(code, now);
+        long downTime = keyDownTimes.getOrDefault(code, now);
+        assertTrue(instrumentation.getUiAutomation().injectInputEvent(new KeyEvent(downTime, now, action, code, 0,
+                meta, keyboard.getId(), 0, 0, InputDevice.SOURCE_KEYBOARD), true));
+        if (action == KeyEvent.ACTION_UP) keyDownTimes.remove(code);
+        Thread.sleep(8);
     }
     private void down(int code, int meta) throws Exception { inject(KeyEvent.ACTION_DOWN, code, meta); }
     private void up(int code, int meta) throws Exception { inject(KeyEvent.ACTION_UP, code, meta); }

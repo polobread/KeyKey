@@ -230,6 +230,7 @@ public:
         auto options = object();
         put(options.get(), "use_bigrams", config.smart.useBigrams);
         put(options.get(), "space_opens_candidates", config.smart.showCandidateListWithSpace);
+        put(options.get(), "omit_tone", config.smart.omitTone);
         put(options.get(), "candidate_cursor_at_end", config.smart.candidateCursorAtEndOfTargetBlock);
         put(options.get(), "clear_composing_with_escape", config.smart.clearComposingTextWithEsc);
         put(options.get(), "max_completed_syllables", config.smart.maxCompletedSyllables);

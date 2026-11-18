@@ -33,12 +33,14 @@ EngineResult Type(KeyKeyEngineSession& engine, const std::string& keys) {
     for (auto c : keys) { result = Character(engine, c); Check(result.handled, "Reading key rejected"); }
     return result;
 }
-void WriteSettings(const std::string& layout, const std::string& keys, int size) {
+void WriteSettings(const std::string& layout, const std::string& keys, int size, const char* omitTone = nullptr) {
     std::ofstream plist(SmartMandarinPreferencesPath(), std::ios::binary);
     plist << "<plist><dict><key>KeyboardLayout</key><string>" << layout
         << "</string><key>CandidateSelectionKeys</key><string>" << keys
         << "</string><key>ComposingTextBufferSize</key><string>" << size
-        << "</string><key>ShowCandidateListWithSpace</key><string>true</string></dict></plist>";
+        << "</string><key>ShowCandidateListWithSpace</key><string>true</string>";
+    if (omitTone) plist << "<key>OmitTone</key><string>" << omitTone << "</string>";
+    plist << "</dict></plist>";
     plist.close();
     std::filesystem::last_write_time(SmartMandarinPreferencesPath(),
         std::filesystem::file_time_type::clock::now() + std::chrono::seconds(3));
@@ -58,6 +60,56 @@ int main(int argc, char** argv) {
         Check(SelectInputMethod("SmartMandarin"), "Smart unavailable");
         auto engine = KeyKeyEngineSession::Create();
         Check(engine && engine->ready(), "Engine unavailable");
+        if (mode == "omit-tone") {
+            Check(Type(*engine, "su").compositionText == L"ㄋㄧ", "Missing setting must keep the legacy reading");
+            engine->reset();
+            Type(*engine, "su3cl3");
+            Check(Key(*engine, VK_RETURN, L'\r').committedText == L"你好", "Explicit tones changed while omission is off");
+
+            WriteSettings("Standard", "", 10, "true");
+            Check(Type(*engine, "sucl").compositionText == L"你好", "Tone omission did not update the visible host composition");
+            Check(Key(*engine, VK_RETURN, L'\r').committedText == L"你好", "Tone omission lost the committed text");
+
+            Type(*engine, "sucl");
+            const auto candidates = Key(*engine, VK_DOWN);
+            Check(candidates.candidatesVisible && !candidates.candidates.empty() &&
+                candidates.candidates.front().selectionKey == L"1", "Omitted reading did not open the normal candidates");
+            engine->reset();
+
+            Type(*engine, "sucl");
+            WriteSettings("Standard", "", 10, "false");
+            const auto changed = Character(*engine, L'1');
+            Check(changed.committedText == L"你好" && changed.compositionText == L"ㄅ",
+                "Disabling omission did not preserve the old composition and restore the legacy reading");
+
+            engine->reset();
+            WriteSettings("Standard", "", 10, "true");
+            Type(*engine, "fu/ru8ulfms8xuj0");
+            auto alternatives = Key(*engine, VK_DOWN);
+            std::wstring chosen;
+            std::set<std::wstring> pages;
+            while (alternatives.candidatesVisible && chosen.empty()) {
+                std::wstring page;
+                for (const auto& candidate : alternatives.candidates) {
+                    page += candidate.text + L"\n";
+                    if (candidate.text == L"完" || candidate.text == L"玩") {
+                        chosen = candidate.text;
+                        alternatives = Character(*engine, candidate.selectionKey[0]);
+                        break;
+                    }
+                }
+                if (!chosen.empty() || !pages.insert(page).second) break;
+                alternatives = Key(*engine, VK_NEXT);
+            }
+            Check(!chosen.empty() && alternatives.compositionText == L"請假要去哪裡" + chosen,
+                "Omitted-tone native candidates must allow a different tone without retyping");
+            Key(*engine, VK_END);
+            Type(*engine, "sk");
+            Check(Key(*engine, VK_RETURN, L'\r').committedText == L"請假要去哪裡" + chosen + L"呢",
+                "Cross-tone selection lost or duplicated text on continued input");
+            std::cout << "Smart Mandarin tone omission and settings reload passed\n";
+            return 0;
+        }
         if (mode == "four-output") {
             for (const auto* method : {"SmartMandarin", "TraditionalMandarin", "Generic-cj-cin", "Generic-simplex-cin"}) {
                 Check(SelectInputMethod(method), "Output test method unavailable");

@@ -25,8 +25,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.BooleanSupplier;
 
 public final class BopomofoImeService extends InputMethodService
         implements BopomofoKeyboardView.Listener, FloatingCandidateWindow.Listener,
@@ -58,6 +60,13 @@ public final class BopomofoImeService extends InputMethodService
     private int cursorAnchorRetryCount;
     private boolean cursorAnchorRequestPending;
     private boolean floatingCandidatesVisible;
+    private volatile long cursorAnchorHostGeneration;
+    private volatile long cursorAnchorRequestGeneration;
+    private InputConnection cursorAnchorMonitorConnection;
+    private long cursorAnchorMonitorHostGeneration;
+    private boolean cursorAnchorMonitoring;
+    private final ExecutorService cursorAnchorRequests = Executors.newSingleThreadExecutor(runnable ->
+            new Thread(runnable, "KeyKey cursor anchor requests"));
     private final Runnable cursorAnchorRetry = this::retryCursorAnchorUpdates;
     private final Set<Integer> pressedHardwareShortcutKeys = new LinkedHashSet<>();
     private final Set<Integer> pressedCandidateKeys = new LinkedHashSet<>();
@@ -78,18 +87,19 @@ public final class BopomofoImeService extends InputMethodService
     private boolean fieldPolicyUnlocked;
     private int lastSelectionStart = -1;
     private int lastSelectionEnd = -1;
-    private int selectionMutationGeneration;
-    private boolean awaitingOwnSelectionUpdate;
+    private final OwnSelectionTracker ownSelections = new OwnSelectionTracker();
+    private boolean hostSelectionWriteStarted;
+    private OwnSelectionTracker.Anchor pendingInitialAnchor;
     private String appliedComposingText = "";
     private boolean appliedTouchReading;
     private final TouchSmartHostTextState touchHostText = new TouchSmartHostTextState();
     private int composingRegionStart = -1;
-    private int expectedSmartSelection = -1;
+    private boolean inputViewFinishingForHandoff;
     private final KeyboardBottomControlsPolicy bottomControlsPolicy = new KeyboardBottomControlsPolicy();
     private WindowInsetsController captionController;
     private boolean captionHideRequested;
     private boolean updatingBottomControls;
-    private boolean destroying;
+    private volatile boolean destroying;
     private boolean rebuildingForConfiguration;
     private WindowInsetsController.OnControllableInsetsChangedListener captionControlListener;
 
@@ -196,7 +206,10 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onStartInput(EditorInfo attribute, boolean restarting) {
+        int retainedSelectionStart = lastSelectionStart;
+        int retainedSelectionEnd = lastSelectionEnd;
         super.onStartInput(attribute, restarting);
+        cursorAnchorHostGeneration++;
         if (engine == null) openEngine();
         stopHardwareBackspace();
         if (!restarting) {
@@ -204,19 +217,29 @@ public final class BopomofoImeService extends InputMethodService
             fieldPolicyUnlocked = false;
         }
         resetCursorAnchor();
-        lastSelectionStart = attribute == null ? -1 : attribute.initialSelStart;
-        lastSelectionEnd = attribute == null ? -1 : attribute.initialSelEnd;
-        cancelExpectedSelectionUpdate();
+        // A restarted EditorInfo may still contain the field's original caret.
+        // Only its current IC snapshot can anchor new writes after a restart.
+        lastSelectionStart = restarting || attribute == null ? -1 : attribute.initialSelStart;
+        lastSelectionEnd = restarting || attribute == null ? -1 : attribute.initialSelEnd;
+        ownSelections.clear();
+        hostSelectionWriteStarted = false;
+        pendingInitialAnchor = null;
         schedulePhraseDictionaryReload();
         InputFieldPolicy nextPolicy = InputFieldPolicy.from(attribute);
         if (fieldPolicyUnlocked) nextPolicy = nextPolicy.unrestricted();
         boolean layoutChanged = !fieldPolicy.hasSameLayout(nextPolicy);
         fieldPolicy = nextPolicy;
         if (engine != null) {
+            boolean ownedMarkedRange = ownsMarkedComposition();
+            InputConnection restartConnection = getCurrentInputConnection();
+            long restartHost = cursorAnchorHostGeneration;
+            long restartEpoch = ownSelections.epoch();
             boolean lostMarkedRange = restarting && !hostTransactionFailed
-                    && !restoreMarkedComposition();
+                    && !restoreMarkedComposition(restartConnection, retainedSelectionStart, retainedSelectionEnd);
+            if (restartConnection != getCurrentInputConnection() || restartHost != cursorAnchorHostGeneration
+                    || restartEpoch != ownSelections.epoch()) return;
             boolean releasedRange = true;
-            if (lostMarkedRange) {
+            if (lostMarkedRange && ownedMarkedRange) {
                 // The new connection cannot prove ownership of the old range.
                 // Keep the host text, and never replay the old engine's commit.
                 InputConnection connection = getCurrentInputConnection();
@@ -229,7 +252,6 @@ public final class BopomofoImeService extends InputMethodService
                 appliedTouchReading = false;
                 touchHostText.reset();
                 composingRegionStart = -1;
-                expectedSmartSelection = -1;
                 if (engine != null) synchronizeInputPreferences();
             }
             if (layoutChanged && appliedTouchReading) commitPendingComposition();
@@ -242,19 +264,49 @@ public final class BopomofoImeService extends InputMethodService
         refreshKeyboard();
     }
 
-    /** A restarted InputConnection may have finished its old composing span. */
-    private boolean restoreMarkedComposition() {
-        if (appliedComposingText.isEmpty() || (!appliedTouchReading
-                && (engine.isTouchSmartComposition() || !touchHostText.editableText().isEmpty()))) {
-            return true;
+    private boolean ownsMarkedComposition() {
+        return !appliedComposingText.isEmpty() && (appliedTouchReading
+                || (!engine.isTouchSmartComposition() && touchHostText.editableText().isEmpty()));
+    }
+
+    /** Refresh the actual caret once, sharing that snapshot with retained-range validation. */
+    private boolean restoreMarkedComposition(InputConnection connection, int retainedStart, int retainedEnd) {
+        boolean marked = ownsMarkedComposition();
+        String editable = touchHostText.editableText();
+        if (connection == null) return !marked && editable.isEmpty();
+        long host = cursorAnchorHostGeneration;
+        long epoch = ownSelections.epoch();
+        hostSelectionWriteStarted = true;
+        ExtractedText current = null;
+        try {
+            current = connection.getExtractedText(new ExtractedTextRequest(), 0);
+        } catch (RuntimeException unavailable) {
+            // An unavailable snapshot never proves the old EditorInfo's caret.
         }
-        InputConnection connection = getCurrentInputConnection();
-        if (connection == null || composingRegionStart < 0) return false;
-        ExtractedText current = connection.getExtractedText(new ExtractedTextRequest(), 0);
-        if (current == null || current.text == null || current.startOffset < 0
-                || current.partialStartOffset >= 0 || current.selectionStart < 0
-                || current.selectionStart != current.selectionEnd
-                || current.selectionEnd > current.text.length()
+        if (connection != getCurrentInputConnection() || host != cursorAnchorHostGeneration
+                || epoch != ownSelections.epoch()) return false;
+        OwnSelectionTracker.Anchor anchor = current == null || current.text == null ? null
+                : OwnSelectionTracker.Anchor.fromFullSnapshot(current.startOffset, current.text.length(),
+                        current.partialStartOffset, current.partialEndOffset,
+                        current.selectionStart, current.selectionEnd);
+        if (anchor == null) return !marked && editable.isEmpty();
+        // A query may dispatch a newer real selection on this same looper.
+        if ((lastSelectionStart >= 0 || lastSelectionEnd >= 0)
+                && (lastSelectionStart != anchor.start() || lastSelectionEnd != anchor.end())) return false;
+        lastSelectionStart = anchor.start();
+        lastSelectionEnd = anchor.end();
+        pendingInitialAnchor = anchor;
+        if (!marked) {
+            if (editable.isEmpty()) return true;
+            // Ordinary touch Chinese is committed, but its mutable suffix is
+            // owned only at the previously accepted caret, with identical text.
+            long relativeEnd = (long) anchor.end() - current.startOffset;
+            long relativeStart = relativeEnd - editable.length();
+            return retainedStart == retainedEnd && anchor.start() == retainedStart
+                    && anchor.end() == retainedEnd && relativeStart >= 0
+                    && editable.contentEquals(current.text.subSequence((int) relativeStart, (int) relativeEnd));
+        }
+        if (composingRegionStart < 0 || anchor.start() != anchor.end()
                 || composingRegionStart > Integer.MAX_VALUE - appliedComposingText.length()) return false;
         long relativeStart = (long) composingRegionStart - current.startOffset;
         long relativeEnd = relativeStart + appliedComposingText.length();
@@ -264,27 +316,21 @@ public final class BopomofoImeService extends InputMethodService
                 || !appliedComposingText.equals(current.text.subSequence(
                         (int) relativeStart, (int) relativeEnd).toString())) return false;
         if (appliedTouchReading) {
-            String editable = touchHostText.editableText();
             long editableStart = relativeStart - editable.length();
             if (editableStart < 0 || !editable.contentEquals(current.text.subSequence(
                     (int) editableStart, (int) relativeStart))) return false;
         }
         int end = composingRegionStart + appliedComposingText.length();
-        expectOwnSelectionUpdate();
-        if (!connection.setComposingRegion(composingRegionStart, end)) return false;
-        // EditorInfo can contain the field's original selection after rotation.
-        // Restore the retained engine caret, rather than that stale position.
+        if (!setOwnComposingRegion(connection, composingRegionStart, end)) return false;
+        // Restore the retained engine caret, rather than stale EditorInfo.
         int caret = appliedTouchReading ? end : composingRegionStart + engine.composingCaretUtf16Offset();
-        if (caret < composingRegionStart || caret > end
-                || !connection.setSelection(caret, caret)) return false;
-        lastSelectionStart = lastSelectionEnd = caret;
-        expectedSmartSelection = caret;
-        return true;
+        return caret >= composingRegionStart && caret <= end && setOwnSelection(connection, caret, caret);
     }
 
     @Override
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
+        inputViewFinishingForHandoff = false;
         stopHardwareBackspace();
         schedulePhraseDictionaryReload();
         InputFieldPolicy nextPolicy = InputFieldPolicy.from(info);
@@ -304,6 +350,8 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onFinishInput() {
+        inputViewFinishingForHandoff = true;
+        cursorAnchorHostGeneration++;
         dismissHardwareQuickSettings();
         stopHardwareBackspace();
         commitPendingComposition();
@@ -319,9 +367,8 @@ public final class BopomofoImeService extends InputMethodService
         appliedTouchReading = false;
         touchHostText.reset();
         composingRegionStart = -1;
-        expectedSmartSelection = -1;
         fieldPolicyUnlocked = false;
-        cancelExpectedSelectionUpdate();
+        ownSelections.clear();
         hideFloatingCandidates();
         super.onFinishInput();
     }
@@ -329,7 +376,9 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onFinishInputView(boolean finishingInput) {
         dismissHardwareQuickSettings();
-        commitPendingComposition();
+        inputViewFinishingForHandoff = finishingInput || rebuildingForConfiguration;
+        if (inputViewFinishingForHandoff) commitPendingComposition();
+        else finishCompositionForKeyboardHide();
         super.onFinishInputView(finishingInput);
     }
 
@@ -337,13 +386,15 @@ public final class BopomofoImeService extends InputMethodService
     public void onWindowHidden() {
         dismissHardwareQuickSettings();
         stopHardwareBackspace();
-        commitPendingComposition();
+        if (inputViewFinishingForHandoff || rebuildingForConfiguration) commitPendingComposition();
+        else finishCompositionForKeyboardHide();
         hideFloatingCandidates();
         super.onWindowHidden();
     }
 
     @Override public void onWindowShown() {
         super.onWindowShown();
+        inputViewFinishingForHandoff = false;
         updateKeyboardBottomControls();
         if (keyboardView != null && keyboardView.isTouchMode()) {
             keyboardView.requestApplyInsets();
@@ -376,6 +427,8 @@ public final class BopomofoImeService extends InputMethodService
     }
 
     private void abandonHostEffects() {
+        ownSelections.clear();
+        pendingInitialAnchor = null;
         if (engine == null) return;
         try {
             engine.abandonHostEffects();
@@ -396,8 +449,18 @@ public final class BopomofoImeService extends InputMethodService
 
     private boolean finishCompositionForKeyboardHide() {
         InputConnection original = getCurrentInputConnection();
-        if (engine == null || hostTransactionFailed || !engine.hasComposition()
-                || original == null) return true;
+        if (engine == null || hostTransactionFailed || !engine.hasComposition()) return true;
+        if (original == null) {
+            // There is no host to accept a hide transaction. Discard its local
+            // pending state rather than replaying it when a connection returns.
+            abandonHostEffects();
+            appliedComposingText = "";
+            appliedTouchReading = false;
+            touchHostText.reset();
+            composingRegionStart = -1;
+            lastSelectionStart = lastSelectionEnd = -1;
+            return true;
+        }
         InputEngine.Result result = engine.finishCompositionForKeyboardHide();
         boolean completed = engine.coreError() == null && !engine.hasComposition();
         // Apply successful earlier effects once even if a later adapter step
@@ -409,6 +472,10 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onDestroy() {
         destroying = true;
+        ownSelections.clear();
+        cursorAnchorHostGeneration++;
+        cursorAnchorRequestGeneration++;
+        cursorAnchorRequests.shutdownNow();
         dismissHardwareQuickSettings();
         releaseCaptionController();
         stopHardwareBackspace();
@@ -444,6 +511,9 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onUpdateCursorAnchorInfo(CursorAnchorInfo cursorAnchorInfo) {
         super.onUpdateCursorAnchorInfo(cursorAnchorInfo);
+        if (destroying || !cursorAnchorMonitoring
+                || cursorAnchorMonitorHostGeneration != cursorAnchorHostGeneration
+                || cursorAnchorMonitorConnection != getCurrentInputConnection()) return;
         cursorAnchor = insertionMarkerBounds(cursorAnchorInfo);
         if (cursorAnchor != null) {
             cursorAnchorRequestPending = false;
@@ -464,34 +534,78 @@ public final class BopomofoImeService extends InputMethodService
                                   int candidatesStart, int candidatesEnd) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd,
                 candidatesStart, candidatesEnd);
-        boolean selectionChanged = lastSelectionStart >= 0 && lastSelectionEnd >= 0
+        if (pendingInitialAnchor != null && candidatesStart == -1 && candidatesEnd == -1
+                && newSelStart == pendingInitialAnchor.start() && newSelEnd == pendingInitialAnchor.end()
+                && ((oldSelStart < 0 || oldSelEnd < 0)
+                        || (oldSelStart == newSelStart && oldSelEnd == newSelEnd))) {
+            // The initial snapshot can precede a delayed startup notification.
+            // Observe it once without rewinding a subsequent accepted write;
+            // a real reported movement from another position still falls through.
+            pendingInitialAnchor = null;
+            return;
+        }
+        OwnSelectionTracker.Match own = ownSelections.consume(newSelStart, newSelEnd, candidatesStart, candidatesEnd);
+        if (own == OwnSelectionTracker.Match.SUPERSEDED) return;
+        if (own == OwnSelectionTracker.Match.CURRENT) {
+            lastSelectionStart = newSelStart;
+            lastSelectionEnd = newSelEnd;
+            if (candidatesStart >= 0) composingRegionStart = candidatesStart;
+            return;
+        }
+        boolean noOwnedHostText = appliedComposingText.isEmpty() && touchHostText.editableText().isEmpty()
+                && ownSelections.pendingCount() == 0;
+        if ((lastSelectionStart < 0 || lastSelectionEnd < 0) && newSelStart >= 0 && newSelEnd >= 0
+                && (oldSelStart < 0 || oldSelEnd < 0) && noOwnedHostText) {
+            // A host may publish its first real selection after local phonetic
+            // input starts. With no earlier position or owned host text this is
+            // an initial observation, not evidence of an external cursor move.
+            lastSelectionStart = newSelStart;
+            lastSelectionEnd = newSelEnd;
+            return;
+        }
+        boolean reportedNoMovement = oldSelStart >= 0 && oldSelEnd >= 0
+                && oldSelStart == newSelStart && oldSelEnd == newSelEnd;
+        boolean currentMarkedRange = !appliedComposingText.isEmpty() && composingRegionStart >= 0
+                && candidatesStart == composingRegionStart
+                && candidatesEnd == addKnownOffset(composingRegionStart, appliedComposingText.length());
+        boolean unexpectedCurrentCaret = currentMarkedRange
+                && (newSelStart != lastSelectionStart || newSelEnd != lastSelectionEnd);
+        if (reportedNoMovement && !unexpectedCurrentCaret) {
+            // An initial/duplicate old==new notification may lag behind our
+            // accepted write. Its stale unmarked range is not a user move and
+            // must not rewind the newer predicted caret or commit raw reading.
+            if (noOwnedHostText) {
+                lastSelectionStart = newSelStart;
+                lastSelectionEnd = newSelEnd;
+            }
+            return;
+        }
+        boolean reportedMovement = oldSelStart >= 0 && oldSelEnd >= 0
+                && (newSelStart != oldSelStart || newSelEnd != oldSelEnd);
+        boolean selectionChanged = reportedMovement || (lastSelectionStart >= 0 && lastSelectionEnd >= 0
                 ? newSelStart != lastSelectionStart || newSelEnd != lastSelectionEnd
-                : newSelStart != oldSelStart || newSelEnd != oldSelEnd;
+                : newSelStart != oldSelStart || newSelEnd != oldSelEnd);
+        // Idle notifications can establish an initially omitted EditorInfo
+        // selection even when old==new. While composing, a duplicate ACK must
+        // not overwrite a newer accepted caret or composing anchor.
+        if (!selectionChanged) {
+            if (engine == null || !engine.hasComposition()) {
+                lastSelectionStart = newSelStart;
+                lastSelectionEnd = newSelEnd;
+            }
+            return;
+        }
         lastSelectionStart = newSelStart;
         lastSelectionEnd = newSelEnd;
         int previousComposingStart = composingRegionStart;
-        if (candidatesStart >= 0 && engine != null && engine.hasComposition()) {
-            composingRegionStart = candidatesStart;
-        }
+        if (candidatesStart >= 0 && engine != null && engine.hasComposition()) composingRegionStart = candidatesStart;
+        if (engine == null || (!engine.hasComposition() && engine.pageCount() == 0)) return;
 
-        boolean expectedSmartCursor = expectedSmartSelection >= 0
-                && newSelStart == expectedSmartSelection
-                && newSelEnd == expectedSmartSelection;
-        if (expectedSmartCursor) expectedSmartSelection = -1;
-
-        boolean atMarkedReadingEnd = candidatesStart >= 0
-                && newSelStart == candidatesEnd && newSelEnd == candidatesEnd;
-        if (expectedSmartCursor || (awaitingOwnSelectionUpdate
-                && (!appliedTouchReading || atMarkedReadingEnd))) return;
-        if (!selectionChanged || engine == null
-                || (!engine.hasComposition() && engine.pageCount() == 0)) {
-            return;
-        }
-
+        ownSelections.clear();
         if (appliedTouchReading) {
+            abandonHostEffects();
             releaseTouchReadingAfterCursorMove(previousComposingStart, candidatesStart, candidatesEnd,
                     newSelStart, newSelEnd);
-            abandonHostEffects();
         } else {
             commitPendingComposition();
             engine.reset();
@@ -500,9 +614,8 @@ public final class BopomofoImeService extends InputMethodService
         appliedTouchReading = false;
         touchHostText.reset();
         composingRegionStart = -1;
-        expectedSmartSelection = -1;
         InputConnection connection = getCurrentInputConnection();
-        if (connection != null) connection.finishComposingText();
+        if (connection != null) finishOwnComposingText(connection);
         refreshKeyboard();
     }
 
@@ -520,14 +633,13 @@ public final class BopomofoImeService extends InputMethodService
         int relativeEnd = previousEnd - current.startOffset;
         if (relativeStart < 0 || relativeEnd > current.text.length()
                 || !appliedComposingText.contentEquals(current.text.subSequence(relativeStart, relativeEnd))) return;
-        expectOwnSelectionUpdate();
         connection.beginBatchEdit();
         try {
-            if (start < 0 && !connection.setComposingRegion(previousStart, previousEnd)) return;
-            if (connection.commitText("", 1) && selectionStart >= 0 && selectionEnd >= 0) {
+            if (start < 0 && !setOwnComposingRegion(connection, previousStart, previousEnd)) return;
+            if (commitOwnText(connection, "") && selectionStart >= 0 && selectionEnd >= 0) {
                 int adjustedStart = selectionStart - Math.max(0, Math.min(selectionStart, previousEnd) - previousStart);
                 int adjustedEnd = selectionEnd - Math.max(0, Math.min(selectionEnd, previousEnd) - previousStart);
-                connection.setSelection(adjustedStart, adjustedEnd);
+                setOwnSelection(connection, adjustedStart, adjustedEnd);
             }
         } finally {
             connection.endBatchEdit();
@@ -788,6 +900,9 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        // System Back dismisses this input view; it is not a transition from
+        // touch input to a physical keyboard or a request to commit raw reading.
+        if (keyCode == KeyEvent.KEYCODE_BACK) return super.onKeyDown(keyCode, event);
         if (event.getRepeatCount() == 0 && (keyCode == KeyEvent.KEYCODE_ENTER
                 || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER)) {
             // The previous Up can be lost when switching input methods. A new
@@ -1004,16 +1119,17 @@ public final class BopomofoImeService extends InputMethodService
         }
 
         boolean applied = false;
+        long ownershipEpoch = ownSelections.epoch();
         try {
             applied = applyToConnection(connection, result, softEnter);
-            if (!applied) {
+            if (!applied && connection == getCurrentInputConnection() && ownershipEpoch == ownSelections.epoch()) {
                 hostTransactionFailed = true;
                 android.widget.Toast.makeText(this, "目前欄位未接受輸入，請重新點選文字欄位。",
                         android.widget.Toast.LENGTH_LONG).show();
             }
         } finally {
             // An absent/replaced host cannot acknowledge the old transaction.
-            if (applied && connection == getCurrentInputConnection() && engine != null) {
+            if (applied && connection == getCurrentInputConnection() && ownershipEpoch == ownSelections.epoch() && engine != null) {
                 engine.acknowledgeHostEffects();
             }
             refreshKeyboard();
@@ -1034,58 +1150,49 @@ public final class BopomofoImeService extends InputMethodService
                         || committedText || result.deleteBeforeCursor());
         boolean finishComposingText = nextReading.isEmpty()
                 && (!appliedComposingText.isEmpty() || committedText);
-        boolean changesSelection = result.deleteBeforeCursor() || committedText
-                || result.discardComposingText() || updateComposingText || result.sendEnter();
-        if (changesSelection) expectOwnSelectionUpdate();
-
-        connection.beginBatchEdit();
+        boolean writesHost = result.deleteBeforeCursor() || committedText || result.discardComposingText()
+                || updateComposingText || finishComposingText || result.sendEnter();
+        if (writesHost && !prepareInitialAnchorForWrite(connection)) return false;
+        var ownBatch = ownSelections.beginBatch(lastSelectionStart, lastSelectionEnd, markedStart(), markedEnd());
+        boolean positionedInBatch = false;
+        boolean hostBatched = connection.beginBatchEdit();
         try {
             if (result.deleteBeforeCursor()) accepted &= deletePreviousGrapheme(connection);
             if (committedText) {
-                accepted &= connection.commitText(convertOutput(result.committedText()), 1);
-                composingRegionStart = -1;
+                accepted &= commitOwnText(connection, convertOutput(result.committedText()));
             }
             if (result.discardComposingText()) {
                 // finishComposingText() preserves the underlined text. Committing an empty
                 // replacement removes the composing region and finishes it in one operation.
-                accepted &= connection.commitText("", 1);
-                appliedComposingText = "";
-                composingRegionStart = -1;
+                accepted &= commitOwnText(connection, "");
             } else if (finishComposingText) {
                 // commitText already finishes the marked range. Only a real
                 // remaining finish operation participates in acknowledgement.
-                if (!committedText) accepted &= connection.finishComposingText();
-                appliedComposingText = "";
-                composingRegionStart = -1;
+                if (!committedText) accepted &= finishOwnComposingText(connection);
             } else if (updateComposingText) {
-                if (composingRegionStart < 0 && lastSelectionStart >= 0) {
-                    composingRegionStart = lastSelectionStart;
-                }
-                accepted &= connection.setComposingText(nextReading, 1);
-                appliedComposingText = nextReading;
+                accepted &= setOwnComposingText(connection, nextReading);
+            }
+            if (engine.smartCompositionCursor() >= 0 && !nextReading.isEmpty() && composingRegionStart >= 0) {
+                // Keep the implicit end and the real core caret in one host batch.
+                // A phrase replacement may otherwise leave unacknowledged
+                // intermediate intentions even though the final caret is unchanged.
+                int position = addKnownOffset(composingRegionStart, engine.composingCaretUtf16Offset());
+                accepted &= setOwnSelection(connection, position, position);
+                positionedInBatch = true;
             }
         } finally {
             connection.endBatchEdit();
         }
 
-        if (engine.smartCompositionCursor() >= 0 && !nextReading.isEmpty()) {
-            // setComposingText can only put the cursor outside the replacement.
-            // Move it inside the marked sentence with setSelection instead.
-            if (updateComposingText) {
-                ExtractedText extracted = connection.getExtractedText(
-                        new ExtractedTextRequest(), 0);
-                if (extracted != null && extracted.selectionStart >= 0) {
-                    composingRegionStart = extracted.startOffset
-                            + extracted.selectionStart - nextReading.length();
-                }
-            }
-            if (composingRegionStart >= 0) {
-                int position = composingRegionStart + engine.composingCaretUtf16Offset();
-                expectOwnSelectionUpdate();
-                expectedSmartSelection = position;
-                if (!connection.setSelection(position, position)) expectedSmartSelection = -1;
-            }
+        if (!positionedInBatch && engine.smartCompositionCursor() >= 0 && !nextReading.isEmpty()
+                && composingRegionStart >= 0) {
+            // An actual marked callback can establish the anchor even when the
+            // one initial snapshot was unavailable. Never issue a second query.
+            int position = addKnownOffset(composingRegionStart, engine.composingCaretUtf16Offset());
+            accepted &= setOwnSelection(connection, position, position);
         }
+        if (hostBatched) ownSelections.finishBatch(ownBatch,
+                lastSelectionStart, lastSelectionEnd, markedStart(), markedEnd());
 
         if (result.sendEnter()) {
             boolean performedAction = softEnter && fieldPolicy.hasEditorAction()
@@ -1110,6 +1217,10 @@ public final class BopomofoImeService extends InputMethodService
                                     boolean softEnter) {
         boolean accepted = true;
         String committedText = convertOutput(result.committedText());
+        boolean writesHost = !committedText.isEmpty() || result.deleteBeforeCursor() || result.sendEnter()
+                || !engine.completedSmartText().isEmpty() || !appliedComposingText.isEmpty()
+                || (engine.usesTouchPhoneticGrid() && engine.hasPendingPhoneticReading());
+        if (writesHost && !prepareInitialAnchorForWrite(connection)) return false;
         TouchSmartHostTextState.Edit edit;
         if (engine.isTouchSmartComposition() && engine.hasComposition()) {
             edit = touchHostText.update(convertOutput(engine.completedSmartText()), committedText);
@@ -1127,35 +1238,25 @@ public final class BopomofoImeService extends InputMethodService
                 && (!appliedTouchReading || editTail || rawReading.isEmpty());
         boolean updateReading = !rawReading.isEmpty()
                 && (removeReading || !rawReading.equals(appliedComposingText));
-        int readingStart = appliedComposingText.isEmpty()
-                ? Math.min(lastSelectionStart, lastSelectionEnd) : composingRegionStart;
-        if (readingStart >= edit.deleteCount() && !result.deleteBeforeCursor()) {
-            readingStart += edit.insertion().length() - edit.deleteCount();
-        } else {
-            readingStart = -1;
-        }
-        if (editTail || removeReading || updateReading || result.sendEnter()) expectOwnSelectionUpdate();
-        connection.beginBatchEdit();
+        var ownBatch = ownSelections.beginBatch(lastSelectionStart, lastSelectionEnd, markedStart(), markedEnd());
+        boolean hostBatched = connection.beginBatchEdit();
         try {
             if (removeReading) {
-                if (!connection.commitText("", 1)) return false;
-                appliedComposingText = "";
-                appliedTouchReading = false;
-                composingRegionStart = -1;
+                if (!commitOwnText(connection, "")) return false;
             }
-            if (edit.deleteCount() > 0 && !connection.deleteSurroundingText(edit.deleteCount(), 0)) {
+            if (edit.deleteCount() > 0 && !deleteOwnSurroundingText(connection, edit.deleteCount())) {
                 return false;
             }
-            if (!edit.insertion().isEmpty() && !connection.commitText(edit.insertion(), 1)) return false;
+            if (!edit.insertion().isEmpty() && !commitOwnText(connection, edit.insertion())) return false;
             if (result.deleteBeforeCursor() && !deletePreviousGrapheme(connection)) return false;
             if (updateReading) {
-                if (!connection.setComposingText(rawReading, 1)) return false;
-                composingRegionStart = readingStart;
-                appliedComposingText = rawReading;
+                if (!setOwnComposingText(connection, rawReading)) return false;
                 appliedTouchReading = true;
             }
         } finally {
             connection.endBatchEdit();
+            if (hostBatched) ownSelections.finishBatch(ownBatch,
+                    lastSelectionStart, lastSelectionEnd, markedStart(), markedEnd());
         }
 
         if (result.sendEnter()) {
@@ -1169,26 +1270,146 @@ public final class BopomofoImeService extends InputMethodService
         return accepted;
     }
 
-    private void expectOwnSelectionUpdate() {
-        awaitingOwnSelectionUpdate = true;
-        int generation = ++selectionMutationGeneration;
-        mainHandler.postDelayed(() -> {
-            if (selectionMutationGeneration == generation) {
-                awaitingOwnSelectionUpdate = false;
+    /** At most one snapshot per IC epoch, only before an actual write with no known anchor. */
+    private boolean prepareInitialAnchorForWrite(InputConnection connection) {
+        if (hostSelectionWriteStarted) return true;
+        hostSelectionWriteStarted = true;
+        if (lastSelectionStart >= 0 && lastSelectionEnd >= 0) return true;
+        long host = cursorAnchorHostGeneration;
+        long epoch = ownSelections.epoch();
+        ExtractedText snapshot = null;
+        try {
+            snapshot = connection.getExtractedText(new ExtractedTextRequest(), 0);
+        } catch (RuntimeException unavailable) {
+            // An unavailable editor snapshot is not proof of an absolute zero.
+        }
+        if (connection != getCurrentInputConnection() || host != cursorAnchorHostGeneration
+                || epoch != ownSelections.epoch()) return false;
+        if (snapshot != null && snapshot.text != null
+                && (lastSelectionStart < 0 || lastSelectionEnd < 0)) {
+            OwnSelectionTracker.Anchor anchor = OwnSelectionTracker.Anchor.fromFullSnapshot(
+                    snapshot.startOffset, snapshot.text.length(), snapshot.partialStartOffset, snapshot.partialEndOffset,
+                    snapshot.selectionStart, snapshot.selectionEnd);
+            if (anchor != null) {
+                pendingInitialAnchor = anchor;
+                lastSelectionStart = anchor.start();
+                lastSelectionEnd = anchor.end();
             }
-        }, 200);
+        }
+        return true;
     }
 
-    private void cancelExpectedSelectionUpdate() {
-        selectionMutationGeneration++;
-        awaitingOwnSelectionUpdate = false;
+    private static int addKnownOffset(int start, int count) {
+        return start >= 0 && count >= 0 && start <= Integer.MAX_VALUE - count ? start + count : -1;
+    }
+
+    private int replacementStart() {
+        if (!appliedComposingText.isEmpty()) return composingRegionStart;
+        return Math.min(lastSelectionStart, lastSelectionEnd);
+    }
+
+    private int markedStart() { return appliedComposingText.isEmpty() ? -1 : composingRegionStart; }
+
+    private int markedEnd() {
+        return appliedComposingText.isEmpty() ? -1 : addKnownOffset(composingRegionStart, appliedComposingText.length());
+    }
+
+    private boolean setOwnComposingText(InputConnection connection, String text) {
+        int start = replacementStart();
+        int end = addKnownOffset(start, text.length());
+        var intention = start >= 0 ? ownSelections.record(end, end, start, end)
+                : ownSelections.recordUnknownComposing(text.length());
+        if (!connection.setComposingText(text, 1)) {
+            ownSelections.reject(intention);
+            return false;
+        }
+        if (end >= 0) lastSelectionStart = lastSelectionEnd = end;
+        if (start >= 0) composingRegionStart = start;
+        appliedComposingText = text;
+        return true;
+    }
+
+    private boolean commitOwnText(InputConnection connection, String text) {
+        int end = addKnownOffset(replacementStart(), text.length());
+        var intention = ownSelections.record(end, end, -1, -1);
+        if (!connection.commitText(text, 1)) {
+            ownSelections.reject(intention);
+            return false;
+        }
+        lastSelectionStart = lastSelectionEnd = end;
+        appliedComposingText = "";
+        appliedTouchReading = false;
+        composingRegionStart = -1;
+        return true;
+    }
+
+    private boolean finishOwnComposingText(InputConnection connection) {
+        var intention = !appliedComposingText.isEmpty()
+                ? ownSelections.record(lastSelectionStart, lastSelectionEnd, -1, -1) : null;
+        if (!connection.finishComposingText()) {
+            ownSelections.reject(intention);
+            return false;
+        }
+        appliedComposingText = "";
+        appliedTouchReading = false;
+        composingRegionStart = -1;
+        return true;
+    }
+
+    private boolean setOwnComposingRegion(InputConnection connection, int start, int end) {
+        var intention = ownSelections.record(lastSelectionStart, lastSelectionEnd, start, end);
+        if (!connection.setComposingRegion(start, end)) {
+            ownSelections.reject(intention);
+            return false;
+        }
+        composingRegionStart = start;
+        return true;
+    }
+
+    private boolean setOwnSelection(InputConnection connection, int start, int end) {
+        var intention = start != lastSelectionStart || end != lastSelectionEnd
+                ? ownSelections.record(start, end, markedStart(), markedEnd()) : null;
+        if (!connection.setSelection(start, end)) {
+            ownSelections.reject(intention);
+            return false;
+        }
+        lastSelectionStart = start;
+        lastSelectionEnd = end;
+        return true;
+    }
+
+    private boolean deleteOwnSurroundingText(InputConnection connection, int count) {
+        int start = Math.min(lastSelectionStart, lastSelectionEnd);
+        if (!appliedComposingText.isEmpty()) start = Math.min(start, composingRegionStart);
+        int removed = start >= 0 ? Math.min(start, count) : -1;
+        int nextStart = removed >= 0 ? lastSelectionStart - removed : -1;
+        int nextEnd = removed >= 0 ? lastSelectionEnd - removed : -1;
+        int markedStart = markedStart();
+        int markedEnd = markedEnd();
+        if (markedStart >= 0 && removed >= 0) {
+            markedStart -= removed;
+            markedEnd -= removed;
+        }
+        var intention = ownSelections.record(nextStart, nextEnd, markedStart, markedEnd);
+        if (!connection.deleteSurroundingText(count, 0)) {
+            ownSelections.reject(intention);
+            return false;
+        }
+        lastSelectionStart = nextStart;
+        lastSelectionEnd = nextEnd;
+        if (!appliedComposingText.isEmpty()) composingRegionStart = markedStart;
+        return true;
     }
 
     private boolean deletePreviousGrapheme(InputConnection connection) {
         CharSequence beforeCursor = connection.getTextBeforeCursor(64, 0);
         int characterCount = TextDeletion.previousGraphemeLength(beforeCursor);
-        if (characterCount > 0) return connection.deleteSurroundingText(characterCount, 0);
-        return connection.deleteSurroundingTextInCodePoints(1, 0);
+        if (characterCount > 0) return deleteOwnSurroundingText(connection, characterCount);
+        // Without the host's preceding UTF16 text the size of one codepoint is
+        // unknown. Preserve the operation, but do not invent an absolute caret.
+        boolean accepted = connection.deleteSurroundingTextInCodePoints(1, 0);
+        if (accepted) lastSelectionStart = lastSelectionEnd = -1;
+        return accepted;
     }
 
     private void refreshKeyboard() {
@@ -1459,6 +1680,9 @@ public final class BopomofoImeService extends InputMethodService
     }
 
     private void resetCursorAnchor() {
+        cursorAnchorRequestGeneration++;
+        cursorAnchorMonitoring = false;
+        cursorAnchorMonitorConnection = null;
         mainHandler.removeCallbacks(cursorAnchorRetry);
         cursorAnchorRetryCount = 0;
         cursorAnchorRequestPending = false;
@@ -1479,27 +1703,55 @@ public final class BopomofoImeService extends InputMethodService
 
     private void requestCursorAnchorUpdates() {
         mainHandler.removeCallbacks(cursorAnchorRetry);
+        if (destroying) return;
         InputConnection connection = getCurrentInputConnection();
         if (connection == null) return;
-        if (!isFloatingCandidateMode()) {
-            connection.requestCursorUpdates(0);
-            resetCursorAnchor();
-            return;
+        boolean monitor = isFloatingCandidateMode();
+        if (!monitor) resetCursorAnchor();
+        else {
+            cursorAnchorRequestPending = true;
+            cursorAnchorMonitoring = true;
+            cursorAnchorMonitorConnection = connection;
+            cursorAnchorMonitorHostGeneration = cursorAnchorHostGeneration;
         }
-        cursorAnchorRequestPending = true;
-        int mode = InputConnection.CURSOR_UPDATE_IMMEDIATE
-                | InputConnection.CURSOR_UPDATE_MONITOR;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            connection.requestCursorUpdates(mode,
-                    InputConnection.CURSOR_UPDATE_FILTER_INSERTION_MARKER);
-        } else {
-            connection.requestCursorUpdates(mode);
-        }
-        // Only judge failure while candidates are needed. An accepted request can
-        // still produce no callback; give it one retry, then disable floating mode.
-        if (floatingCandidatesVisible && cursorAnchorRequestPending) {
-            mainHandler.postDelayed(cursorAnchorRetry, CURSOR_ANCHOR_RETRY_DELAY_MS);
-        }
+        long hostGeneration = cursorAnchorHostGeneration;
+        long requestGeneration = ++cursorAnchorRequestGeneration;
+        int mode = monitor ? InputConnection.CURSOR_UPDATE_IMMEDIATE
+                | InputConnection.CURSOR_UPDATE_MONITOR : 0;
+        // RemoteInputConnection waits for the editor's reply. Our own App's
+        // editor can share this main looper with the IME, so neither starting
+        // nor cancelling its monitor may synchronously wait here.
+        requestCursorUpdatesAsync(cursorAnchorRequests, mainHandler::post, connection, mode,
+                () -> !destroying && cursorAnchorHostGeneration == hostGeneration
+                        && cursorAnchorRequestGeneration == requestGeneration,
+                () -> {
+                    if (getCurrentInputConnection() != connection) return;
+                    // Begin the callback grace period after the current request
+                    // actually ran, not while it was waiting behind an old host.
+                    if (monitor && floatingCandidatesVisible && cursorAnchorRequestPending) {
+                        mainHandler.postDelayed(cursorAnchorRetry, CURSOR_ANCHOR_RETRY_DELAY_MS);
+                    }
+                });
+    }
+
+    static void requestCursorUpdatesAsync(Executor worker, Executor completionDispatcher,
+            InputConnection connection, int mode, BooleanSupplier current, Runnable completed) {
+        worker.execute(() -> {
+            if (!current.getAsBoolean()) return;
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && mode != 0) {
+                    connection.requestCursorUpdates(mode,
+                            InputConnection.CURSOR_UPDATE_FILTER_INSERTION_MARKER);
+                } else {
+                    connection.requestCursorUpdates(mode);
+                }
+            } catch (RuntimeException error) {
+                android.util.Log.w("KeyKey", "Cursor anchor request failed", error);
+            }
+            completionDispatcher.execute(() -> {
+                if (current.getAsBoolean()) completed.run();
+            });
+        });
     }
 
     private RectF insertionMarkerBounds(CursorAnchorInfo information) {

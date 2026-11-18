@@ -151,6 +151,17 @@ fn syllable_matches(layout: BopomofoLayout, raw: &str, start: usize) -> Vec<Syll
     matches
 }
 
+/// Keep the original spelling's tone constraints after desktop materialization.
+pub(crate) fn syllable_queries(layout: BopomofoLayout, raw: &str) -> Vec<String> {
+    let mut seen = HashSet::new();
+    syllable_matches(layout, raw, 0)
+        .into_iter()
+        .filter(|edge| edge.end == raw.len())
+        .flat_map(|edge| edge.queries)
+        .filter(|query| seen.insert(query.clone()))
+        .collect()
+}
+
 #[derive(Clone)]
 struct Ranked {
     suggestion: PhoneticSuggestion,
@@ -285,21 +296,16 @@ pub(crate) fn character_choices(
     }
     let mut lookup = WordLookup::new(db, user, user_phrases, filter, usize::MAX)?;
     let mut rows = Vec::new();
-    for edge in syllable_matches(layout, raw, 0) {
-        if edge.end != raw.len() {
-            continue;
-        }
-        for query in edge.queries {
-            for (text, score) in lookup.words(&query)? {
-                if text.chars().count() == 1 {
-                    rows.push((
-                        PhoneticChoice {
-                            query: query.clone(),
-                            text: text.clone(),
-                        },
-                        *score,
-                    ));
-                }
+    for query in syllable_queries(layout, raw) {
+        for (text, score) in lookup.words(&query)? {
+            if text.chars().count() == 1 {
+                rows.push((
+                    PhoneticChoice {
+                        query: query.clone(),
+                        text: text.clone(),
+                    },
+                    *score,
+                ));
             }
         }
     }

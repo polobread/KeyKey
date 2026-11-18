@@ -2,7 +2,7 @@
 
 此檔只記錄目前仍適用的規則、模型決策與驗證入口。逐日進度、舊版測試數字及已完成的除錯紀錄在 [歷史交接紀錄](docs/AGENTS_HISTORY.md)，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 與相關平台文件。
 
-工作分支以 `git status --short --branch` 的實際結果為準。正式支援 Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台。Android 原始碼版號為 `1.5.2`，其他五個平台為 `1.5.1`。六平台 1.5.1 的發布準備集中於 `docs/CROSS_PLATFORM_V1_5_1_RELEASE.md`；GitHub Release／CDN 資產、商店上架及更新公告仍須依各平台流程核對，不能由文件版號推定已發布。FreeBSD 沿用 Linux-IME 的版本來源，透過 ports／pkg 安裝，套件庫版本可能較晚上架；舊版 1.3.7 曾在 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 驗證，不能當成 1.5.1 的原生驗收。共用好打注音模型為 **1.5.0**。README 與平台指南按各平台版號整理下載入口與支援範圍；舊版截圖、歷史更新紀錄與驗收來源保留實際版號。各平台仍須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
+工作分支以 `git status --short --branch` 的實際結果為準。正式支援 Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台。六平台原始碼版號為 `1.5.2`。六平台 1.5.1 的發布準備集中於 `docs/CROSS_PLATFORM_V1_5_1_RELEASE.md`；GitHub Release／CDN 資產、商店上架及更新公告仍須依各平台流程核對，不能由文件版號推定已發布。FreeBSD 沿用 Linux-IME 的版本來源，透過 ports／pkg 安裝，套件庫版本可能較晚上架；舊版 1.3.7 曾在 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 驗證，不能當成 1.5.1 的原生驗收。共用好打注音模型為 **1.5.0**。README 與平台指南按各平台版號整理下載入口與支援範圍；舊版截圖、歷史更新紀錄與驗收來源保留實際版號。各平台仍須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
 
 ## 好打注音模型決策
 

@@ -221,6 +221,8 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     private var candidateButtonHeightConstraints: [NSLayoutConstraint] = []
     private var compactableButtonHeightConstraints: [NSLayoutConstraint] = []
     private var outputHeightConstraint: NSLayoutConstraint?
+    private var compactPortraitHeightConstraint: NSLayoutConstraint?
+    private var compactOutputMinimumHeightConstraint: NSLayoutConstraint?
     private var portraitCandidateWidthConstraint: NSLayoutConstraint?
     private var landscapeInputWidthConstraint: NSLayoutConstraint?
     private var landscapeCandidateWidthConstraint: NSLayoutConstraint?
@@ -490,6 +492,16 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             greaterThanOrEqualTo: scrollView.frameLayoutGuide.heightAnchor,
             constant: traitCollection.userInterfaceIdiom == .pad ? -36 : -16
         )
+        // Compact phones keep the candidate list and editing controls visible.
+        // Let the output shrink first; if its readable minimum cannot fit, the
+        // content may still scroll rather than compressing fixed-size controls.
+        compactPortraitHeightConstraint = mainStack.heightAnchor.constraint(
+            lessThanOrEqualTo: scrollView.frameLayoutGuide.heightAnchor, constant: -16
+        )
+        compactPortraitHeightConstraint?.priority = UILayoutPriority(749)
+        compactOutputMinimumHeightConstraint = outputView.heightAnchor.constraint(
+            greaterThanOrEqualToConstant: 0
+        )
         updateAdaptiveLayout(isLandscape: view.bounds.width > view.bounds.height)
     }
 
@@ -523,6 +535,12 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             candidateButtonHeightConstraints.forEach { $0.constant = candidateRowHeight }
         }
 
+        let outputInsets = outputView.textContainerInset
+        compactOutputMinimumHeightConstraint?.constant = ceil(
+            UIFont.preferredFont(forTextStyle: .body).lineHeight * 2
+                + outputInsets.top + outputInsets.bottom
+        )
+
         guard usesLandscapeLayout != isLandscape
                 || usesCompactPortraitLayout != isCompactPortrait
         else { return }
@@ -540,6 +558,8 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         landscapeScrollBottomConstraint?.isActive = false
         landscapeMinimumHeightConstraint?.isActive = false
         outputHeightConstraint?.isActive = false
+        compactPortraitHeightConstraint?.isActive = false
+        compactOutputMinimumHeightConstraint?.isActive = false
 
         for item in [
             inputColumn, candidateList, controlsColumn, candidateWorkspace, actionsStack
@@ -618,7 +638,10 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             outputHeightConstraint?.constant = isCompactPortrait
                 ? 160
                 : (traitCollection.userInterfaceIdiom == .pad ? 340 : 220)
+            outputHeightConstraint?.priority = isCompactPortrait ? .defaultLow : .required
             outputHeightConstraint?.isActive = true
+            compactPortraitHeightConstraint?.isActive = isCompactPortrait
+            compactOutputMinimumHeightConstraint?.isActive = isCompactPortrait
             NSLayoutConstraint.activate(portraitActionConstraints)
             compactableButtonHeightConstraints.forEach { $0.constant = 38 }
             optionalNavigationControls.forEach { $0.isHidden = false }

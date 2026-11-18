@@ -81,11 +81,32 @@ jobs:
             echo "VERSION_CODE=$version_code"
           } >> "$GITHUB_ENV"
 
-      - name: Set up JDK 17
+      - name: Set up patched Corretto JDK 25
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
-          distribution: temurin
-          java-version: "17"
+          distribution: corretto
+          java-version: '25'
+          check-latest: true
+
+      - name: Verify patched Android Java runtime
+        shell: bash
+        run: |
+          python3 - <<'PYTHON'
+          import re
+          import subprocess
+
+          settings = subprocess.check_output(
+              ["java", "-XshowSettings:properties", "-version"],
+              stderr=subprocess.STDOUT, text=True)
+          values = dict(re.findall(
+              r"(?m)^\s*(java\.(?:version|runtime\.version|vendor)) = (.+)$", settings))
+          version = values.get("java.version", "")
+          if (not re.fullmatch(r"25(?:\.\d+)+", version)
+                  or tuple(map(int, version.split("."))) < (25, 0, 5, 1)
+                  or "Amazon" not in values.get("java.vendor", "")):
+              raise SystemExit("Android builds require patched Amazon Corretto 25.0.5.1 or later")
+          print(values["java.vendor"], values["java.runtime.version"])
+          PYTHON
 
       - name: Read the pinned Rust toolchain
         id: rust
@@ -234,11 +255,32 @@ jobs:
           echo "VERSION=$version" >> "$GITHUB_ENV"
           echo "VERSION_CODE=$version_code" >> "$GITHUB_ENV"
 
-      - name: Set up JDK 17
+      - name: Set up patched Corretto JDK 25
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
-          distribution: temurin
-          java-version: '17'
+          distribution: corretto
+          java-version: '25'
+          check-latest: true
+
+      - name: Verify patched Android Java runtime
+        shell: bash
+        run: |
+          python3 - <<'PYTHON'
+          import re
+          import subprocess
+
+          settings = subprocess.check_output(
+              ["java", "-XshowSettings:properties", "-version"],
+              stderr=subprocess.STDOUT, text=True)
+          values = dict(re.findall(
+              r"(?m)^\s*(java\.(?:version|runtime\.version|vendor)) = (.+)$", settings))
+          version = values.get("java.version", "")
+          if (not re.fullmatch(r"25(?:\.\d+)+", version)
+                  or tuple(map(int, version.split("."))) < (25, 0, 5, 1)
+                  or "Amazon" not in values.get("java.vendor", "")):
+              raise SystemExit("Android builds require patched Amazon Corretto 25.0.5.1 or later")
+          print(values["java.vendor"], values["java.runtime.version"])
+          PYTHON
 
       - name: Read the pinned Rust toolchain
         id: rust

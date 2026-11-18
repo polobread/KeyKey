@@ -12,6 +12,7 @@
 #include "PVLoaderSystem.h"
 #include "OVOFHanConvert.h"
 #include "OVOFFullWidthCharacter.h"
+#include <chrono>
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -462,6 +463,134 @@ public:
 protected:
     bool shouldEnter(OVLoaderService*, bool = false, bool = false) override { return true; }
 };
+// Run saved preference changes through the real module manager, plist mtime
+// check, sandwich and native candidate dispatch, without reactivating the context.
+class SavedPreferencesPipeline {
+    const fs::path directory;
+    size_t revision = 0;
+    TemporaryLoaderPolicy policy;
+    PVLoaderService service;
+    std::unique_ptr<OVModulePackage> package;
+    PVStaticModulePackageLoadingSystem packages;
+    std::unique_ptr<PVLoader> loader;
+    std::unique_ptr<PVLoaderContext> context;
+public:
+    std::string committed;
+    SavedPreferencesPipeline(const fs::path& model, const fs::path& root, bool omit)
+        : directory(root), policy(root), service("zh_TW", nullptr, nullptr, nullptr),
+          package(GuanyinmaCreateModulePackage(model.u8string(), (root / "users.db").u8string())),
+          packages(OVPathInfo::DefaultPathInfo()) {
+        fs::create_directory(directory);
+        save("Hsu", omit);
+        require([@{@"PrimaryInputMethod": @"SmartMandarin"} writeToFile:
+                 @( (directory / "loader.plist").u8string().c_str() ) atomically:YES],
+                "write isolated real loader preferences");
+        OVPathInfo paths; paths.writablePath = directory.u8string();
+        require(package->initialize(&paths, &service), "real preference package initializes");
+        require(packages.addInitializedPackage("Guanyinma", package.get()), "register real preference package");
+        loader.reset(new PVLoader(&policy, &service, {&packages}));
+        context.reset(new PVLoaderContext(loader.get()));
+        context->activate();
+        require(!service.shouldBeep(), "real preference context activates");
+    }
+    ~SavedPreferencesPipeline() {
+        context.reset();
+        loader.reset();
+        package->finalize();
+    }
+    void save(const char* layout, bool omit, int limit = 10) {
+        const auto path = directory / "module.plist";
+        NSDictionary* config = @{@"KeyboardLayout": @(layout), @"OmitTone": @(omit),
+            @"ComposingTextBufferSize": @(limit), @"UseDynamicFrequency": @NO};
+        require([config writeToFile:@(path.u8string().c_str()) atomically:YES], "save real module plist");
+        // The existing native timestamp comparison uses second precision. Give
+        // each fixture save its own mtime instead of sleeping or forcing reload.
+        fs::last_write_time(path, fs::file_time_type::clock::now() + std::chrono::seconds(++revision));
+    }
+    bool press(const OVKey& key, bool consume = true) {
+        service.resetState();
+        loader->syncSandwichConfig(); // Same order as the macOS controller.
+        GuanyinmaPrepareCandidatePanelForKey(&key, context->candidateService());
+        OVKey copy(key);
+        bool handled = context->handleKeyEvent(&copy);
+        if (consume) finishCommit();
+        return handled;
+    }
+    bool key(unsigned code, bool consume = true) { return press(service.makeOVKey(code), consume); }
+    void type(const std::string& keys) { for (unsigned char ch : keys) key(ch); }
+    std::string visible() {
+        return PVCombinedUTF16TextBuffer(*context->composingText(), *context->readingText()).composedText();
+    }
+    PVTextBuffer* composing() { return context->composingText(); }
+    PVOneDimensionalCandidatePanel* panel() { return context->candidateService()->accessVerticalCandidatePanel(); }
+    bool beep() { return service.shouldBeep(); }
+    void finishCommit() {
+        if (composing()->isCommitted()) {
+            committed += composing()->composedCommittedText();
+            composing()->finishCommit();
+        }
+    }
+    void choose(const std::string& text) {
+        auto* p = panel();
+        size_t index = 0;
+        while (index < p->candidateList()->size() && p->candidateList()->candidateAtIndex(index) != text) ++index;
+        require(index < p->candidateList()->size(), "saved preference candidate remains available: " + text);
+        while (p->currentPage() < index / p->candidatesPerPage()) key(OVKeyCode::PageDown);
+        press(p->candidateKeyAtIndex(index % p->candidatesPerPage()));
+    }
+};
+static void testSavedPreferencesInActiveLoader(const fs::path& model, const fs::path& root) {
+    {
+        SavedPreferencesPipeline h(model, root / "saved-idle", true);
+        h.type("nehw"); h.key(OVKeyCode::Return);
+        expectText(h.committed, "你好", "real loader initially uses Hsu omission");
+        h.save("ETen", true);
+        h.type("nehz"); h.key(OVKeyCode::Return);
+        expectText(h.committed, "你好你好", "same idle context uses saved ETen without source switch");
+    }
+    {
+        SavedPreferencesPipeline h(model, root / "saved-reading", false);
+        h.type("ne");
+        const auto unfinished = h.visible();
+        require(!unfinished.empty(), "old layout owns unfinished reading");
+        h.save("ETen", true);
+        h.type("fhwf"); h.key(OVKeyCode::Return);
+        expectText(h.committed, "你好", "saved layout and omission preserve old Hsu reading and composition");
+        h.type("nehz"); h.key(OVKeyCode::Return);
+        expectText(h.committed, "你好你好", "next empty boundary installs both saved settings");
+    }
+    {
+        SavedPreferencesPipeline h(model, root / "saved-candidates", true);
+        h.type("nehw"); h.key(OVKeyCode::Home); h.key(OVKeyCode::Down);
+        require(h.panel()->isVisible() && h.panel()->isInControl(), "real loader owns native candidates");
+        const auto before = h.visible();
+        h.save("ETen", true);
+        h.choose("你");
+        expectText(h.visible(), before, "changed layout preserves native candidate selection and old composition");
+        h.key(OVKeyCode::Return);
+        expectText(h.committed, "你好", "native candidate transaction commits old input exactly once");
+        h.type("nehz"); h.key(OVKeyCode::Return);
+        expectText(h.committed, "你好你好", "saved layout applies after native candidate transaction");
+    }
+    {
+        SavedPreferencesPipeline h(model, root / "saved-pending-commit", true);
+        h.type("nehw"); h.key(OVKeyCode::Return, false);
+        require(h.composing()->isCommitted(), "real loader leaves native commit for host acceptance");
+        h.save("ETen", true, 9); // Invalid only after the outstanding host transaction is accepted.
+        h.key(OVKeyCode::Esc, false);
+        require(!h.beep(), "saved invalid settings wait for pending host commit");
+        expectText(h.composing()->composedCommittedText(), "你好", "pending host commit is retained without replay");
+        h.finishCommit(); h.key(OVKeyCode::Esc);
+        require(h.beep(), "quiet host boundary reports invalid saved configuration");
+        expectText(h.committed, "你好", "one exact host commit survives rejected settings");
+        h.key(OVKeyCode::Esc);
+        require(!h.beep(), "rejected saved generation is reported once");
+        h.save("ETen", true);
+        h.type("nehz"); h.key(OVKeyCode::Return);
+        expectText(h.committed, "你好你好", "corrected saved settings recover in same context without replay");
+    }
+}
+
 static void testOwnedNativePreferences(const fs::path& model, const fs::path& root) {
     Harness h;
     std::unique_ptr<OVModulePackage> package(GuanyinmaCreateModulePackage(
@@ -923,6 +1052,7 @@ int main(int argc, char** argv) {
             testUserDataAdministration(model, root);
             testNativePipeline(model, root);
             testOwnedNativePreferences(model, root);
+            testSavedPreferencesInActiveLoader(model, root);
             testNativeFilterPreferenceRefresh(model, root);
             testNormalizedNativeEncodings(model, root);
             testNativeShiftAndDirectText(model, root);

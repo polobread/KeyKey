@@ -54,11 +54,14 @@ public final class CandidateGlyphSupportInstrumentedTest {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         Context context = instrumentation.getTargetContext();
         CandidateGlyphSupport glyphs = CandidateGlyphSupport.shared();
-        glyphs.canDisplay("你");
+        // An active IME/prewarmed session can immediately repopulate ordinary
+        // glyphs. This sentinel is never queried by normal keyboard startup.
+        String oldEntry = new String(Character.toChars(0x10FFFF));
+        glyphs.canDisplay(oldEntry);
         var field = CandidateGlyphSupport.class.getDeclaredField("cache");
         field.setAccessible(true);
         Map<?, ?> cache = (Map<?, ?>) field.get(glyphs);
-        assertFalse(cache.isEmpty());
+        assertTrue(cache.containsKey(oldEntry));
         Activity activity = instrumentation.startActivitySync(new Intent(context,
                 SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         try {
@@ -79,7 +82,8 @@ public final class CandidateGlyphSupportInstrumentedTest {
             }
             assertTrue("reset confirmation button", clicked);
             instrumentation.waitForIdleSync();
-            assertTrue(cache.isEmpty());
+            assertFalse("The old cache generation must be cleared", cache.containsKey(oldEntry));
+            assertTrue(glyphs.canDisplay("你"));
         } finally { instrumentation.runOnMainSync(activity::finish); }
     }
 

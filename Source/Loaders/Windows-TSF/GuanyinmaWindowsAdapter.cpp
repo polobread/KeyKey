@@ -155,6 +155,7 @@ Json Configuration(const std::string& method, const Preferences& prefs, std::str
     if (smart) {
         Json options;
         Set(options, L"space_opens_candidates", prefs.boolean("ShowCandidateListWithSpace", false));
+        Set(options, L"omit_tone", prefs.boolean("OmitTone", false));
         Set(options, L"candidate_cursor_at_end", prefs.boolean("CandidateCursorAtEndOfTargetBlock", false));
         Set(options, L"clear_composing_with_escape", prefs.boolean("ClearComposingTextWithEscUserChoice", false) &&
             prefs.boolean("ClearComposingTextWithEsc", false));

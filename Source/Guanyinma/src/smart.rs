@@ -64,6 +64,8 @@ pub struct SmartOptions {
     /// Use model Bigram probabilities and context backoff during composition.
     pub use_bigrams: bool,
     pub space_opens_candidates: bool,
+    /// Decode consecutive phonetic keys without requiring tones on desktop.
+    pub omit_tone: bool,
     pub candidate_cursor_at_end: bool,
     pub clear_composing_with_escape: bool,
     /// Force explicit Shift ASCII letters to uppercase after FE translation.
@@ -82,6 +84,7 @@ impl Default for SmartOptions {
         Self {
             use_bigrams: true,
             space_opens_candidates: true,
+            omit_tone: false,
             candidate_cursor_at_end: false,
             clear_composing_with_escape: false,
             shift_always_uppercase: false,
@@ -145,6 +148,8 @@ pub struct MarkedPhrase {
 #[derive(Clone, Debug)]
 pub struct SmartState {
     graph: SmartGraph,
+    // Parallel to graph readings. Empty entries are explicitly toned or literal.
+    phonetic_queries: Vec<Vec<String>>,
     reading: BopomofoReading,
     cursor: usize,
     candidates: Vec<SmartCandidate>,
@@ -160,6 +165,7 @@ impl SmartState {
     pub fn with_candidate_filter(layout: BopomofoLayout, filter: CandidateFilter) -> Self {
         Self {
             graph: SmartGraph::with_candidate_filter(filter),
+            phonetic_queries: Vec::new(),
             reading: BopomofoReading::new(layout),
             cursor: 0,
             candidates: Vec::new(),
@@ -187,6 +193,7 @@ impl SmartState {
         self.mark_anchor = None;
         self.marked_phrase_request = None;
         self.graph.clear();
+        self.phonetic_queries.clear();
         self.reading.clear();
         self.cursor = 0;
         self.candidates.clear();
@@ -427,27 +434,52 @@ impl SmartState {
     }
 
     /// Materialize a provisional suggestion using its original dictionary
-    /// readings, pinning each chosen word before enforcing the touch limit.
-    pub(crate) fn choose_touch_words(
+    /// readings, pinning each chosen word before enforcing the composition limit.
+    pub(crate) fn choose_phonetic_words(
         &mut self,
         database: &ModelDatabase,
         chunks: &[crate::phonetic_suggestions::PhoneticChunk],
         options: &SmartOptions,
         learn: bool,
+        raw: Option<&str>,
         effects: &mut Effects,
     ) -> Result<(), DatabaseError> {
         self.sync_model_options(options);
         self.cancel_mark_for_other_key(effects);
         self.candidates.clear();
+        // Desktop suggestions retain raw readings and insert at the caret;
+        // touch suggestions append their materialized words at the end.
+        let append = raw.is_none();
+        let mut raw_start = 0;
         for chunk in chunks {
-            let start = self.graph.len();
-            for key in chunk.query.as_bytes().chunks_exact(2) {
+            let start = if append {
+                self.graph.len()
+            } else {
+                self.cursor
+            };
+            let mut end = start;
+            for (key, &raw_end) in chunk
+                .query
+                .as_bytes()
+                .chunks_exact(2)
+                .zip(&chunk.syllable_ends)
+            {
                 let key = std::str::from_utf8(key).expect("phonetic dictionary keys are ASCII");
-                if !self.graph.insert(database, self.graph.len(), key)? {
+                let queries = raw
+                    .map(|raw| {
+                        crate::phonetic_suggestions::syllable_queries(
+                            self.reading.layout(),
+                            &raw[raw_start..raw_end],
+                        )
+                    })
+                    .unwrap_or_default();
+                raw_start = raw_end;
+                if !self.insert_reading(database, end, key, queries)? {
                     return Err(DatabaseError::InvalidData(
                         "suggested word contains an unavailable reading".into(),
                     ));
                 }
+                end += 1;
             }
             let candidate = SmartCandidate {
                 start,
@@ -460,7 +492,7 @@ impl SmartState {
                     "suggested word no longer belongs to the graph".into(),
                 ));
             }
-            self.cursor = self.graph.len();
+            self.cursor = end;
             self.enforce_limit(options, effects);
         }
         Ok(())
@@ -477,11 +509,12 @@ impl SmartState {
     ) -> Result<usize, DatabaseError> {
         let consumed = if self.graph.is_empty() {
             let Some(chunk) = inferred else { return Ok(0) };
-            self.choose_touch_words(
+            self.choose_phonetic_words(
                 database,
                 std::slice::from_ref(chunk),
                 options,
                 false,
+                None,
                 effects,
             )?;
             *chunk
@@ -503,6 +536,79 @@ impl SmartState {
         effects: &mut Effects,
     ) -> Result<(), EngineError> {
         self.open_candidates_with_scope(index, options, effects, false)
+    }
+
+    pub(crate) fn open_phonetic_candidates(
+        &mut self,
+        database: &ModelDatabase,
+        index: Option<usize>,
+        options: &SmartOptions,
+        effects: &mut Effects,
+    ) -> Result<(), EngineError> {
+        let previous_beep = effects.beep;
+        self.open_candidates(index, options, effects)?;
+        if !self.reading.is_empty() {
+            return Ok(());
+        }
+        let target = if options.candidate_cursor_at_end {
+            self.cursor.saturating_sub(1)
+        } else {
+            self.cursor.min(self.graph.len().saturating_sub(1))
+        };
+        let Some(queries) = self.phonetic_queries.get(target) else {
+            return Ok(());
+        };
+        if !options.omit_tone || queries.len() < 2 {
+            return Ok(());
+        }
+        let alternatives = self.graph.phonetic_candidates(database, target, queries)?;
+        if alternatives.is_empty() {
+            return Ok(());
+        }
+        // Keep native phrase candidates, then rank single-character choices
+        // together across the spelling's permitted tones before pagination.
+        let mut seen = std::collections::HashSet::new();
+        self.candidates = self
+            .candidates
+            .iter()
+            .filter(|candidate| candidate.span > 1)
+            .cloned()
+            .chain(alternatives)
+            .filter(|candidate| seen.insert(candidate.text.clone()))
+            .collect();
+        if self.candidates.len() > 1 {
+            effects.beep = previous_beep;
+        } else {
+            self.candidates.clear();
+            effects.beep = true;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn select_phonetic_candidate(
+        &mut self,
+        database: &ModelDatabase,
+        index: usize,
+        options: &SmartOptions,
+    ) -> Result<(), EngineError> {
+        if let Some(candidate) = self.candidates.get(index) {
+            if candidate.span == 1
+                && self.graph.readings().get(candidate.start) != Some(&candidate.query)
+                && options.omit_tone
+                && self
+                    .phonetic_queries
+                    .get(candidate.start)
+                    .is_some_and(|queries| queries.contains(&candidate.query))
+                && !self
+                    .graph
+                    .replace_reading(database, candidate.start, &candidate.query)?
+            {
+                return Err(EngineError::InvalidInput(
+                    "phonetic candidate reading is no longer available".into(),
+                ));
+            }
+        }
+        self.select(index, options)
     }
 
     pub(crate) fn open_single_character_candidates(
@@ -607,6 +713,7 @@ impl SmartState {
 
     fn shift_segment(&mut self, effects: &mut Effects) -> bool {
         if let Some(segment) = self.graph.shift() {
+            self.phonetic_queries.drain(..segment.span);
             effects.commit.push_str(&segment.text);
             self.cursor = self.cursor.saturating_sub(segment.span);
             self.mark_anchor = self
@@ -632,7 +739,7 @@ impl SmartState {
         } else {
             self.cursor
         };
-        if self.graph.insert(database, index, query)? {
+        if self.insert_reading(database, index, query, Vec::new())? {
             self.cursor = index + 1;
             self.enforce_limit(options, effects);
             Ok(true)
@@ -658,7 +765,7 @@ impl SmartState {
         } else {
             self.cursor
         };
-        if self.graph.insert(database, index, &query)? {
+        if self.insert_reading(database, index, &query, Vec::new())? {
             self.cursor = index + 1;
             self.reading.clear();
             self.candidates.clear();
@@ -667,6 +774,20 @@ impl SmartState {
             effects.beep = true;
         }
         Ok(())
+    }
+
+    fn insert_reading(
+        &mut self,
+        database: &ModelDatabase,
+        index: usize,
+        query: &str,
+        alternatives: Vec<String>,
+    ) -> Result<bool, DatabaseError> {
+        if !self.graph.insert(database, index, query)? {
+            return Ok(false);
+        }
+        self.phonetic_queries.insert(index, alternatives);
+        Ok(true)
     }
 
     /// Explicit literal input joins the composing graph when text already
@@ -721,6 +842,21 @@ impl SmartState {
         Ok(())
     }
 
+    pub(crate) fn has_control_punctuation(
+        &mut self,
+        database: &ModelDatabase,
+        character: char,
+        modifiers: Modifiers,
+    ) -> Result<bool, DatabaseError> {
+        if !modifiers.control || modifiers.command || modifiers.keypad || modifiers.caps_lock {
+            return Ok(false);
+        }
+        self.graph.is_in_dictionary(
+            database,
+            &control_punctuation_query(character, modifiers.alt),
+        )
+    }
+
     pub fn character(
         &mut self,
         database: &ModelDatabase,
@@ -756,13 +892,7 @@ impl SmartState {
                 return Ok(());
             }
             self.cancel_mark_for_other_key(effects);
-            let query = if modifiers.alt {
-                format!("_ctrl_opt_{character}")
-            } else if character == '0' || character == '1' {
-                "_punctuation_list".into()
-            } else {
-                format!("_ctrl_{character}")
-            };
+            let query = control_punctuation_query(character, modifiers.alt);
             if !self.graph.is_in_dictionary(database, &query)? {
                 if self.is_empty() {
                     effects.handled = false;
@@ -776,7 +906,7 @@ impl SmartState {
             {
                 // The native Ctrl-punctuation long jump uses the ordinary
                 // keyboard target and leaves the actual reading caret intact.
-                self.open_candidates(None, options, effects)?;
+                self.open_phonetic_candidates(database, None, options, effects)?;
             }
             return Ok(());
         }
@@ -803,7 +933,7 @@ impl SmartState {
             && self.reading.is_empty()
             && !self.graph.is_empty()
         {
-            return self.open_candidates(None, options, effects);
+            return self.open_phonetic_candidates(database, None, options, effects);
         }
         if !self.reading.is_empty() {
             if character.is_ascii() {
@@ -875,7 +1005,7 @@ impl SmartState {
                 } else if matches!(key, Key::Down)
                     || (options.space_opens_candidates && !modifiers.caps_lock)
                 {
-                    self.open_candidates(None, options, effects)?;
+                    self.open_phonetic_candidates(database, None, options, effects)?;
                 } else {
                     self.literal(database, " ", options, effects)?;
                 }
@@ -889,6 +1019,7 @@ impl SmartState {
                     effects.beep = true;
                 } else {
                     self.graph.remove(database, self.cursor - 1)?;
+                    self.phonetic_queries.remove(self.cursor - 1);
                     self.cursor -= 1;
                 }
             }
@@ -901,6 +1032,7 @@ impl SmartState {
                     effects.beep = true;
                 } else {
                     self.graph.remove(database, self.cursor)?;
+                    self.phonetic_queries.remove(self.cursor);
                 }
             }
             Key::Escape => {
@@ -940,6 +1072,16 @@ impl SmartState {
         }
         self.cursor = self.cursor.min(self.graph.len());
         Ok(())
+    }
+}
+
+fn control_punctuation_query(character: char, alt: bool) -> String {
+    if alt {
+        format!("_ctrl_opt_{character}")
+    } else if matches!(character, '0' | '1') {
+        "_punctuation_list".into()
+    } else {
+        format!("_ctrl_{character}")
     }
 }
 

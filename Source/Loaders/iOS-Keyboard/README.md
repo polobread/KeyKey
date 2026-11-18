@@ -52,8 +52,13 @@ App「輸入法設定」分列「倉頡設定（虛擬鍵盤）」與「倉頡�
 
 候選列與組字格的字體／清空渲染另用真實 UIKit Simulator 驗證，直接讀取目前產品的按鈕類別，
 檢查四種字體、空白格與字體切換後的可見標籤及渲染像素。先啟動專用模擬器，再執行
-`python3 Tests/run-strip-rendering-tests.py --device SIMULATOR_UDID`；產物存於暫存目錄。
-此測試不連輸入核心，不能代替鍵盤 extension 的輸入、刪除與旋轉接合測試。
+`python3 Tests/run-strip-rendering-tests.py --device SIMULATOR_UDID --output /path/on/external-ssd`。
+同一入口另以完整產品 `KeyboardView` 執行三版面、四字級、手機／平板／寬螢幕的直→橫→直尺寸轉換，
+並在外層尺寸不變時調整底部留白，讓 UIKit 自行重新排版子列，核對最終鍵帽範圍與實際 UIFont。
+這可捕捉子列尺寸已更新、共用字級仍停在前一版面的問題；測量時不額外觸發外層排版。
+`--negative-control /path/to/previous/KeyboardView.swift` 可確認舊碼確實失敗。
+若 Simulator 暫時無法使用，`--compile-only --output /path/on/external-ssd` 只產生編譯證據，不能算執行通過。
+此測試不建立輸入 session，不能代替鍵盤 extension 的輸入、刪除與系統旋轉接合測試。
 
 App「輸入法設定」的「好打注音使用空白鍵選字」預設關閉，好打注音虛擬鍵盤與 App 實體鍵盤編輯器讀取同一個 App Group 值。關閉時，讀音完成後按空白會在組字區插入空白，仍可繼續輸入及回頭選字；未完成讀音時仍以空白結束一聲。開啟後可用空白完成讀音、開候選及翻頁。關閉時仍可點選組字或按實體鍵盤 `↓` 開候選。此選項在 App 調整，鍵盤「設」頁顯示目前值。兩處都可點選項右側的 ⓘ 查看說明。
 
@@ -373,8 +378,9 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
   450 毫秒後開始連續刪除，逐步加快但最多約每 70 毫秒一次。放開時立即停止，
   虛擬鍵盤的按鍵預覽也會收起。App 實體 Forward Delete 使用相同的連續刪除節奏；按鍵取消、失去焦點或 App 進入背景時也會停止。
 - 橫式固定由左到右排列輸入、候選、按鍵、清除／複製／分享四欄；iPad 保留方向鍵與
-  空白鍵，iPhone 高度不足時收起這組輔助鍵。4.7 吋 iPhone SE 直式會縮短輸入區，保留
-  完整候選與操作鍵。候選內容與裝置旋轉不應改變各區塊的固定尺寸。
+  空白鍵，iPhone 高度不足時收起這組輔助鍵。4.7 吋 iPhone SE 直式會依可用高度縮短輸入區，
+  優先保留完整候選、頁碼與操作鍵，文字區至少保留兩行。系統字級放大到無法同時容納時，
+  可上下捲動操作區。候選內容不應改變區塊尺寸，旋轉回原方向後須恢復原本位置。
 
 ![iPhone 實體鍵盤編輯器中請假已成為黑字，後段仍以紫色底線組字](../../../docs/images/keykey-ios-v130-hardware-editor-boundary.png)
 
