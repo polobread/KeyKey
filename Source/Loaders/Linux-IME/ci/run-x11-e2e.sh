@@ -70,4 +70,10 @@ export KEYKEY_E2E_ARTIFACT_DIR="$absolute_artifact_dir"
 export KEYKEY_E2E_RUNTIME_ROOT="$runtime_root"
 
 unset AT_SPI_BUS_ADDRESS DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR
-dbus-run-session -- ci/run-x11-e2e-session.sh
+if [[ "${KEYKEY_E2E_SESSION_MODE:-managed}" == managed && \
+    -z "${CHICHI77_KEYKEY_GUANYINMA_USER_DB:-}" ]]; then
+  python3 ci/run-x11-e2e-parallel.py
+else
+  # Explicit learning fixtures and an existing desktop retain serial semantics.
+  dbus-run-session -- ci/run-x11-e2e-session.sh
+fi

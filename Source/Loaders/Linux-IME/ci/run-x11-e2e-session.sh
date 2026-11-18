@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-test -n "${KEYKEY_E2E_HOST:-}"
-test -n "${KEYKEY_E2E_GTK4_HOST:-}"
-test -n "${KEYKEY_E2E_QT6_HOST:-}"
-test -n "${KEYKEY_E2E_ARTIFACT_DIR:-}"
-test -n "${KEYKEY_E2E_RUNTIME_ROOT:-}"
+# The coordinator uses the canonical selector without starting a GUI session.
+if [[ "${1:-}" != --list-cases ]]; then
+  test -n "${KEYKEY_E2E_HOST:-}"
+  test -n "${KEYKEY_E2E_GTK4_HOST:-}"
+  test -n "${KEYKEY_E2E_QT6_HOST:-}"
+  test -n "${KEYKEY_E2E_ARTIFACT_DIR:-}"
+  test -n "${KEYKEY_E2E_RUNTIME_ROOT:-}"
+fi
 
 session_mode=${KEYKEY_E2E_SESSION_MODE:-managed}
 case "$session_mode" in
@@ -133,7 +136,7 @@ known_cases=(
 requested_cases=${KEYKEY_E2E_CASES:-all}
 config_ui=${KEYKEY_E2E_CONFIG_UI:-ON}
 key_delay_ms=${KEYKEY_E2E_KEY_DELAY_MS:-80}
-gtk3_e2e_host=$KEYKEY_E2E_HOST
+gtk3_e2e_host=${KEYKEY_E2E_HOST:-}
 e2e_host_window_title=chichi77-keykey-gtk3-e2e
 e2e_host_label='GTK 3'
 case "$config_ui" in ON|OFF) ;; *)
@@ -207,6 +210,11 @@ if [[ "$session_mode" == existing-gnome ]]; then
         ;;
     esac
   done
+fi
+
+if [[ "${1:-}" == --list-cases ]]; then
+  printf '%s\n' "${selected_cases[@]}"
+  exit 0
 fi
 
 selected_cases_json=
