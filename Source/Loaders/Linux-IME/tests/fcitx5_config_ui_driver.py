@@ -260,7 +260,7 @@ def drive_isolated_x11(artifact_dir):
     time.sleep(0.5)
     title = xdo("getwindowname", dialog)
     capture_window(title, artifact_dir / "settings-before", dialog)
-    actions = [("McBopomofo", 63, 2160), ("agriculture-food", 63, 3078),
+    actions = [("McBopomofo", 63, 2194), ("agriculture-food", 63, 3112),
                ("PlaySoundOnTypingError", 150, 349),
                ("ToggleInputMethodWithControlBackslash", 150, 281)]
     for _, x, y in actions:
