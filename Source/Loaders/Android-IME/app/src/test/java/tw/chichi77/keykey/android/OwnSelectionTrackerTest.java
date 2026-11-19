@@ -230,6 +230,36 @@ public final class OwnSelectionTrackerTest {
     }
 
     /** Stateful batch host: unchanged final tuples send no deferred ACK. */
+    @Test public void finishedUnknownRegionReleasesOnlyItsRelativeIntentions() {
+        OwnSelectionTracker tracker = new OwnSelectionTracker();
+        tracker.record(7, 7, -1, -1);
+        tracker.recordUnknownComposing(1);
+        tracker.recordUnknownComposing(2);
+        assertTrue(tracker.hasUnknownComposing(1));
+        assertTrue(tracker.hasUnknownComposing(2));
+        assertFalse(tracker.hasUnknownComposing(3));
+        tracker.releaseUnknownComposing();
+        assertFalse(tracker.hasUnknownComposing(1));
+        assertFalse(tracker.hasUnknownComposing(2));
+        assertEquals(1, tracker.pendingCount());
+        assertEquals(NO_MATCH, tracker.consume(3, 3, 2, 3));
+        assertEquals(NO_MATCH, tracker.consume(4, 4, 2, 4));
+        assertEquals(CURRENT, tracker.consume(7, 7, -1, -1));
+        assertEquals(0, tracker.pendingCount());
+    }
+
+    @Test public void unknownChineseHandshakeNeverClaimsAnUnmarkedMovementAsItsOwn() {
+        OwnSelectionTracker tracker = new OwnSelectionTracker();
+        tracker.recordUnknownComposing("你".length());
+        assertEquals(NO_MATCH, tracker.consume(3, 3, -1, -1));
+        assertEquals(1, tracker.pendingCount());
+        assertEquals(CURRENT, tracker.consume(3, 3, 2, 3));
+        tracker.record(3, 3, -1, -1); // Finish only the now-proven marked region.
+        assertEquals(CURRENT, tracker.consume(3, 3, -1, -1));
+        assertEquals(NO_MATCH, tracker.consume(2, 2, -1, -1));
+        assertEquals(NO_MATCH, tracker.consume(3, 3, 2, 3));
+    }
+
     private static final class BatchEditor {
         final OwnSelectionTracker tracker;
         final boolean reentrant;

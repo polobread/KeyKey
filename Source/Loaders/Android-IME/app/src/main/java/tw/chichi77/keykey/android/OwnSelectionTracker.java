@@ -126,6 +126,15 @@ final class OwnSelectionTracker {
         return pending.isEmpty() ? Match.CURRENT : Match.SUPERSEDED;
     }
 
+    boolean hasUnknownComposing(int utf16Length) {
+        return utf16Length > 0 && pending.stream().anyMatch(token -> token.relativeLength == utf16Length);
+    }
+
+    /** A successful finish/cancel has ended this unanchored marked region. */
+    void releaseUnknownComposing() {
+        pending.removeIf(token -> token.relativeLength >= 0);
+    }
+
     void clear() { pending.clear(); epoch++; }
 
     int pendingCount() { return pending.size(); }

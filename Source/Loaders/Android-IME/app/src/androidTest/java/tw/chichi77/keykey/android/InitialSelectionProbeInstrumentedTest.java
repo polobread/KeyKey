@@ -240,6 +240,328 @@ public final class InitialSelectionProbeInstrumentedTest {
         }
     }
 
+
+    @Test public void firstUnavailableSnapshotKeepsCompletedTextEditableAfterItsOwnAck() throws Exception {
+        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
+        org.junit.Assume.assumeTrue("Use an owned disposable touch device",
+                "true".equals(InstrumentationRegistry.getArguments().getString("keykey.isolatedDevice")));
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        var preferences = CandidateWindowSettings.preferences(context);
+        var previous = preferences.getAll();
+        String[] keys = {KeyboardSettingsProfile.key(true, ChineseInputMethodSettings.KEY_METHOD), BopomofoCompositionModeSettings.KEY_MODE,
+                KeyboardSettingsProfile.key(true, BopomofoCompositionModeSettings.KEY_OMIT_TONE), KeyboardSettingsProfile.key(true, BopomofoKeyboardLayoutSettings.KEY_LAYOUT)};
+        try {
+            preferences.edit().putString(keys[0], ChineseInputMethod.SMART.name())
+                    .putString(keys[1], BopomofoCompositionModeSettings.valueForMode(BopomofoCompositionMode.SMART))
+                    .putBoolean(keys[2], false).putString(keys[3], BopomofoKeyboardLayout.STANDARD.value).commit();
+            IntegratedBottomControlsInstrumentedTest.await(() -> {
+                var view = IntegratedBottomControlsInstrumentedTest.findKeyboard();
+                return view == null || !engine((BopomofoImeService) view.getContext()).hasComposition();
+            });
+            instrumentation.runOnMainSync(() -> { try (var data = UserPhraseRepository.open(context)) { data.resetSmartLearning(); } });
+            for (String behavior : new String[]{"unavailable", "partial", "outside", "overflow"}) {
+                ImeTestActivity host = (ImeTestActivity) instrumentation.startActivitySync(new Intent()
+                        .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                        .putExtra("initialSelectionUnknown", true)
+                        .putExtra("holdInitialSelectionUntilWrite", true)
+                        .putExtra("releaseInitialBatchAfterCommitMs", 450)
+                        .putExtra("probeInitialText", "前:")
+                        .putExtra("probeSelectionStart", 2).putExtra("probeSelectionEnd", 2)
+                        .putExtra("restartExtraction", behavior));
+                try {
+                    IntegratedBottomControlsInstrumentedTest.showEditorKeyboard(host, context);
+                    EditText editor = IntegratedBottomControlsInstrumentedTest.findEditor(host.findViewById(android.R.id.content));
+                    BopomofoImeService[] service = {null};
+                    instrumentation.runOnMainSync(() -> {
+                        service[0] = (BopomofoImeService) IntegratedBottomControlsInstrumentedTest.findKeyboard().getContext();
+                        assertTrue(IntegratedBottomControlsInstrumentedTest.findKeyboard().isTouchMode());
+                        assertEquals("前:", editor.getText().toString());
+                        assertEquals(-1, field(service[0], "lastSelectionStart"));
+                        assertEquals(0, host.extractionProbeCalls.get());
+                        service[0].onKey("s"); service[0].onKey("u");
+                        assertTrue(engine(service[0]).hasComposition());
+                        assertEquals("前:", editor.getText().toString());
+                        assertEquals("Local phonetic keys must not query an unavailable host", 0, host.extractionProbeCalls.get());
+                        service[0].onKey("3");
+                        assertEquals("前:你", editor.getText().toString());
+                        assertEquals("你", engine(service[0]).completedSmartText());
+                        assertEquals(1, engine(service[0]).touchSmartEditableCount());
+                        assertEquals("Only the first actual write may query this IC", 1, host.extractionProbeCalls.get());
+                        assertEquals("The real host ACK is deliberately still held", 0, host.initialSelectionBatchReleaseCount.get());
+                    });
+                    // Do not Backspace away the first word before its ACK, or an
+                    // empty engine would conceal a first-character ownership loss.
+                    IntegratedBottomControlsInstrumentedTest.await(() ->
+                            host.initialSelectionBatchReleaseCount.get() > 0
+                                    && ((Integer) field(service[0], "lastSelectionStart")) >= 0
+                                    && ((OwnSelectionTracker) field(service[0], "ownSelections")).pendingCount() == 0);
+                    instrumentation.runOnMainSync(() -> {
+                        assertEquals(behavior + ": the genuine first ACK must retain the displayed text",
+                                "前:你", editor.getText().toString());
+                        assertEquals("The acknowledged first word ends after the actual prefix", 3,
+                                field(service[0], "lastSelectionStart"));
+                        assertTrue(behavior + ": the first Chinese syllable must remain editable after its own ACK",
+                                engine(service[0]).hasComposition());
+                        assertEquals("你", engine(service[0]).completedSmartText());
+                        assertEquals(1, engine(service[0]).touchSmartEditableCount());
+                        assertEquals(java.util.List.of("你"), engine(service[0]).touchSmartCells(9));
+                        assertEquals("你", ((TouchSmartHostTextState) field(service[0], "touchHostText")).editableText());
+                        assertEquals(1, host.extractionProbeCalls.get());
+                        for (char key : "cl3".toCharArray()) service[0].onKey(String.valueOf(key));
+                    });
+                    IntegratedBottomControlsInstrumentedTest.await(() ->
+                            editor.getText().toString().equals("前:你好")
+                                    && ((Integer) field(service[0], "lastSelectionStart")) == 4
+                                    && ((OwnSelectionTracker) field(service[0], "ownSelections")).pendingCount() == 0);
+                    instrumentation.runOnMainSync(() -> {
+                        assertTrue(engine(service[0]).hasComposition());
+                        assertEquals("你好", engine(service[0]).completedSmartText());
+                        assertEquals(2, engine(service[0]).touchSmartEditableCount());
+                        assertEquals(java.util.List.of("你", "好"), engine(service[0]).touchSmartCells(9));
+                        assertEquals("你好", ((TouchSmartHostTextState) field(service[0], "touchHostText")).editableText());
+                        assertEquals("Invalid snapshots must not cause repeated probing", 1, host.extractionProbeCalls.get());
+                        // This is a real host caret change, not a synthesized IME
+                        // callback. An unrelated movement must still release ownership.
+                        editor.setSelection(2);
+                    });
+                    IntegratedBottomControlsInstrumentedTest.await(() ->
+                            !engine(service[0]).hasComposition()
+                                    && editor.getText().toString().equals("前:你好")
+                                    && editor.getSelectionStart() == 2 && editor.getSelectionEnd() == 2
+                                    && BaseInputConnection.getComposingSpanStart(editor.getText()) == -1);
+                    instrumentation.runOnMainSync(() -> {
+                        assertEquals("", engine(service[0]).completedSmartText());
+                        assertEquals(0, engine(service[0]).touchSmartEditableCount());
+                        assertEquals("", ((TouchSmartHostTextState) field(service[0], "touchHostText")).editableText());
+                        assertEquals("An external caret move must not replay or delete Chinese", "前:你好", editor.getText().toString());
+                        assertEquals(1, host.extractionProbeCalls.get());
+                    });
+                    Bundle evidence = new Bundle();
+                    evidence.putString("keykey_unknown_first_chinese", "behavior=" + behavior
+                            + ", calls=" + host.extractionProbeCalls.get()
+                            + ", realBatchReleases=" + host.initialSelectionBatchReleaseCount.get()
+                            + ", firstAckRetained=true, continuedText=前:你好, realCaret=2, releasedWithoutReplay=true");
+                    instrumentation.sendStatus(0, evidence);
+                } finally {
+                    instrumentation.runOnMainSync(host::finish);
+                }
+            }
+        } finally {
+            var edit = preferences.edit();
+            for (String key : keys) {
+                edit.remove(key); Object value = previous.get(key);
+                if (value instanceof String text) edit.putString(key, text);
+                else if (value instanceof Boolean enabled) edit.putBoolean(key, enabled);
+            }
+            edit.commit();
+        }
+    }
+
+    @Test public void unknownFirstWriteTemporaryChineseSurvivesHideBeforeAck() throws Exception {
+        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
+        org.junit.Assume.assumeTrue("Use an owned disposable touch device",
+                "true".equals(InstrumentationRegistry.getArguments().getString("keykey.isolatedDevice")));
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        var preferences = CandidateWindowSettings.preferences(context);
+        var previous = preferences.getAll();
+        String[] keys = {KeyboardSettingsProfile.key(true, ChineseInputMethodSettings.KEY_METHOD), BopomofoCompositionModeSettings.KEY_MODE,
+                KeyboardSettingsProfile.key(true, BopomofoCompositionModeSettings.KEY_OMIT_TONE), KeyboardSettingsProfile.key(true, BopomofoKeyboardLayoutSettings.KEY_LAYOUT)};
+        try {
+            preferences.edit().putString(keys[0], ChineseInputMethod.SMART.name())
+                    .putString(keys[1], BopomofoCompositionModeSettings.valueForMode(BopomofoCompositionMode.SMART))
+                    .putBoolean(keys[2], false).putString(keys[3], BopomofoKeyboardLayout.STANDARD.value).commit();
+            IntegratedBottomControlsInstrumentedTest.await(() -> {
+                var view = IntegratedBottomControlsInstrumentedTest.findKeyboard();
+                return view == null || !engine((BopomofoImeService) view.getContext()).hasComposition();
+            });
+            instrumentation.runOnMainSync(() -> { try (var data = UserPhraseRepository.open(context)) { data.resetSmartLearning(); } });
+            ImeTestActivity host = (ImeTestActivity) instrumentation.startActivitySync(new Intent()
+                    .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    .putExtra("initialSelectionUnknown", true)
+                    .putExtra("holdInitialSelectionUntilWrite", true)
+                    .putExtra("releaseInitialBatchAfterCommitMs", 450)
+                    .putExtra("probeInitialText", "前:")
+                    .putExtra("probeSelectionStart", 2).putExtra("probeSelectionEnd", 2)
+                    .putExtra("restartExtraction", "unavailable"));
+            try {
+                IntegratedBottomControlsInstrumentedTest.showEditorKeyboard(host, context);
+                EditText editor = IntegratedBottomControlsInstrumentedTest.findEditor(host.findViewById(android.R.id.content));
+                BopomofoImeService[] service = {null};
+                instrumentation.runOnMainSync(() -> {
+                    service[0] = (BopomofoImeService) IntegratedBottomControlsInstrumentedTest.findKeyboard().getContext();
+                    assertTrue(IntegratedBottomControlsInstrumentedTest.findKeyboard().isTouchMode());
+                    assertEquals(-1, field(service[0], "lastSelectionStart"));
+                    assertEquals(0, host.extractionProbeCalls.get());
+                    for (char key : "su3".toCharArray()) service[0].onKey(String.valueOf(key));
+                    assertEquals("前:你", editor.getText().toString());
+                    assertEquals("你", engine(service[0]).completedSmartText());
+                    assertEquals(1, engine(service[0]).touchSmartEditableCount());
+                    assertEquals(1, host.extractionProbeCalls.get());
+                    assertEquals(0, host.initialSelectionBatchReleaseCount.get());
+                    // Invoke the public FE lifecycle on its real current IC while
+                    // the app still holds the first ACK. This is not a UI-hide test.
+                    service[0].onWindowHidden();
+                    assertEquals("Chinese used to locate the unknown anchor is not an unfinished reading",
+                            "前:你", editor.getText().toString());
+                    assertFalse(engine(service[0]).hasComposition());
+                    assertEquals("", engine(service[0]).completedSmartText());
+                    assertEquals("", ((TouchSmartHostTextState) field(service[0], "touchHostText")).editableText());
+                });
+                IntegratedBottomControlsInstrumentedTest.await(() ->
+                        host.initialSelectionBatchReleaseCount.get() > 0
+                                && editor.getText().toString().equals("前:你")
+                                && !engine(service[0]).hasComposition()
+                                && ((OwnSelectionTracker) field(service[0], "ownSelections")).pendingCount() == 0);
+                instrumentation.runOnMainSync(() -> {
+                    assertEquals("前:你", editor.getText().toString());
+                    assertEquals(-1, BaseInputConnection.getComposingSpanStart(editor.getText()));
+                    assertFalse(engine(service[0]).hasComposition());
+                    for (char key : "cl3".toCharArray()) service[0].onKey(String.valueOf(key));
+                });
+                IntegratedBottomControlsInstrumentedTest.await(() ->
+                        editor.getText().toString().equals("前:你好")
+                                && ((OwnSelectionTracker) field(service[0], "ownSelections")).pendingCount() == 0);
+                instrumentation.runOnMainSync(() -> {
+                    assertTrue(engine(service[0]).hasComposition());
+                    assertEquals("Only the post-hide word is editable; the old Chinese was already retained",
+                            "好", engine(service[0]).completedSmartText());
+                    assertEquals(1, engine(service[0]).touchSmartEditableCount());
+                    assertEquals(java.util.List.of("好"), engine(service[0]).touchSmartCells(9));
+                    assertEquals("好", ((TouchSmartHostTextState) field(service[0], "touchHostText")).editableText());
+                    assertEquals("The same IC must not be queried again after hide", 1, host.extractionProbeCalls.get());
+                    assertEquals("前:你好", editor.getText().toString());
+                });
+                Bundle evidence = new Bundle();
+                evidence.putString("keykey_unknown_first_chinese_hide", "behavior=unavailable, calls="
+                        + host.extractionProbeCalls.get() + ", realBatchReleases=" + host.initialSelectionBatchReleaseCount.get()
+                        + ", hiddenBeforeAck=true, retainedText=前:你, finalText=前:你好, editableText=好");
+                instrumentation.sendStatus(0, evidence);
+            } finally {
+                instrumentation.runOnMainSync(host::finish);
+            }
+        } finally {
+            var edit = preferences.edit();
+            for (String key : keys) {
+                edit.remove(key); Object value = previous.get(key);
+                if (value instanceof String text) edit.putString(key, text);
+                else if (value instanceof Boolean enabled) edit.putBoolean(key, enabled);
+            }
+            edit.commit();
+        }
+    }
+
+
+    @Test public void unknownFirstWriteCaretMovePreservesChineseBeforeAck() throws Exception {
+        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
+        org.junit.Assume.assumeTrue("Use an owned disposable touch device",
+                "true".equals(InstrumentationRegistry.getArguments().getString("keykey.isolatedDevice")));
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        var preferences = CandidateWindowSettings.preferences(context);
+        var previous = preferences.getAll();
+        String[] keys = {KeyboardSettingsProfile.key(true, ChineseInputMethodSettings.KEY_METHOD), BopomofoCompositionModeSettings.KEY_MODE,
+                KeyboardSettingsProfile.key(true, BopomofoCompositionModeSettings.KEY_OMIT_TONE), KeyboardSettingsProfile.key(true, BopomofoKeyboardLayoutSettings.KEY_LAYOUT)};
+        try {
+            preferences.edit().putString(keys[0], ChineseInputMethod.SMART.name())
+                    .putString(keys[1], BopomofoCompositionModeSettings.valueForMode(BopomofoCompositionMode.SMART))
+                    .putBoolean(keys[2], false).putString(keys[3], BopomofoKeyboardLayout.STANDARD.value).commit();
+            IntegratedBottomControlsInstrumentedTest.await(() -> {
+                var view = IntegratedBottomControlsInstrumentedTest.findKeyboard();
+                return view == null || !engine((BopomofoImeService) view.getContext()).hasComposition();
+            });
+            instrumentation.runOnMainSync(() -> { try (var data = UserPhraseRepository.open(context)) { data.resetSmartLearning(); } });
+            ImeTestActivity host = (ImeTestActivity) instrumentation.startActivitySync(new Intent()
+                    .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    .putExtra("initialSelectionUnknown", true)
+                    .putExtra("holdInitialSelectionUntilWrite", true)
+                    .putExtra("releaseInitialBatchAfterCommitMs", 450)
+                    .putExtra("probeInitialText", "前:")
+                    .putExtra("probeSelectionStart", 2).putExtra("probeSelectionEnd", 2)
+                    .putExtra("restartExtraction", "unavailable"));
+            try {
+                IntegratedBottomControlsInstrumentedTest.showEditorKeyboard(host, context);
+                EditText editor = IntegratedBottomControlsInstrumentedTest.findEditor(host.findViewById(android.R.id.content));
+                BopomofoImeService[] service = {null};
+                instrumentation.runOnMainSync(() -> {
+                    service[0] = (BopomofoImeService) IntegratedBottomControlsInstrumentedTest.findKeyboard().getContext();
+                    assertTrue(IntegratedBottomControlsInstrumentedTest.findKeyboard().isTouchMode());
+                    assertEquals(-1, field(service[0], "lastSelectionStart"));
+                    assertEquals(0, host.extractionProbeCalls.get());
+                    for (char key : "su3".toCharArray()) service[0].onKey(String.valueOf(key));
+                    assertEquals("前:你", editor.getText().toString());
+                    assertEquals("你", engine(service[0]).completedSmartText());
+                    assertEquals(1, engine(service[0]).touchSmartEditableCount());
+                    assertEquals("This boundary specifically exercises the still-unanchored Chinese marked probe",
+                            2, BaseInputConnection.getComposingSpanStart(editor.getText()));
+                    assertEquals(3, BaseInputConnection.getComposingSpanEnd(editor.getText()));
+                    assertEquals(1, host.extractionProbeCalls.get());
+                    assertEquals(0, host.initialSelectionBatchReleaseCount.get());
+                    // The host holds the 2 -> 3 -> 2 movement until its batch
+                    // ends; the Chinese remains marked despite no net caret movement.
+                    // Move the real editor; never manufacture an onUpdateSelection.
+                    editor.setSelection(2);
+                    assertEquals(2, editor.getSelectionStart());
+                    assertEquals(2, BaseInputConnection.getComposingSpanStart(editor.getText()));
+                    assertEquals(3, BaseInputConnection.getComposingSpanEnd(editor.getText()));
+                });
+                IntegratedBottomControlsInstrumentedTest.await(() ->
+                        host.initialSelectionBatchReleaseCount.get() > 0
+                                && !engine(service[0]).hasComposition()
+                                && ((OwnSelectionTracker) field(service[0], "ownSelections")).pendingCount() == 0
+                                && editor.getText().toString().equals("前:你")
+                                && editor.getSelectionStart() == 2 && editor.getSelectionEnd() == 2
+                                && BaseInputConnection.getComposingSpanStart(editor.getText()) == -1
+                                && BaseInputConnection.getComposingSpanEnd(editor.getText()) == -1);
+                instrumentation.runOnMainSync(() -> {
+                    assertEquals("The external caret is not an own marked-end ACK", 2, field(service[0], "lastSelectionStart"));
+                    assertEquals(2, field(service[0], "lastSelectionEnd"));
+                    assertEquals("", engine(service[0]).completedSmartText());
+                    assertEquals(0, engine(service[0]).touchSmartEditableCount());
+                    assertEquals("", ((TouchSmartHostTextState) field(service[0], "touchHostText")).editableText());
+                    assertEquals("前:你", editor.getText().toString());
+                    assertEquals(1, host.extractionProbeCalls.get());
+                    for (char key : "cl3".toCharArray()) service[0].onKey(String.valueOf(key));
+                });
+                IntegratedBottomControlsInstrumentedTest.await(() ->
+                        editor.getText().toString().equals("前:好你")
+                                && editor.getSelectionStart() == 3 && editor.getSelectionEnd() == 3
+                                && ((OwnSelectionTracker) field(service[0], "ownSelections")).pendingCount() == 0);
+                instrumentation.runOnMainSync(() -> {
+                    assertTrue(engine(service[0]).hasComposition());
+                    assertEquals("好", engine(service[0]).completedSmartText());
+                    assertEquals(1, engine(service[0]).touchSmartEditableCount());
+                    assertEquals(java.util.List.of("好"), engine(service[0]).touchSmartCells(9));
+                    assertEquals("好", ((TouchSmartHostTextState) field(service[0], "touchHostText")).editableText());
+                    assertEquals("The next word must insert before the retained Chinese, never replace it",
+                            "前:好你", editor.getText().toString());
+                    assertEquals(-1, BaseInputConnection.getComposingSpanStart(editor.getText()));
+                    assertEquals(1, host.extractionProbeCalls.get());
+                });
+                Bundle evidence = new Bundle();
+                evidence.putString("keykey_unknown_first_chinese_caret", "behavior=unavailable, calls="
+                        + host.extractionProbeCalls.get() + ", realBatchReleases=" + host.initialSelectionBatchReleaseCount.get()
+                        + ", actualCaretMovedBeforeAck=true, heldBatchFinalCaret=2, retainedText=前:你"
+                        + ", finalText=前:好你, editableText=好, releasedOriginalMarkedRange=true");
+                instrumentation.sendStatus(0, evidence);
+            } finally {
+                instrumentation.runOnMainSync(host::finish);
+            }
+        } finally {
+            var edit = preferences.edit();
+            for (String key : keys) {
+                edit.remove(key); Object value = previous.get(key);
+                if (value instanceof String text) edit.putString(key, text);
+                else if (value instanceof Boolean enabled) edit.putBoolean(key, enabled);
+            }
+            edit.commit();
+        }
+    }
+
     private static HostInputEngine engine(BopomofoImeService service) { return (HostInputEngine) field(service, "engine"); }
     private static Object field(Object target, String name) {
         try { Field field = target.getClass().getDeclaredField(name); field.setAccessible(true); return field.get(target); }
