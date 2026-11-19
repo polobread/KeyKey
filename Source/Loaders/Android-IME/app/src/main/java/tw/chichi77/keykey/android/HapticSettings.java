@@ -1,32 +1,28 @@
 package tw.chichi77.keykey.android;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 
 final class HapticSettings {
     private static final int[] DURATIONS_MS = {0, 1, 2, 3, 5, 10, 20, 30, 50, 100};
     private static final int[] LEGACY_DURATIONS_MS = {0, 10, 20, 30, 50, 80, 100, 150, 200};
 
-    private static final String PREFERENCES_NAME = "ime_settings";
-    private static final String KEY_HAPTIC_LEVEL = "haptic_level";
-    private static final String KEY_HAPTIC_DURATION_MS = "haptic_duration_ms";
+    static final String KEY_HAPTIC_LEVEL = "haptic_level";
+    static final String KEY_HAPTIC_DURATION_MS = "haptic_duration_ms";
 
     private HapticSettings() {}
 
-    static int durationMs(Context context) {
-        SharedPreferences preferences = preferences(context);
-        if (preferences.contains(KEY_HAPTIC_DURATION_MS)) {
-            return nearestDurationMs(preferences.getInt(KEY_HAPTIC_DURATION_MS, 0));
-        }
-        int legacyLevel = Math.max(0, Math.min(LEGACY_DURATIONS_MS.length - 1,
-                preferences.getInt(KEY_HAPTIC_LEVEL, 0)));
-        return nearestDurationMs(LEGACY_DURATIONS_MS[legacyLevel]);
+    static int durationMs(Context context) { return durationMs(context, true); }
+
+    static int durationMs(Context context, boolean virtual) {
+        return nearestDurationMs(KeyboardSettingsProfile.preferences(context)
+                .getInt(KeyboardSettingsProfile.key(virtual, KEY_HAPTIC_DURATION_MS), 0));
     }
 
-    static void setDurationMs(Context context, int durationMs) {
-        preferences(context).edit()
-                .putInt(KEY_HAPTIC_DURATION_MS, nearestDurationMs(durationMs))
-                .remove(KEY_HAPTIC_LEVEL)
+    static void setDurationMs(Context context, int durationMs) { setDurationMs(context, durationMs, true); }
+
+    static void setDurationMs(Context context, int durationMs, boolean virtual) {
+        KeyboardSettingsProfile.preferences(context).edit()
+                .putInt(KeyboardSettingsProfile.key(virtual, KEY_HAPTIC_DURATION_MS), nearestDurationMs(durationMs))
                 .apply();
     }
 
@@ -59,7 +55,4 @@ final class HapticSettings {
         return nearestDurationMs(LEGACY_DURATIONS_MS[safeLevel]);
     }
 
-    private static SharedPreferences preferences(Context context) {
-        return context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
-    }
 }

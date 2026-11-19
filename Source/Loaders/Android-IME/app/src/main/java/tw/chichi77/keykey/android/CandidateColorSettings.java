@@ -1,7 +1,6 @@
 package tw.chichi77.keykey.android;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 
 final class CandidateColorSettings {
     enum CandidateColor { PURPLE, GREEN, YELLOW, RED }
@@ -10,12 +9,18 @@ final class CandidateColorSettings {
 
     private CandidateColorSettings() {}
 
-    static CandidateColor color(Context context) {
-        return colorFromValue(preferences(context).getString(KEY_COLOR, null));
+    static CandidateColor color(Context context) { return color(context, true); }
+
+    static CandidateColor color(Context context, boolean virtual) {
+        return colorFromValue(KeyboardSettingsProfile.preferences(context)
+                .getString(KeyboardSettingsProfile.key(virtual, KEY_COLOR), null));
     }
 
-    static void setColor(Context context, CandidateColor color) {
-        preferences(context).edit().putString(KEY_COLOR, valueForColor(color)).apply();
+    static void setColor(Context context, CandidateColor color) { setColor(context, color, true); }
+
+    static void setColor(Context context, CandidateColor color, boolean virtual) {
+        KeyboardSettingsProfile.preferences(context).edit()
+                .putString(KeyboardSettingsProfile.key(virtual, KEY_COLOR), valueForColor(color)).apply();
     }
 
     static CandidateColor colorFromValue(String value) {
@@ -65,7 +70,4 @@ final class CandidateColorSettings {
         return color == CandidateColor.YELLOW ? 0xFF000000 : 0xFFFFFFFF;
     }
 
-    private static SharedPreferences preferences(Context context) {
-        return CandidateWindowSettings.preferences(context);
-    }
 }

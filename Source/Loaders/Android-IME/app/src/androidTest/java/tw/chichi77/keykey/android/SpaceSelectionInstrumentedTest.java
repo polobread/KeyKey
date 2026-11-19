@@ -21,14 +21,13 @@ public final class SpaceSelectionInstrumentedTest {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         Context context = instrumentation.getTargetContext();
         SharedPreferences prefs = BopomofoCompositionModeSettings.preferences(context);
-        String key = BopomofoCompositionModeSettings.KEY_SPACE_SELECTS_CANDIDATES;
+        String key = KeyboardSettingsProfile.key(true, BopomofoCompositionModeSettings.KEY_SPACE_SELECTS_CANDIDATES);
         Object previous = prefs.getAll().get(key);
         Activity activity = null;
         try {
             prefs.edit().remove(key).commit();
             assertFalse(BopomofoCompositionModeSettings.spaceSelectsCandidates(context));
-            activity = instrumentation.startActivitySync(new Intent(context,
-                    SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            activity = instrumentation.startActivitySync(SettingsActivity.intent(context, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             Activity current = activity;
             instrumentation.runOnMainSync(() -> {
                 View root = ((ScrollView) ((ViewGroup) current.findViewById(android.R.id.content))
@@ -40,8 +39,7 @@ public final class SpaceSelectionInstrumentedTest {
                 assertTrue(BopomofoCompositionModeSettings.spaceSelectsCandidates(context));
                 current.finish();
             });
-            activity = instrumentation.startActivitySync(new Intent(context,
-                    SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            activity = instrumentation.startActivitySync(SettingsActivity.intent(context, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             Activity reopened = activity;
             instrumentation.runOnMainSync(() -> {
                 assertTrue(findToggle(reopened.findViewById(android.R.id.content)).isChecked());

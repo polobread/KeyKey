@@ -28,6 +28,7 @@ final class SetupViewController: UIViewController {
         #endif
         return SupporterStore(supporterState: supporterState)
     }()
+    private let sharedDefaults = UserDefaults(suiteName: KeyboardPreferenceStore.appGroupIdentifier)
     private let contentStack = UIStackView()
     private let supporterSection = UIStackView()
     private let supporterPrice = UILabel()
@@ -72,15 +73,35 @@ final class SetupViewController: UIViewController {
         userPhrases.accessibilityIdentifier = "open-user-phrases"
         userPhrases.addTarget(self, action: #selector(openUserPhrases), for: .touchUpInside)
 
-        let inputSettings = UIButton(configuration: .tinted())
-        inputSettings.setTitle("輸入法設定", for: .normal)
-        inputSettings.accessibilityIdentifier = "open-input-method-settings"
-        inputSettings.addTarget(self, action: #selector(openInputMethodSettings), for: .touchUpInside)
-
         let phraseCollections = UIButton(configuration: .tinted())
         phraseCollections.setTitle("關聯詞詞庫", for: .normal)
         phraseCollections.accessibilityIdentifier = "open-phrase-collections"
         phraseCollections.addTarget(self, action: #selector(openPhraseCollections), for: .touchUpInside)
+
+        let settingsTitle = label("琦琦輸入法設定", size: 20, weight: .semibold)
+        settingsTitle.accessibilityIdentifier = "app-settings.title"
+        let settingsSection = UIStackView(arrangedSubviews: [settingsTitle])
+        settingsSection.axis = .vertical
+        settingsSection.spacing = 12
+        settingsSection.accessibilityIdentifier = "app-settings.section"
+        for profile in KeyboardSettingsProfile.allCases {
+            let entry = UIButton(configuration: .tinted())
+            entry.setTitle(profile.title, for: .normal)
+            entry.titleLabel?.numberOfLines = 0
+            entry.accessibilityIdentifier = "app-settings.open-" + profile.rawValue
+            entry.addAction(UIAction { [weak self] _ in
+                self?.present(UINavigationController(rootViewController:
+                    KeyboardProfileSettingsViewController(profile: profile)), animated: true)
+            }, for: .touchUpInside)
+            settingsSection.addArrangedSubview(entry)
+        }
+        let resetLearning = UIButton(configuration: .tinted())
+        resetLearning.setTitle("重設好打注音學習紀錄", for: .normal)
+        resetLearning.accessibilityIdentifier = "app-settings.reset-learning"
+        resetLearning.addTarget(self, action: #selector(confirmLearningReset), for: .touchUpInside)
+        for item in [phraseCollections, userPhrases, resetLearning] {
+            settingsSection.addArrangedSubview(item)
+        }
 
         let steps = label(
             """
@@ -147,8 +168,8 @@ final class SetupViewController: UIViewController {
         supporterSection.accessibilityIdentifier = "supporter.section"
 
         var items: [UIView] = [
-            titleBlock, subtitle, hardwareEditor, hardwareEditorNote, inputSettings,
-            phraseCollections, userPhrases, steps, openSettings, note, acknowledgements
+            titleBlock, subtitle, hardwareEditor, hardwareEditorNote, settingsSection,
+            steps, openSettings, note, acknowledgements
         ]
         #if DEBUG
         if !ProcessInfo.processInfo.arguments.contains("-KeyKeySupporterReview") {
@@ -290,9 +311,40 @@ final class SetupViewController: UIViewController {
         present(UINavigationController(rootViewController: UserPhrasesViewController()), animated: true)
     }
 
-    @objc private func openInputMethodSettings() {
-        present(UINavigationController(rootViewController: InputMethodSettingsViewController()),
-                animated: true)
+    @objc private func confirmLearningReset() {
+        let alert = UIAlertController(
+            title: "重設好打注音學習紀錄？",
+            message: "將立即清除 App 內實體鍵盤編輯器的學習紀錄，並在下次開啟鍵盤時清除鍵盤的學習紀錄。自訂詞保留。",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "重設", style: .destructive) { [weak self] _ in
+            self?.resetLearning()
+        })
+        present(alert, animated: true)
+    }
+
+    private func resetLearning() {
+        KeyboardLearningResetRequest(sharedDefaults: sharedDefaults).request()
+        let local = FileManager.default.urls(for: .applicationSupportDirectory,
+                                            in: .userDomainMask)[0]
+        var editorReset = false
+        do {
+            guard let modelURL = embeddedKeyboardModelURL() else { throw CocoaError(.fileNoSuchFile) }
+            try GuanyinmaInputEngine.resetLearning(
+                modelURL: modelURL, userDatabaseURL: local.appendingPathComponent("GuanyinmaUser.db")
+            )
+            editorReset = true
+        } catch { /* The keyboard request remains pending for its next activation. */ }
+        let alert = UIAlertController(
+            title: "好打注音學習紀錄",
+            message: editorReset
+                ? "App 內編輯器已重設；鍵盤下次開啟時會重設。"
+                : "鍵盤下次開啟時會重設；App 內編輯器的紀錄暫時無法清除。",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "知道了", style: .default))
+        present(alert, animated: true)
     }
 
     @objc private func purchaseSupport() {
@@ -371,41 +423,72 @@ final class SetupViewController: UIViewController {
     #endif
 }
 
-/// App-managed keyboard preferences are read by the keyboard from the App Group.
-/// The keyboard still keeps its own changes in its private sandbox.
-private final class InputMethodSettingsViewController: UIViewController {
+final class KeyboardProfileSettingsViewController: UIViewController {
+    private let profile: KeyboardSettingsProfile
+    private let writesShared: Bool
+    var settingsDidChange: (() -> Void)?
+    init(profile: KeyboardSettingsProfile, writesShared: Bool = true) {
+        self.profile = profile
+        self.writesShared = writesShared
+        super.init(nibName: nil, bundle: nil)
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        settingsDidChange?()
+    }
+    static func prepareDefaults(in shared: UserDefaults, profile: KeyboardSettingsProfile) {
+        let mode = ChineseInputMethodSettings(sharedDefaults: shared, writesShared: true, profile: profile)
+        _ = mode.method
+        _ = mode.options(for: .cangjie, virtualKeyboard: profile == .virtual)
+        _ = mode.options(for: .simplex, virtualKeyboard: profile == .virtual)
+        _ = BopomofoKeyboardLayoutSettings(sharedDefaults: shared, writesShared: true, profile: profile).layout
+        _ = SimplifiedChineseOutputSettings(sharedDefaults: shared, writesShared: true, profile: profile).enabled
+        _ = SmartMandarinSpaceSettings(sharedDefaults: shared, writesShared: true, profile: profile).enabled
+        _ = SmartMandarinToneOmissionSettings(sharedDefaults: shared, writesShared: true, profile: profile).enabled
+        _ = KeyboardTypingSettings(sharedDefaults: shared, writesShared: true, profile: profile).options
+    }
+
     private let sharedDefaults = UserDefaults(suiteName: KeyboardPreferenceStore.appGroupIdentifier)
     private lazy var modeSettings = ChineseInputMethodSettings(
-        sharedDefaults: sharedDefaults, writesShared: true
+        sharedDefaults: sharedDefaults, writesShared: writesShared, profile: profile
     )
     private lazy var simplifiedOutputSettings = SimplifiedChineseOutputSettings(
-        sharedDefaults: sharedDefaults, writesShared: true
+        sharedDefaults: sharedDefaults, writesShared: writesShared, profile: profile
     )
+    private var tableOptionViews: [KeyboardTableOptionsView] = []
     private let applyKeyboardSettingsStatus = UILabel()
-    private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults)
+    private lazy var typingSettings = KeyboardTypingSettings(sharedDefaults: sharedDefaults, writesShared: writesShared, profile: profile)
+    private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults, writesShared: writesShared, profile: profile)
     private lazy var toneOmissionSettings = SmartMandarinToneOmissionSettings(
-        sharedDefaults: sharedDefaults, writesShared: true
+        sharedDefaults: sharedDefaults, writesShared: writesShared, profile: profile
     )
     private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(
-        sharedDefaults: sharedDefaults, writesShared: true
+        sharedDefaults: sharedDefaults, writesShared: writesShared, profile: profile
     )
     private lazy var colorSettings = CandidateColorSettings(
-        sharedDefaults: sharedDefaults, writesShared: true
+        sharedDefaults: sharedDefaults, writesShared: writesShared
     )
     private lazy var profileSettings = KeyboardLayoutProfileSettings(
-        sharedDefaults: sharedDefaults, writesShared: true
+        sharedDefaults: sharedDefaults, writesShared: writesShared
     )
     private lazy var clickSettings = KeyboardClickSettings(
-        sharedDefaults: sharedDefaults, writesShared: true
+        sharedDefaults: sharedDefaults, writesShared: writesShared
     )
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "輸入法設定"
+        title = profile.title
         view.backgroundColor = .systemBackground
-        navigationItem.leftBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .done, target: self, action: #selector(close)
-        )
+        if navigationController?.viewControllers.first === self {
+            navigationItem.leftBarButtonItem = UIBarButtonItem(
+                barButtonSystemItem: .done, target: self, action: #selector(close)
+            )
+        } else {
+            navigationItem.rightBarButtonItem = UIBarButtonItem(
+                barButtonSystemItem: .done, target: self, action: #selector(close)
+            )
+        }
 
         let scroll = UIScrollView()
         scroll.translatesAutoresizingMaskIntoConstraints = false
@@ -432,25 +515,32 @@ private final class InputMethodSettingsViewController: UIViewController {
             return
         }
 
-        let applySettings = button("套用到鍵盤", #selector(applySettingsToKeyboard))
-        applySettings.accessibilityIdentifier = "app-settings.apply-to-keyboard"
-        applySettings.accessibilityHint = "用琦琦 App 的所有鍵盤設定取代鍵盤目前的對應選項。"
-        let applyHelp = label(
-            "一次套用琦琦 App 內的所有鍵盤設定，包含首頁的關聯詞詞庫。重新叫出鍵盤後生效，之後仍可在鍵盤「設」即時調整。",
-            size: 16
-        )
-        applyHelp.textColor = .secondaryLabel
-        applyKeyboardSettingsStatus.font = .preferredFont(forTextStyle: .footnote)
-        applyKeyboardSettingsStatus.adjustsFontForContentSizeCategory = true
-        applyKeyboardSettingsStatus.textColor = .secondaryLabel
-        applyKeyboardSettingsStatus.numberOfLines = 0
-        applyKeyboardSettingsStatus.isHidden = true
-        let applySection = UIStackView(arrangedSubviews: [
-            applySettings, applyHelp, applyKeyboardSettingsStatus
-        ])
-        applySection.axis = .vertical
-        applySection.spacing = 6
-        stack.addArrangedSubview(applySection)
+        if writesShared && profile == .virtual {
+            let applySettings = button("套用到鍵盤", #selector(applySettingsToKeyboard))
+            applySettings.accessibilityIdentifier = "app-settings.apply-to-keyboard"
+            applySettings.accessibilityHint = "用 App 的虛擬鍵盤設定取代鍵盤目前的對應選項。"
+            let applyInfo = UIButton(type: .system)
+            applyInfo.setImage(UIImage(systemName: "info.circle"), for: .normal)
+            applyInfo.accessibilityLabel = "查看「套用到鍵盤」說明"
+            applyInfo.accessibilityIdentifier = "app-settings.apply-to-keyboard.info"
+            applyInfo.addTarget(self, action: #selector(showApplySettingsHelp), for: .touchUpInside)
+            NSLayoutConstraint.activate([
+                applyInfo.widthAnchor.constraint(equalToConstant: 44),
+                applyInfo.heightAnchor.constraint(equalToConstant: 44)
+            ])
+            let applyRow = UIStackView(arrangedSubviews: [applySettings, applyInfo])
+            applyRow.alignment = .center
+            applyRow.spacing = 8
+            applyKeyboardSettingsStatus.font = .preferredFont(forTextStyle: .footnote)
+            applyKeyboardSettingsStatus.adjustsFontForContentSizeCategory = true
+            applyKeyboardSettingsStatus.textColor = .secondaryLabel
+            applyKeyboardSettingsStatus.numberOfLines = 0
+            applyKeyboardSettingsStatus.isHidden = true
+            let applySection = UIStackView(arrangedSubviews: [applyRow, applyKeyboardSettingsStatus])
+            applySection.axis = .vertical
+            applySection.spacing = 6
+            stack.addArrangedSubview(applySection)
+        }
 
         stack.addArrangedSubview(label("輸入法", size: 18))
         let modes = ChineseInputMethod.allCases
@@ -460,28 +550,28 @@ private final class InputMethodSettingsViewController: UIViewController {
         modeControl.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(modeControl)
 
-        let simplifiedOutputLabel = label(SimplifiedChineseOutputSettings.displayName, size: 18)
-        simplifiedOutputLabel.isAccessibilityElement = false
         let simplifiedOutput = UISwitch()
         simplifiedOutput.isOn = simplifiedOutputSettings.enabled
-        simplifiedOutput.accessibilityLabel = SimplifiedChineseOutputSettings.displayName
         simplifiedOutput.accessibilityIdentifier = "app-settings.simplified-chinese-output"
-        simplifiedOutput.setContentHuggingPriority(.required, for: .horizontal)
-        simplifiedOutput.setContentCompressionResistancePriority(.required, for: .horizontal)
         simplifiedOutput.addTarget(self, action: #selector(simplifiedOutputChanged(_:)), for: .valueChanged)
-        let simplifiedOutputRow = UIStackView(arrangedSubviews: [simplifiedOutputLabel, simplifiedOutput])
-        simplifiedOutputRow.alignment = .center
-        simplifiedOutputRow.spacing = 8
+        stack.addArrangedSubview(settingWithHelp(
+            SimplifiedChineseOutputSettings.displayName,
+            message: "開啟後，送出的中文字會轉成簡體，組字與候選仍顯示繁體。",
+            identifier: "app-settings.simplified-chinese-output.info",
+            control: simplifiedOutput
+        ))
 
-        stack.addArrangedSubview(simplifiedOutputRow)
-
+        let phonetic = KeyboardSettingsGroup(title: "注音與選字", identifier: "app-settings.group.phonetic")
+        stack.addArrangedSubview(phonetic)
         let toneOmission = UISwitch()
         toneOmission.isOn = toneOmissionSettings.enabled
         toneOmission.accessibilityIdentifier = "app-settings.omit-tones"
         toneOmission.addTarget(self, action: #selector(toneOmissionChanged(_:)), for: .valueChanged)
-        stack.addArrangedSubview(settingWithHelp(
+        phonetic.content.addArrangedSubview(settingWithHelp(
             SmartMandarinToneOmissionSettings.displayName,
-            message: "預設關閉。開啟後，觸控好打注音的標準注音、許氏、漢語拼音、倚天與倚天 26 鍵可連續輸入讀音，並在 11 格組字區顯示轉出的中文字。仍可照常輸入聲調。",
+            message: profile == .virtual
+                ? "預設關閉。開啟後可連續輸入讀音，使用 11 格組字區，仍可照常輸入聲調。"
+                : "預設關閉。開啟後可連續輸入讀音，仍可照常輸入聲調。",
             identifier: "app-settings.omit-tones.info",
             control: toneOmission
         ))
@@ -490,21 +580,15 @@ private final class InputMethodSettingsViewController: UIViewController {
         spaceSelection.isOn = spaceSettings.enabled
         spaceSelection.accessibilityIdentifier = "app-settings.space-selects-candidates"
         spaceSelection.addTarget(self, action: #selector(spaceSelectionChanged(_:)), for: .valueChanged)
-        stack.addArrangedSubview(settingWithHelp(
+        phonetic.content.addArrangedSubview(settingWithHelp(
             "好打注音使用空白鍵選字",
-            message: "虛擬與實體鍵盤共用，預設關閉。關閉時，讀音完成後按空白會在組字區插入空白，仍可繼續輸入及回頭選字。未完成讀音時仍以空白結束一聲。開啟後，空白鍵可完成讀音、開啟候選及翻頁。關閉時仍可點選組字或按實體鍵盤 ↓ 開啟候選。",
+            message: "預設關閉。關閉時，讀音完成後按空白會在組字區插入空白，仍可繼續輸入及回頭選字。未完成讀音時仍以空白結束一聲。開啟後，空白鍵可完成讀音、開啟候選及翻頁。"
+                + (profile == .virtual ? "關閉時仍可點選組字開啟候選。" : "關閉時仍可按 ↓ 開啟候選。"),
             identifier: "app-settings.space-selects-candidates.info",
             control: spaceSelection
         ))
 
-        let phrases = button("管理好打注音自訂詞", #selector(openPhrases))
-        phrases.accessibilityIdentifier = "app-settings.user-phrases"
-        stack.addArrangedSubview(phrases)
-        let reset = button("重設好打注音學習紀錄", #selector(confirmLearningReset))
-        reset.accessibilityIdentifier = "app-settings.reset-learning"
-        stack.addArrangedSubview(reset)
-
-        stack.addArrangedSubview(settingWithHelp(
+        phonetic.content.addArrangedSubview(settingWithHelp(
             "注音鍵盤",
             message: BopomofoKeyboardLayout.settingsHelp,
             identifier: "app-settings.keyboard-layout.info"
@@ -515,20 +599,31 @@ private final class InputMethodSettingsViewController: UIViewController {
         layoutControl.selectedSegmentIndex = layouts.firstIndex(of: layoutSettings.layout) ?? 0
         layoutControl.accessibilityIdentifier = "app-settings.keyboard-layout"
         layoutControl.addTarget(self, action: #selector(layoutChanged(_:)), for: .valueChanged)
-        stack.addArrangedSubview(layoutControl)
+        phonetic.content.addArrangedSubview(layoutControl)
 
-        stack.addArrangedSubview(tableOptionsButton(for: .cangjie))
-        stack.addArrangedSubview(tableOptionsButton(for: .cangjie, virtualKeyboard: false))
-        stack.addArrangedSubview(tableOptionsButton(for: .simplex))
+        addTypingSettings(to: phonetic.content)
+        let tables = KeyboardSettingsGroup(title: "倉頡與簡易", identifier: "app-settings.group.tables")
+        for method in [ChineseInputMethod.cangjie, .simplex] {
+            let view = tableOptionsView(for: method)
+            tableOptionViews.append(view)
+            tables.content.addArrangedSubview(view)
+        }
+        stack.addArrangedSubview(tables)
+        if profile == .virtual {
+        let appearance = KeyboardSettingsGroup(title: "外觀與操作", identifier: "app-settings.group.appearance")
+        stack.addArrangedSubview(appearance)
+        appearance.content.addArrangedSubview(settingWithHelp("調整鍵盤高度",
+            message: "請在鍵盤的「設」→「調整鍵盤高度」拖曳預覽。直式與橫式各自保存在鍵盤，App 的套用按鈕不改動這些高度。",
+            identifier: "app-settings.keyboard-height.info"))
 
-        stack.addArrangedSubview(label("候選字底色", size: 18))
+        appearance.content.addArrangedSubview(label("候選字底色", size: 18))
         let colors = CandidateColor.allCases
         let colorControl = UISegmentedControl(items: ["紫", "綠", "黃", "紅"])
         colorControl.selectedSegmentIndex = colors.firstIndex(of: colorSettings.color) ?? 0
         colorControl.accessibilityIdentifier = "app-settings.candidate-color"
         colorControl.addTarget(self, action: #selector(colorChanged(_:)), for: .valueChanged)
-        stack.addArrangedSubview(colorControl)
-        addLayoutSettings(to: stack)
+        appearance.content.addArrangedSubview(colorControl)
+        addLayoutSettings(to: appearance.content)
 
         let clickRow = UIStackView()
         clickRow.axis = .horizontal
@@ -540,20 +635,61 @@ private final class InputMethodSettingsViewController: UIViewController {
         clicks.accessibilityIdentifier = "app-settings.input-clicks"
         clicks.addTarget(self, action: #selector(clicksChanged(_:)), for: .valueChanged)
         clickRow.addArrangedSubview(clicks)
-        stack.addArrangedSubview(clickRow)
+        appearance.content.addArrangedSubview(clickRow)
+        }
+    }
 
-        stack.addArrangedSubview(settingWithHelp(
-            "設定套用說明",
-            message: "鍵盤內「設」頁的選擇保存在鍵盤。要一次改回琦琦 App 的設定，請按最上方的「套用到鍵盤」。重設學習紀錄會在下次開啟鍵盤時生效。",
-            identifier: "app-settings.application.info"
-        ))
+    private func addTypingSettings(to stack: UIStackView) {
+        func toggle(_ title: String, _ key: String, _ path: WritableKeyPath<KeyboardTypingOptions, Bool>, help: String) {
+            let control = UISwitch()
+            control.isOn = typingSettings.options[keyPath: path]
+            control.accessibilityIdentifier = "app-settings." + key
+            control.addAction(UIAction { [weak self] _ in
+                guard let self else { return }
+                var next = self.typingSettings.options
+                next[keyPath: path] = control.isOn
+                self.typingSettings.setOptions(next)
+            }, for: .valueChanged)
+            stack.addArrangedSubview(settingWithHelp(title, message: help,
+                identifier: "app-settings." + key + ".info", control: control))
+        }
+        toggle("使用上下文選字", "use-bigrams", \.useBigrams, help: "使用前後文協助好打注音選詞，預設開啟。")
+        guard profile == .physical else { return }
+        toggle("從游標前方選字", "candidate-cursor-at-end", \.candidateCursorAtEnd,
+               help: "開啟後，↓ 從游標前方的音節開候選；關閉時從游標右側開啟，句尾仍選最後一字。")
+        toggle("選字及後續輸入回到句尾", "selection-returns-to-end", \.selectionReturnsToEnd,
+               help: "開啟後，選字與後續輸入會回到組字句尾；關閉時保留游標位置，可在句中接續輸入。")
+        toggle("Esc 清除全部組字", "clear-composing-with-escape", \.clearComposingWithEscape,
+               help: "開啟後 Esc 可清除整段好打注音組字；關閉時沿用逐步取消。")
+        toggle("中文模式忽略 Caps Lock", "ignore-caps-lock", \.ignoreCapsLockInChinese,
+               help: "預設關閉。開啟後未按 Shift 的英文字母仍可輸入中文讀音；英文模式保留 Caps Lock。")
+        toggle("Shift 英文字母固定大寫", "shift-always-uppercase", \.shiftAlwaysUppercase,
+               help: "好打注音中明確按 Shift 輸入英文字母時，固定輸出大寫，預設關閉。")
+        let limit = UIStepper()
+        limit.minimumValue = 10; limit.maximumValue = 20; limit.stepValue = 1
+        limit.value = Double(typingSettings.options.maximumCompletedSyllables)
+        limit.accessibilityIdentifier = "app-settings.composition-limit"
+        let count = label("組字上限：\(Int(limit.value)) 個音節", size: 18)
+        limit.addAction(UIAction { [weak self] _ in
+            guard let self else { return }
+            var next = self.typingSettings.options
+            next.maximumCompletedSyllables = Int(limit.value)
+            self.typingSettings.setOptions(next)
+            count.text = "組字上限：\(Int(limit.value)) 個音節"
+        }, for: .valueChanged)
+        let row = UIStackView(arrangedSubviews: [count, limit]); row.spacing = 8
+        stack.addArrangedSubview(row)
+    }
+
+    private var settingsOptionFont: UIFont {
+        UIFontMetrics(forTextStyle: .headline).scaledFont(for: .systemFont(ofSize: 18, weight: .semibold))
     }
 
     private func settingWithHelp(
         _ title: String, message: String, identifier: String, control: UISwitch? = nil
     ) -> UIStackView {
         let heading = label(title, size: 18)
-        heading.font = UIFontMetrics(forTextStyle: .headline).scaledFont(for: heading.font)
+        heading.font = settingsOptionFont
         heading.adjustsFontForContentSizeCategory = true
         heading.isAccessibilityElement = control == nil
         heading.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
@@ -603,40 +739,21 @@ private final class InputMethodSettingsViewController: UIViewController {
 
     @objc private func close() { dismiss(animated: true) }
 
-    private func tableOptionsButton(for method: ChineseInputMethod, virtualKeyboard: Bool = true) -> UIButton {
-        let button = UIButton(configuration: .tinted())
-        button.setTitle(method.displayName + (method == .cangjie ? (virtualKeyboard ? "設定（虛擬鍵盤）" : "設定（實體鍵盤）") : "設定"), for: .normal)
-        button.accessibilityIdentifier = "table-options." + method.rawValue + (virtualKeyboard ? "" : ".physical")
-        button.showsMenuAsPrimaryAction = true
-        refreshTableOptions(button, for: method, virtualKeyboard: virtualKeyboard)
-        return button
-    }
-
-    private func refreshTableOptions(_ button: UIButton, for method: ChineseInputMethod, virtualKeyboard: Bool) {
-        let options = modeSettings.options(for: method, virtualKeyboard: virtualKeyboard)
-        var children: [UIMenuElement] = options.switches(for: method).map { item in
-            UIAction(title: item.title, attributes: item.key == "prefix" && !options.composeWhileTyping ? .disabled : [], state: item.enabled ? .on : .off) { [weak self, weak button] _ in
-                guard let self, let button else { return }
-                var next = self.modeSettings.options(for: method, virtualKeyboard: virtualKeyboard)
-                next.toggle(item.key)
-                self.modeSettings.setOptions(next, for: method, virtualKeyboard: virtualKeyboard)
-
-                self.refreshTableOptions(button, for: method, virtualKeyboard: virtualKeyboard)
-            }
-        }
-        if method == .cangjie {
-            children.append(UIMenu(title: "標點", children: ["原字表", "中英混合", "半形"].enumerated().map { index, title in
-                UIAction(title: title, state: options.punctuation == index ? .on : .off) { [weak self, weak button] _ in
-                    guard let self, let button else { return }
-                    var next = self.modeSettings.options(for: method, virtualKeyboard: virtualKeyboard)
-                    next.punctuation = index
-                    self.modeSettings.setOptions(next, for: method, virtualKeyboard: virtualKeyboard)
-
-                    self.refreshTableOptions(button, for: method, virtualKeyboard: virtualKeyboard)
-                }
-            }))
-        }
-        button.menu = UIMenu(title: method.displayName + "設定", children: children)
+    private func tableOptionsView(for method: ChineseInputMethod) -> KeyboardTableOptionsView {
+        KeyboardTableOptionsView(method: method, identifierPrefix: "app-settings.table",
+            optionFont: settingsOptionFont, infoTintColor: view.tintColor,
+            read: { [weak self] in
+                guard let self else { return TableInputOptions(method: method) }
+                return self.modeSettings.options(for: method, virtualKeyboard: self.profile == .virtual)
+            }, write: { [weak self] options in
+                guard let self else { return }
+                self.modeSettings.setOptions(options, for: method, virtualKeyboard: self.profile == .virtual)
+                self.tableOptionViews.forEach { $0.refresh() }
+            }, showHelp: { [weak self] title, message, _ in
+                let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "關閉", style: .default))
+                self?.present(alert, animated: true)
+            })
     }
 
     private func addLayoutSettings(to stack: UIStackView) {
@@ -655,11 +772,13 @@ private final class InputMethodSettingsViewController: UIViewController {
         area.accessibilityLabel = "鍵帽間隔"
         area.addTarget(self, action: #selector(keycapAreaChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(area)
-        stack.addArrangedSubview(label("字體", size: 18))
+        stack.addArrangedSubview(settingWithHelp("字體大小",
+            message: "「標準」保留英文鍵位提示；選擇「中」、「大」或「特大」會隱藏提示，放大主要字。",
+            identifier: "app-settings.key-font-size.info"))
         let font = UISegmentedControl(items: KeyboardKeyFontSize.allCases.map(\.displayName))
         font.selectedSegmentIndex = KeyboardKeyFontSize.allCases.firstIndex(of: profileSettings.fontSize) ?? 0
         font.accessibilityIdentifier = "app-settings.key-font-size"
-        font.accessibilityLabel = "字體"
+        font.accessibilityLabel = "字體大小"
         font.addTarget(self, action: #selector(keyFontSizeChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(font)
         stack.addArrangedSubview(label("刪除鍵位置", size: 18))
@@ -700,10 +819,19 @@ private final class InputMethodSettingsViewController: UIViewController {
         simplifiedOutputSettings.setEnabled(sender.isOn)
     }
 
+    @objc private func showApplySettingsHelp() {
+        let alert = UIAlertController(title: "套用到鍵盤",
+            message: "一次套用 App 的虛擬鍵盤預設與關聯詞詞庫；重新叫出鍵盤後讀取，仍可在鍵盤內即時調整。實體鍵盤設定及上下緣高度不受影響。",
+            preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "關閉", style: .default))
+        present(alert, animated: true)
+    }
+
     @objc private func applySettingsToKeyboard() {
         guard let sharedDefaults else { return }
-        KeyboardPreferenceStore.applyAppDefaults(in: sharedDefaults)
-        let message = "已送出 App 設定。重新叫出鍵盤後生效。"
+        Self.prepareDefaults(in: sharedDefaults, profile: .virtual)
+        KeyboardPreferenceStore.applyAppDefaults(in: sharedDefaults, profile: .virtual)
+        let message = "已送出虛擬鍵盤設定。重新叫出鍵盤後生效。"
         applyKeyboardSettingsStatus.text = message
         applyKeyboardSettingsStatus.isHidden = false
         UIAccessibility.post(notification: .announcement, argument: message)
@@ -731,45 +859,6 @@ private final class InputMethodSettingsViewController: UIViewController {
         clickSettings.setEnabled(sender.isOn)
     }
 
-    @objc private func openPhrases() {
-        navigationController?.pushViewController(UserPhrasesViewController(), animated: true)
-    }
-
-    @objc private func confirmLearningReset() {
-        let alert = UIAlertController(
-            title: "重設好打注音學習紀錄？",
-            message: "自訂詞會保留；鍵盤學習紀錄會在下次開啟鍵盤時清除。",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
-        alert.addAction(UIAlertAction(title: "重設", style: .destructive) { [weak self] _ in
-            self?.resetLearning()
-        })
-        present(alert, animated: true)
-    }
-
-    private func resetLearning() {
-        KeyboardLearningResetRequest(sharedDefaults: sharedDefaults).request()
-        let local = FileManager.default.urls(for: .applicationSupportDirectory,
-                                            in: .userDomainMask)[0]
-        var editorReset = false
-        do {
-            guard let modelURL = embeddedKeyboardModelURL() else { throw CocoaError(.fileNoSuchFile) }
-            try GuanyinmaInputEngine.resetLearning(
-                modelURL: modelURL, userDatabaseURL: local.appendingPathComponent("GuanyinmaUser.db")
-            )
-            editorReset = true
-        } catch { /* The keyboard request remains pending for its next activation. */ }
-        let alert = UIAlertController(
-            title: "好打注音學習紀錄",
-            message: editorReset
-                ? "App 內編輯器已重設；鍵盤下次開啟時會重設。"
-                : "鍵盤下次開啟時會重設；App 內編輯器的紀錄暫時無法清除。",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "知道了", style: .default))
-        present(alert, animated: true)
-    }
 
 }
 

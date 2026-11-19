@@ -48,6 +48,8 @@ public final class BopomofoImeService extends InputMethodService
     private volatile int phraseLoadGeneration;
     private boolean hardwareKeyboard;
     private boolean tableVirtualKeyboard = true;
+    private boolean inputPreferencesDirty;
+    private boolean synchronizingInputPreferences;
     private boolean hardwareCandidatesCollapsed;
     private boolean hardwareSmartTwoRows;
     private boolean floatingCandidatesEnabled;
@@ -106,7 +108,10 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onCreate() {
         super.onCreate();
-        simplifiedChineseOutput = ChineseInputMethodSettings.simplifiedChineseOutput(this);
+        KeyboardSettingsProfile.migrate(this);
+        tableVirtualKeyboard = !hasHardwareKeyboard();
+        hardwareKeyboard = !tableVirtualKeyboard;
+        simplifiedChineseOutput = ChineseInputMethodSettings.simplifiedChineseOutput(this, tableVirtualKeyboard);
         openEngine();
         schedulePhraseDictionaryReload();
         vibrator = getSystemService(Vibrator.class);
@@ -119,14 +124,19 @@ public final class BopomofoImeService extends InputMethodService
     private void openEngine() {
         try {
             File model = SharedModelDatabase.install(this);
-            ChineseInputMethod method = ChineseInputMethodSettings.method(this);
+            ChineseInputMethod method = ChineseInputMethodSettings.method(this, tableVirtualKeyboard);
             engine = new HostInputEngine(model.getAbsolutePath(),
                     new File(getFilesDir(), GuanyinmaUserData.FILE_NAME).getAbsolutePath(), method,
-                    BopomofoKeyboardLayoutSettings.layout(this),
+                    BopomofoKeyboardLayoutSettings.layout(this, tableVirtualKeyboard),
                     ChineseInputMethodSettings.options(this, method, tableVirtualKeyboard),
-                    BopomofoCompositionModeSettings.spaceSelectsCandidates(this),
-                    BopomofoCompositionModeSettings.bigramEnabled(this),
+                    BopomofoCompositionModeSettings.spaceSelectsCandidates(this, tableVirtualKeyboard),
+                    BopomofoCompositionModeSettings.bigramEnabled(this, tableVirtualKeyboard),
                     CandidateGlyphSupport.shared()::canDisplay);
+            engine.setHardwareOptions(HardwareSmartSettings.options(this));
+            engine.setHardwareTouchSmartEditing(hardwareKeyboard && !CandidateWindowSettings.floatingEnabled(this)
+                    && CandidateWindowSettings.smartTwoRowsEnabled(this));
+            engine.setHardwareSmartEditing(hardwareKeyboard && (CandidateWindowSettings.floatingEnabled(this)
+                    || !CandidateWindowSettings.smartTwoRowsEnabled(this)));
             synchronizeTouchPhoneticGrid();
             // A recreated session has no FE association dictionary yet. Invalidate
             // old async callbacks and reload even when the selected sources match.
@@ -143,7 +153,7 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onPress() {
-        int durationMs = HapticSettings.durationMs(this);
+        int durationMs = HapticSettings.durationMs(this, !hardwareKeyboard);
         if (durationMs > 0 && vibrator != null && vibrator.hasVibrator()) {
             vibrator.vibrate(VibrationEffect.createOneShot(
                     durationMs, VibrationEffect.DEFAULT_AMPLITUDE));
@@ -407,19 +417,27 @@ public final class BopomofoImeService extends InputMethodService
     }
 
     private void synchronizeInputPreferences() {
-        // Preferences changed while a former host rejected effects are applied
-        // only after that host's state was explicitly discarded.
-        apply(engine.setChineseInputMethod(ChineseInputMethodSettings.method(this)));
-        apply(engine.setKeyboardLayout(BopomofoKeyboardLayoutSettings.layout(this)));
-        engine.setTableOptions(ChineseInputMethodSettings.options(this, engine.chineseInputMethod(), tableVirtualKeyboard));
-        engine.setSpaceSelectsCandidates(BopomofoCompositionModeSettings.spaceSelectsCandidates(this));
-        engine.setUseBigrams(BopomofoCompositionModeSettings.bigramEnabled(this));
-        synchronizeTouchPhoneticGrid();
+        inputPreferencesDirty = true;
+        if (engine == null || hostTransactionFailed || synchronizingInputPreferences || engine.hasComposition()) return;
+        synchronizingInputPreferences = true;
+        inputPreferencesDirty = false;
+        try {
+            // All old host effects are already acknowledged before this boundary.
+            apply(engine.setChineseInputMethod(ChineseInputMethodSettings.method(this, tableVirtualKeyboard)));
+            apply(engine.setKeyboardLayout(BopomofoKeyboardLayoutSettings.layout(this, tableVirtualKeyboard)));
+            engine.setTableOptions(ChineseInputMethodSettings.options(this, engine.chineseInputMethod(), tableVirtualKeyboard));
+            engine.setSpaceSelectsCandidates(BopomofoCompositionModeSettings.spaceSelectsCandidates(this, tableVirtualKeyboard));
+            engine.setUseBigrams(BopomofoCompositionModeSettings.bigramEnabled(this, tableVirtualKeyboard));
+            engine.setHardwareOptions(HardwareSmartSettings.options(this));
+            simplifiedChineseOutput = ChineseInputMethodSettings.simplifiedChineseOutput(this, tableVirtualKeyboard);
+            synchronizeTouchPhoneticGrid();
+            updateHardwareQuickSettings();
+        } finally { synchronizingInputPreferences = false; }
     }
 
     private void synchronizeTouchPhoneticGrid() {
         if (engine == null || hostTransactionFailed) return;
-        boolean enabled = !hardwareKeyboard && engine.chineseInputMethod() == ChineseInputMethod.SMART
+        boolean enabled = tableVirtualKeyboard && engine.chineseInputMethod() == ChineseInputMethod.SMART
                 && BopomofoCompositionModeSettings.omitTone(this);
         if (enabled == engine.touchPhoneticGridEnabled()) return;
         commitPendingComposition();
@@ -648,65 +666,15 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences preferences, String key) {
-        if (key == null || ChineseInputMethodSettings.KEY_SIMPLIFIED_CHINESE_OUTPUT.equals(key)) {
-            boolean enabled = ChineseInputMethodSettings.simplifiedChineseOutput(this);
-            if (enabled != simplifiedChineseOutput) {
-                // Finish with the old setting while it still owns the editable host suffix.
-                if (!hostTransactionFailed) commitPendingComposition();
-                simplifiedChineseOutput = enabled;
-                updateHardwareQuickSettings();
+        if (key == null || key.startsWith("keyboard.")) {
+            if (key == null || KeyboardSettingsProfile.belongsTo(key, tableVirtualKeyboard)) {
+                synchronizeInputPreferences();
+                refreshKeyboard();
             }
-            if (key != null) return;
+            return;
         }
         if (UserDataNotifications.KEY_CHANGED.equals(key)) {
             if (engine != null) apply(engine.refreshUserData());
-            return;
-        }
-        if (key == null || ChineseInputMethodSettings.KEY_METHOD.equals(key) || key.startsWith("table_options.")) {
-            if (engine != null) {
-                if (key == null) engine.setSpaceSelectsCandidates(
-                        BopomofoCompositionModeSettings.spaceSelectsCandidates(this));
-                if (key == null || key.startsWith("table_options.")) apply(engine.finishCompositionForModeSwitch());
-                apply(engine.setChineseInputMethod(ChineseInputMethodSettings.method(this)));
-                synchronizeTouchPhoneticGrid();
-                engine.setTableOptions(ChineseInputMethodSettings.options(this, engine.chineseInputMethod(), tableVirtualKeyboard));
-            }
-            refreshKeyboard();
-            return;
-        }
-        if (BopomofoKeyboardLayoutSettings.KEY_LAYOUT.equals(key)) {
-            if (engine != null) apply(engine.setKeyboardLayout(BopomofoKeyboardLayoutSettings.layout(this)));
-            synchronizeTouchPhoneticGrid();
-            refreshKeyboard();
-            return;
-        }
-        if (BopomofoCompositionModeSettings.KEY_SPACE_SELECTS_CANDIDATES.equals(key)) {
-            if (engine != null) engine.setSpaceSelectsCandidates(
-                    BopomofoCompositionModeSettings.spaceSelectsCandidates(this));
-            return;
-        }
-        if (BopomofoCompositionModeSettings.KEY_MODE.equals(key)) {
-            if (engine != null) {
-                apply(engine.setChineseInputMethod(ChineseInputMethodSettings.method(this)));
-                engine.setTableOptions(ChineseInputMethodSettings.options(this, engine.chineseInputMethod(), tableVirtualKeyboard));
-            }
-            synchronizeTouchPhoneticGrid();
-            refreshKeyboard();
-            return;
-        }
-        if (BopomofoCompositionModeSettings.KEY_OMIT_TONE.equals(key)) {
-            synchronizeTouchPhoneticGrid();
-            refreshKeyboard();
-            return;
-        }
-        if (BopomofoCompositionModeSettings.KEY_BIGRAM_ENABLED.equals(key)) {
-            if (engine != null && engine.compositionMode() == BopomofoCompositionMode.SMART
-                    && engine.inputMode() == InputEngine.InputMode.BOPOMOFO) {
-                apply(engine.finishCompositionForModeSwitch());
-            }
-            boolean enabled = BopomofoCompositionModeSettings.bigramEnabled(this);
-            if (engine != null) engine.setUseBigrams(enabled);
-            refreshKeyboard();
             return;
         }
         if (SupporterState.KEY_SUPPORTER.equals(key)) {
@@ -817,15 +785,17 @@ public final class BopomofoImeService extends InputMethodService
         if (engine == null || hostTransactionFailed) return;
         dismissHardwareQuickSettings();
         apply(engine.finishCompositionForModeSwitch());
-        Intent intent = new Intent(this, SettingsActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Intent intent = SettingsActivity.intent(this, !hardwareKeyboard);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
     }
 
     @Override
     public void onScriptToggle() {
         if (canUseHardwareQuickSettings()) {
-            ChineseInputMethodSettings.setSimplifiedChineseOutput(this, !simplifiedChineseOutput);
+            commitPendingComposition();
+            if (!hostTransactionFailed && !engine.hasComposition())
+                ChineseInputMethodSettings.setSimplifiedChineseOutput(this, !simplifiedChineseOutput, false);
         }
     }
 
@@ -834,7 +804,9 @@ public final class BopomofoImeService extends InputMethodService
         if (!canUseHardwareQuickSettings()) return;
         engine.prepareForHardwareInput();
         if (method != null && method != engine.chineseInputMethod()) {
-            ChineseInputMethodSettings.setMethod(this, method);
+            commitPendingComposition();
+            if (hostTransactionFailed || engine.hasComposition()) return;
+            ChineseInputMethodSettings.setMethod(this, method, false);
         }
         boolean wantsEnglish = method == null;
         boolean english = engine.inputMode() != InputEngine.InputMode.BOPOMOFO;
@@ -919,7 +891,7 @@ public final class BopomofoImeService extends InputMethodService
         }
         // A key can arrive before the hardware configuration callback. Finish
         // the already-inserted touch tail before adopting marked host text.
-        if ((engine.hasPendingPhoneticReading()
+        if (((engine.isTouchSmartComposition() && engine.hasPendingPhoneticReading())
                 || (!hardwareSmartTwoRows && !touchHostText.editableText().isEmpty()))
                 && !KeyEvent.isModifierKey(keyCode) && keyCode != KeyEvent.KEYCODE_CAPS_LOCK
                 && keyCode != KeyEvent.KEYCODE_NUM_LOCK && keyCode != KeyEvent.KEYCODE_SCROLL_LOCK) {
@@ -1051,7 +1023,7 @@ public final class BopomofoImeService extends InputMethodService
                 if (unicode == 0 || Character.isISOControl(unicode)) {
                     return super.onKeyDown(keyCode, event);
                 }
-                apply(engine.handleHardwareCharacter((char) unicode));
+                apply(engine.handleHardwareCharacter((char) unicode, event.isShiftPressed(), event.isCapsLockOn()));
             }
         }
         return true;
@@ -1413,6 +1385,8 @@ public final class BopomofoImeService extends InputMethodService
     }
 
     private void refreshKeyboard() {
+        if (inputPreferencesDirty && !synchronizingInputPreferences && engine != null && !engine.hasComposition())
+            synchronizeInputPreferences();
         if (keyboardView == null || engine == null) return;
         String coreError = engine.coreError();
         if (coreError != null && !coreError.equals(lastReportedCoreError)) {
@@ -1429,7 +1403,7 @@ public final class BopomofoImeService extends InputMethodService
         keyboardView.setKeyboardLayout(engine.keyboardLayout());
         keyboardView.setKeyPreviewEnabled(KeyPreviewSettings.enabled(this));
         updateKeyboardSize();
-        CandidateColorSettings.CandidateColor candidateColor = CandidateColorSettings.color(this);
+        CandidateColorSettings.CandidateColor candidateColor = CandidateColorSettings.color(this, !hardwareKeyboard);
         keyboardView.setCandidateHighlightColors(
                 CandidateColorSettings.backgroundColor(candidateColor),
                 CandidateColorSettings.textColor(candidateColor));
@@ -1590,16 +1564,25 @@ public final class BopomofoImeService extends InputMethodService
 
     private void useTableKeyboard(boolean virtualKeyboard) {
         if (engine == null || tableVirtualKeyboard == virtualKeyboard) return;
-        if (engine.chineseInputMethod().isTable()) apply(engine.finishCompositionForInputHandoff());
+        // Finish using the old reading layout and output script before adopting new preferences.
+        commitPendingComposition();
+        if (hostTransactionFailed || engine.hasComposition()) return;
         tableVirtualKeyboard = virtualKeyboard;
-        engine.setTableOptions(ChineseInputMethodSettings.options(this, engine.chineseInputMethod(), virtualKeyboard));
+        synchronizeInputPreferences();
+    }
+
+    private boolean hasHardwareKeyboard() {
+        Configuration configuration = getResources().getConfiguration();
+        return configuration.keyboard != Configuration.KEYBOARD_NOKEYS
+                && configuration.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
     }
 
     private void updateKeyboardMode() {
         Configuration configuration = getResources().getConfiguration();
-        hardwareKeyboard = configuration.keyboard != Configuration.KEYBOARD_NOKEYS
-                && configuration.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
-        useTableKeyboard(!hardwareKeyboard);
+        boolean nextHardwareKeyboard = hasHardwareKeyboard();
+        useTableKeyboard(!nextHardwareKeyboard);
+        if (tableVirtualKeyboard == nextHardwareKeyboard) return; // the old host has not accepted its handoff
+        hardwareKeyboard = nextHardwareKeyboard;
         if (!hardwareKeyboard) hardwareCandidatesCollapsed = false;
         floatingCandidatesEnabled = CandidateWindowSettings.floatingEnabled(this);
         floatingCandidateLayout = CandidateWindowSettings.layout(this);

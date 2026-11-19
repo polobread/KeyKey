@@ -45,8 +45,8 @@ final class KeyboardViewController: UIInputViewController {
     private lazy var clickSettings = KeyboardClickSettings(sharedDefaults: sharedDefaults)
     private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(sharedDefaults: sharedDefaults)
     private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults)
+    private lazy var typingSettings = KeyboardTypingSettings(sharedDefaults: sharedDefaults)
     private lazy var toneOmissionSettings = SmartMandarinToneOmissionSettings(sharedDefaults: sharedDefaults)
-    private var pendingToneOmission: Bool?
     private lazy var learningResetRequest = KeyboardLearningResetRequest(
         sharedDefaults: sharedDefaults
     )
@@ -279,24 +279,22 @@ final class KeyboardViewController: UIInputViewController {
             fontSize: profileSettings.fontSize, deleteShiftPosition: profileSettings.deleteShiftPosition)
     }
 
+    private var currentPreferences: KeyboardInputPreferences {
+        let method = methodSettings.method
+        return KeyboardInputPreferences(method: method, layout: layoutSettings.layout,
+            tableOptions: methodSettings.options(for: method, virtualKeyboard: true),
+            spaceSelectsCandidates: spaceSettings.enabled, omitsTones: toneOmissionSettings.enabled,
+            typingOptions: typingSettings.options)
+    }
+
     private func refreshAppSettings() {
         updateActiveSimplifiedOutput(simplifiedOutputSettings.enabled)
         keyboardView?.setLayoutProfile(profileSettings.profile)
         refreshLayoutOptions()
         candidateColor = candidateColorSettings.color
         inputClicksEnabled = clickSettings.enabled
-        if let engine {
-            apply(engine.setChineseInputMethod(methodSettings.method))
-            let nextOptions = methodSettings.options(for: engine.chineseInputMethod, virtualKeyboard: true)
-            if engine.tableOptions != nextOptions { apply(engine.finishCompositionForInputHandoff()) }
-            engine.tableOptions = nextOptions
-        }
         applyPhraseSelection(phraseSettings.enabledCollections)
-        if let engine {
-            apply(engine.setKeyboardLayout(layoutSettings.layout))
-            engine.spaceSelectsCandidates = spaceSettings.enabled
-            pendingToneOmission = toneOmissionSettings.enabled
-        }
+        if let engine { engine.applyPreferencesWhenReady(currentPreferences) }
         applyLearningResetRequests()
         if let engine {
             do { try engine.refreshUserPhrases(from: guanyinmaPhraseData) }
@@ -504,7 +502,7 @@ final class KeyboardViewController: UIInputViewController {
                 keyboardLayout: layoutSettings.layout,
                 tableOptions: methodSettings.options(for: methodSettings.method, virtualKeyboard: true),
                 spaceSelectsCandidates: spaceSettings.enabled,
-                omitsTones: toneOmissionSettings.enabled,
+                omitsTones: toneOmissionSettings.enabled, typingOptions: typingSettings.options,
                 associatedPhrases: phrases,
                 candidateFilter: CandidateGlyphSupport.shared.canDisplay
             )
@@ -639,16 +637,13 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func refresh() {
+        if engine?.hasComposition != true { simplifiedOutputEnabled = simplifiedOutputSettings.enabled }
         guard let keyboardView else { return }
         guard let engine else {
             var state = KeyboardView.State()
             state.statusOverride = loadFailure ?? "字庫載入失敗"
             keyboardView.apply(state)
             return
-        }
-        if let pendingToneOmission, !engine.hasComposition, !engine.hasPendingPhoneticInput {
-            engine.omitsTones = pendingToneOmission
-            self.pendingToneOmission = nil
         }
         var state = KeyboardView.State()
         state.reading = engine.usesTouchPhoneticGrid ? engine.touchSmartHostReading : engine.composingText
@@ -733,7 +728,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func apply(_ result: KeyboardInput.Result) {
-        defer { engine?.acknowledgeHostEffects() }
+        defer { engine?.acknowledgeHostEffects(); refresh() }
         if engine?.isTouchSmartComposition == true || !touchHostText.editableText.isEmpty
             || !markedTouchReading.isEmpty {
             applyTouchSmart(result)
@@ -1029,15 +1024,23 @@ extension KeyboardViewController: SettingsPanelDelegate {
 
     private func updateActiveSimplifiedOutput(_ enabled: Bool) {
         guard simplifiedOutputEnabled != enabled else { return }
-        if let engine, engine.hasComposition {
-            apply(engine.finishCompositionForInputHandoff())
-        }
         simplifiedOutputEnabled = enabled
+    }
+
+    func settingsPanel(_ panel: SettingsPanel, didChangeSpaceSelection enabled: Bool) {
+        spaceSettings.setEnabled(enabled)
+        engine?.applyPreferencesWhenReady(currentPreferences)
+    }
+    func settingsPanel(_ panel: SettingsPanel, didChangeUseBigrams enabled: Bool) {
+        var next = typingSettings.options
+        next.useBigrams = enabled
+        typingSettings.setOptions(next)
+        engine?.applyPreferencesWhenReady(currentPreferences)
     }
 
     func settingsPanel(_ panel: SettingsPanel, didChangeToneOmission enabled: Bool) {
         toneOmissionSettings.setEnabled(enabled)
-        pendingToneOmission = enabled
+        engine?.applyPreferencesWhenReady(currentPreferences)
         refresh()
     }
 

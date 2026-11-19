@@ -26,6 +26,7 @@ final class GuanyinmaInputEngine implements InputEngine {
     private EnumSet<InputEngine.InputMode> allowedModes = EnumSet.allOf(InputEngine.InputMode.class);
     private boolean shifted, temporaryEnglish, hardwareFullWidth, hardwareSmartEditing, hardwareTouchSmartEditing;
     private boolean useBigrams = true, spaceSelects, touchPhoneticGrid;
+    private HardwareSmartSettings.Options hardwareOptions = HardwareSmartSettings.Options.defaults();
     private enum Overlay { NONE, SYMBOLS, ASSOCIATED }
     private Overlay overlay = Overlay.NONE;
     private List<String> overlayCandidates = List.of();
@@ -67,11 +68,28 @@ final class GuanyinmaInputEngine implements InputEngine {
     private static String methodName(ChineseInputMethod method) { return method.name().toLowerCase(Locale.ROOT); }
     private JSONObject smartOptions() {
         return object("use_bigrams", useBigrams, "space_opens_candidates", spaceSelects,
-            "candidate_cursor_at_end", false, "clear_composing_with_escape", false,
-            "shift_always_uppercase", false,
-            "max_completed_syllables", touchPhoneticGrid && !hardwareSmartEditing ? 12 : 10,
-            "shift_at_limit", !hardwareSmartEditing, "selection_returns_to_end", !hardwareSmartEditing,
+            "omit_tone", hardwareSmartEditing && hardwareOptions.omitTone(),
+            "candidate_cursor_at_end", hardwareSmartEditing && hardwareOptions.cursorAtEnd(),
+            "clear_composing_with_escape", hardwareSmartEditing && hardwareOptions.clearEscape(),
+            "shift_always_uppercase", hardwareSmartEditing && hardwareOptions.shiftUpper(),
+            "max_completed_syllables", hardwareSmartEditing ? hardwareOptions.maxSyllables() : touchPhoneticGrid ? 12 : 10,
+            "shift_at_limit", !hardwareSmartEditing,
+            "selection_returns_to_end", !hardwareSmartEditing || hardwareOptions.returnsToEnd(),
             "candidate_selection_keys", "123456789");
+    }
+    private JSONObject behaviorOptions() {
+        return object("ignore_caps_lock_in_chinese", hardwareSmartEditing && hardwareOptions.ignoreCaps(),
+                "literal_keypad", true);
+    }
+    void setHardwareOptions(HardwareSmartSettings.Options value) {
+        if (value.equals(hardwareOptions)) return;
+        if (hasComposition()) { lastError = "請先完成組字後再變更實體鍵盤設定。"; return; }
+        HardwareSmartSettings.Options old = hardwareOptions;
+        hardwareOptions = value;
+        try {
+            apply(object("type", "set_smart_options", "options", smartOptions()));
+            apply(object("type", "set_behaviors", "behaviors", behaviorOptions()));
+        } catch (RuntimeException error) { hardwareOptions = old; lastError = diagnostic(error); }
     }
     private JSONObject learningOptions() {
         return object("user_phrases", true, "candidate_overrides", true, "bigrams", useBigrams, "table_learning", true);
@@ -87,7 +105,7 @@ final class GuanyinmaInputEngine implements InputEngine {
             "layout", layout.coreValue, "user_database", userDatabasePath,
             "prime_smart_mandarin", primeSmartMandarin,
             "traditional_selection_keys", "123456789", "table_selection_keys", "123456789",
-            "smart", smartOptions(), "learning", learningOptions(),
+            "smart", smartOptions(), "learning", learningOptions(), "behaviors", behaviorOptions(),
             "cangjie", tableOptionsJSON(method == ChineseInputMethod.CANGJIE ? options : new TableInputOptions(ChineseInputMethod.CANGJIE)),
             "simplex", tableOptionsJSON(method == ChineseInputMethod.SIMPLEX ? options : new TableInputOptions(ChineseInputMethod.SIMPLEX)));
     }
@@ -333,6 +351,14 @@ final class GuanyinmaInputEngine implements InputEngine {
         if (chineseInputMethod().isTable() && !displayedCandidates().isEmpty() && (value == '<' || value == '>')) { changePage(value == '<' ? -1 : 1); return InputEngine.Result.update(); }
         return width(character(String.valueOf(value), false, false));
     }
+    InputEngine.Result handleHardwareCharacter(char value, boolean shift, boolean capsLock) {
+        if (!prepareHardware()) return InputEngine.Result.update();
+        if (overlay != Overlay.NONE || !hardwareSmartEditing) return handleHardwareCharacter(value);
+        if (mode != InputEngine.InputMode.BOPOMOFO) return width(direct(String.valueOf(value)));
+        clearOverlay();
+        return width(offerAssociated(operate(object("type", "character", "text", String.valueOf(value),
+                "modifiers", object("shift", shift, "caps_lock", capsLock)))));
+    }
     @Override public InputEngine.Result commitHardwareLiteral(char value) { return prepareHardware() ? width(direct(String.valueOf(value))) : InputEngine.Result.update(); }
     @Override public InputEngine.Result handleHardwareSpace() { return prepareHardware() ? space(hardwareFullWidth) : InputEngine.Result.update(); }
     @Override public InputEngine.Result toggleHardwareLanguage() {
@@ -358,6 +384,7 @@ final class GuanyinmaInputEngine implements InputEngine {
         try {
             apply(object("type", "set_profile", "profile", enabled ? "desktop" : "touch"));
             apply(object("type", "set_smart_options", "options", smartOptions()));
+            apply(object("type", "set_behaviors", "behaviors", behaviorOptions()));
         } catch (RuntimeException error) { hardwareSmartEditing = old; failureEpoch++; lastError = diagnostic(error); }
     }
     private InputEngine.Result showOverlay(List<String> values) {
@@ -378,7 +405,7 @@ final class GuanyinmaInputEngine implements InputEngine {
         if (array("candidates").length() > 0) { changePage(1); return InputEngine.Result.update(); }
         if (array("readings").length() == 0) return InputEngine.Result.update();
         int index = hardwareSmartEditing
-                ? Math.min(number("reading_cursor"), array("readings").length() - 1)
+                ? Math.max(0, Math.min(number("reading_cursor") - (hardwareOptions.cursorAtEnd() ? 1 : 0), array("readings").length() - 1))
                 : array("readings").length() - 1;
         return operate(object("type", "open_candidates", "index", index));
     }
@@ -426,7 +453,13 @@ final class GuanyinmaInputEngine implements InputEngine {
     @Override public InputEngine.Result escape() {
         if (overlay != Overlay.NONE) { clearOverlay(); return InputEngine.Result.update(); }
         if (!hardwareSmartEditing) { boolean had = hasComposition(); reset(); return had && lastError == null ? InputEngine.Result.discardComposition() : InputEngine.Result.update(); }
-        return key("escape");
+        boolean hadComposition = hasComposition();
+        InputEngine.Result result = key("escape");
+        // Finishing an Android marked range preserves its text. Replace the
+        // range only when Escape actually cancelled the core composition.
+        return new InputEngine.Result(result.committedText(), result.deleteBeforeCursor(), result.sendEnter(),
+                result.discardComposingText() || (hadComposition && lastError == null
+                        && !hasComposition() && result.committedText().isEmpty()));
     }
     @Override public InputEngine.Result selectDisplayedCandidate(int index) {
         List<String> values = displayedCandidates();

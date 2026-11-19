@@ -29,12 +29,12 @@ public final class SimplifiedChineseOutputInstrumentedTest {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         Context context = instrumentation.getTargetContext();
         var preferences = ChineseInputMethodSettings.preferences(context);
-        String key = ChineseInputMethodSettings.KEY_SIMPLIFIED_CHINESE_OUTPUT;
+        String key = KeyboardSettingsProfile.key(true, ChineseInputMethodSettings.KEY_SIMPLIFIED_CHINESE_OUTPUT);
         Object previous = preferences.getAll().get(key);
         Activity activity = null;
         try {
             preferences.edit().remove(key).commit();
-            activity = instrumentation.startActivitySync(new Intent(context, SettingsActivity.class)
+            activity = instrumentation.startActivitySync(SettingsActivity.intent(context, true)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             Activity settings = activity;
             instrumentation.runOnMainSync(() -> {
@@ -82,10 +82,10 @@ public final class SimplifiedChineseOutputInstrumentedTest {
                 && ime.contains(context.getPackageName()));
         var preferences = ChineseInputMethodSettings.preferences(context);
         var previous = preferences.getAll();
-        String[] keys = {ChineseInputMethodSettings.KEY_SIMPLIFIED_CHINESE_OUTPUT,
-                ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
-                BopomofoCompositionModeSettings.KEY_OMIT_TONE,
-                BopomofoKeyboardLayoutSettings.KEY_LAYOUT};
+        String[] keys = {KeyboardSettingsProfile.key(true, ChineseInputMethodSettings.KEY_SIMPLIFIED_CHINESE_OUTPUT),
+                KeyboardSettingsProfile.key(true, ChineseInputMethodSettings.KEY_METHOD), BopomofoCompositionModeSettings.KEY_MODE,
+                KeyboardSettingsProfile.key(true, BopomofoCompositionModeSettings.KEY_OMIT_TONE),
+                KeyboardSettingsProfile.key(true, BopomofoKeyboardLayoutSettings.KEY_LAYOUT)};
         Activity activity = null;
         try {
             preferences.edit().putBoolean(keys[0], true)

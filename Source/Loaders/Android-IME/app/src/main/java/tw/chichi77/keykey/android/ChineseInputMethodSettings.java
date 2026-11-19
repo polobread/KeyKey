@@ -6,76 +6,46 @@ import android.content.SharedPreferences;
 final class ChineseInputMethodSettings {
     static final String KEY_METHOD = "chinese_input_method";
     static final String KEY_SIMPLIFIED_CHINESE_OUTPUT = "simplified_chinese_output";
-    static ChineseInputMethod method(Context context) {
-        String raw = preferences(context).getString(KEY_METHOD, "");
+    static ChineseInputMethod method(Context context) { return method(context, true); }
+    static ChineseInputMethod method(Context context, boolean virtual) {
+        String raw = preferences(context).getString(KeyboardSettingsProfile.key(virtual, KEY_METHOD), "SMART");
         try { return ChineseInputMethod.valueOf(raw); }
-        catch (IllegalArgumentException ignored) {
-            return BopomofoCompositionModeSettings.mode(context) == BopomofoCompositionMode.TRADITIONAL
-                    ? ChineseInputMethod.TRADITIONAL : ChineseInputMethod.SMART;
-        }
+        catch (IllegalArgumentException ignored) { return ChineseInputMethod.SMART; }
     }
-    static SharedPreferences preferences(Context context) { return CandidateWindowSettings.preferences(context); }
-    static void setMethod(Context context, ChineseInputMethod method) {
-        // One edit: listeners never observe a new legacy mode with an old method.
-        SharedPreferences.Editor editor = preferences(context).edit().putString(KEY_METHOD, method.name());
-        if (!method.isTable()) editor.putString(BopomofoCompositionModeSettings.KEY_MODE,
-                method == ChineseInputMethod.SMART ? "smart" : "traditional");
-        editor.apply();
+    static SharedPreferences preferences(Context context) { return KeyboardSettingsProfile.preferences(context); }
+    static void setMethod(Context context, ChineseInputMethod method) { setMethod(context, method, true); }
+    static void setMethod(Context context, ChineseInputMethod method, boolean virtual) {
+        preferences(context).edit().putString(KeyboardSettingsProfile.key(virtual, KEY_METHOD), method.name()).apply();
     }
-    static boolean simplifiedChineseOutput(Context context) {
-        return preferences(context).getBoolean(KEY_SIMPLIFIED_CHINESE_OUTPUT, false);
+    static boolean simplifiedChineseOutput(Context context) { return simplifiedChineseOutput(context, true); }
+    static boolean simplifiedChineseOutput(Context context, boolean virtual) {
+        return preferences(context).getBoolean(KeyboardSettingsProfile.key(virtual, KEY_SIMPLIFIED_CHINESE_OUTPUT), false);
     }
-    static void setSimplifiedChineseOutput(Context context, boolean enabled) {
-        preferences(context).edit().putBoolean(KEY_SIMPLIFIED_CHINESE_OUTPUT, enabled).apply();
+    static void setSimplifiedChineseOutput(Context context, boolean enabled) { setSimplifiedChineseOutput(context, enabled, true); }
+    static void setSimplifiedChineseOutput(Context context, boolean enabled, boolean virtual) {
+        preferences(context).edit().putBoolean(KeyboardSettingsProfile.key(virtual, KEY_SIMPLIFIED_CHINESE_OUTPUT), enabled).apply();
     }
-    static TableInputOptions options(Context context, ChineseInputMethod method) {
-        return options(context, method, false);
-    }
-    static TableInputOptions options(Context context, ChineseInputMethod method, boolean virtualKeyboard) {
+    static TableInputOptions options(Context context, ChineseInputMethod method) { return options(context, method, false); }
+    static TableInputOptions options(Context context, ChineseInputMethod method, boolean virtual) {
         TableInputOptions result = new TableInputOptions(method);
-        SharedPreferences p = preferences(context);
-        String key = "table_options." + method.name() + ".";
-        result.queryAtMaximum = p.getBoolean(key + "maximum", result.queryAtMaximum);
-        result.clearOnError = p.getBoolean(key + "clear", result.clearOnError);
-        result.composeWhileTyping = p.getBoolean(key + "realtime", false);
-        result.dynamicFrequency = p.getBoolean(key + "learning", result.dynamicFrequency);
-        result.punctuation = p.getInt(key + "punctuation", 0);
-        if (method == ChineseInputMethod.CANGJIE && !virtualKeyboard)
-            result.prefixCandidates = p.getBoolean(key + "physical.prefix", false);
-        if (method == ChineseInputMethod.CANGJIE && virtualKeyboard) {
-            result.composeWhileTyping = p.getBoolean(key + "virtual.realtime",
-                    p.getBoolean(key + "realtime", true));
-            result.prefixCandidates = p.getBoolean(key + "virtual.prefix", true);
-        }
-        if (method == ChineseInputMethod.CANGJIE)
-            result.clearOnError = p.getBoolean(key + (virtualKeyboard ? "virtual.clear" : "physical.clear"),
-                    result.clearOnError);
+        SharedPreferences saved = preferences(context);
+        String key = KeyboardSettingsProfile.key(virtual, "table_options." + method.name() + ".");
+        result.queryAtMaximum = saved.getBoolean(key + "maximum", result.queryAtMaximum);
+        result.clearOnError = saved.getBoolean(key + "clear", result.clearOnError);
+        result.composeWhileTyping = saved.getBoolean(key + "realtime", method == ChineseInputMethod.CANGJIE && virtual);
+        result.prefixCandidates = method == ChineseInputMethod.CANGJIE && saved.getBoolean(key + "prefix", virtual);
+        result.dynamicFrequency = saved.getBoolean(key + "learning", result.dynamicFrequency);
+        result.punctuation = saved.getInt(key + "punctuation", 0);
         if (result.composeWhileTyping) result.clearOnError = false;
         return result;
     }
-    static void setOptions(Context context, ChineseInputMethod method, TableInputOptions options) {
-        setOptions(context, method, options, false);
-    }
-    static void setOptions(Context context, ChineseInputMethod method, TableInputOptions options,
-                           boolean virtualKeyboard) {
-        String key = "table_options." + method.name() + ".";
-        SharedPreferences p = preferences(context);
-        SharedPreferences.Editor edit = p.edit().putBoolean(key + "maximum", options.queryAtMaximum)
-                .putBoolean(key + "learning", options.dynamicFrequency)
-                .putInt(key + "punctuation", options.punctuation);
-        if (method == ChineseInputMethod.CANGJIE) {
-            edit.putBoolean(key + (virtualKeyboard ? "virtual.clear" : "physical.clear"),
-                    options.clearOnError && !options.composeWhileTyping);
-            // Resolve the old shared choice once, before either input source edits it.
-            if (!p.contains(key + "virtual.realtime"))
-                edit.putBoolean(key + "virtual.realtime", options(context, method, true).composeWhileTyping);
-            if (virtualKeyboard) {
-                edit.putBoolean(key + "virtual.realtime", options.composeWhileTyping)
-                    .putBoolean(key + "virtual.prefix", options.prefixCandidates);
-            } else edit.putBoolean(key + "realtime", options.composeWhileTyping)
-                    .putBoolean(key + "physical.prefix", options.prefixCandidates);
-        } else edit.putBoolean(key + "realtime", options.composeWhileTyping)
-                .putBoolean(key + "clear", options.clearOnError && !options.composeWhileTyping);
-        edit.apply();
+    static void setOptions(Context context, ChineseInputMethod method, TableInputOptions options) { setOptions(context, method, options, false); }
+    static void setOptions(Context context, ChineseInputMethod method, TableInputOptions options, boolean virtual) {
+        String key = KeyboardSettingsProfile.key(virtual, "table_options." + method.name() + ".");
+        preferences(context).edit().putBoolean(key + "maximum", options.queryAtMaximum)
+                .putBoolean(key + "learning", options.dynamicFrequency).putInt(key + "punctuation", options.punctuation)
+                .putBoolean(key + "clear", options.clearOnError && !options.composeWhileTyping)
+                .putBoolean(key + "realtime", options.composeWhileTyping)
+                .putBoolean(key + "prefix", options.prefixCandidates).apply();
     }
 }

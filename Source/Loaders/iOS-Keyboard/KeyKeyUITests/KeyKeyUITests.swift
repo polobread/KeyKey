@@ -43,7 +43,7 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(version.label.hasPrefix("版本 "))
         XCTAssertNotEqual(version.label, "版本 —")
         for identifier in [
-            "open-hardware-editor", "open-input-method-settings", "open-phrase-collections",
+            "open-hardware-editor", "app-settings.open-virtual", "app-settings.open-physical", "open-phrase-collections",
             "open-user-phrases",
             "open-system-settings", "supporter.purchase",
             "supporter.restore", "open-acknowledgements"
@@ -58,22 +58,276 @@ final class KeyKeyUITests: XCTestCase {
         #endif
     }
 
+    func testKeyboardProfilePagesAndEditorEntry() {
+        app = XCUIApplication()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["app-settings.title"].waitForExistence(timeout: 8))
+        XCTAssertEqual(app.staticTexts["app-settings.title"].label, "琦琦輸入法設定")
+        XCTAssertFalse(app.buttons["open-input-method-settings"].exists)
+        XCTAssertFalse(app.buttons["app-settings.apply-to-keyboard"].exists)
+        for identifier in ["app-settings.open-virtual", "app-settings.open-physical",
+                           "open-user-phrases", "open-phrase-collections", "app-settings.reset-learning"] {
+            XCTAssertEqual(app.buttons.matching(identifier: identifier).count, 1)
+        }
+        revealSetting(app.buttons["app-settings.open-virtual"], in: app.scrollViews.firstMatch)
+        keepAppSettingsEvidence("home-direct-keyboard-settings")
+        homeButton("app-settings.reset-learning").tap()
+        let resetConfirmation = app.alerts["重設好打注音學習紀錄？"]
+        XCTAssertTrue(resetConfirmation.waitForExistence(timeout: 3))
+        for text in ["App", "編輯器", "鍵盤", "下次", "自訂詞"] {
+            XCTAssertTrue(resetConfirmation.staticTexts.allElementsBoundByIndex.contains {
+                $0.label.contains(text)
+            }, "重設前須告知受影響的資料範圍：\(text)")
+        }
+        keepAppSettingsEvidence("app-reset-confirmation-scope")
+        resetConfirmation.buttons["取消"].tap()
+
+        openAppKeyboardSettings(.virtual, expandPhonetic: false)
+        XCTAssertEqual(app.buttons.matching(identifier: "app-settings.apply-to-keyboard").count, 1)
+        XCTAssertFalse(appKeyboardSettingsScroll.buttons["open-user-phrases"].exists)
+        XCTAssertFalse(appKeyboardSettingsScroll.buttons["app-settings.reset-learning"].exists)
+        assertSettingsGroupsCollapsed(prefix: "app-settings", appearance: true)
+        XCTAssertFalse(app.buttons["app-settings.application.info"].exists)
+        assertAppSettingsHelp("app-settings.simplified-chinese-output.info", title: "繁體中文轉簡體",
+                              contains: ["送出", "候選", "繁體"], in: appKeyboardSettingsScroll)
+        setSettingsGroup("appearance", prefix: "app-settings", expanded: true, in: appKeyboardSettingsScroll)
+        let fontSize = app.segmentedControls["app-settings.key-font-size"]
+        revealSetting(fontSize, in: appKeyboardSettingsScroll)
+        XCTAssertEqual(fontSize.label, "字體大小")
+        assertAppSettingsHelp("app-settings.key-font-size.info", title: "字體大小",
+                              contains: ["標準", "提示"], in: appKeyboardSettingsScroll)
+        keepAppSettingsEvidence("virtual-appearance-info")
+        setSettingsGroup("appearance", prefix: "app-settings", expanded: false, in: appKeyboardSettingsScroll)
+        setSettingsGroup("phonetic", prefix: "app-settings", expanded: true, in: appKeyboardSettingsScroll)
+        let space = app.switches["app-settings.space-selects-candidates"]
+        revealSetting(space, in: appKeyboardSettingsScroll)
+        if space.value as? String != "1" { space.tap() }
+        XCTAssertEqual(space.value as? String, "1")
+        setSettingsGroup("phonetic", prefix: "app-settings", expanded: false, in: appKeyboardSettingsScroll)
+        XCTAssertFalse(space.isHittable)
+        setSettingsGroup("phonetic", prefix: "app-settings", expanded: true, in: appKeyboardSettingsScroll)
+        XCTAssertEqual(space.value as? String, "1")
+        exerciseInlineTableOptions(prefix: "app-settings", punctuation: "半形", in: appKeyboardSettingsScroll)
+        keepAppSettingsEvidence("virtual-inline-table-settings")
+        closeAppKeyboardSettings()
+        XCTAssertFalse(app.buttons["app-settings.apply-to-keyboard"].exists)
+
+        openAppKeyboardSettings(.physical, expandPhonetic: false)
+        assertSettingsGroupsCollapsed(prefix: "app-settings", appearance: false)
+        setSettingsGroup("phonetic", prefix: "app-settings", expanded: true, in: appKeyboardSettingsScroll)
+        XCTAssertFalse(app.buttons["app-settings.apply-to-keyboard"].exists)
+        revealSetting(space, in: appKeyboardSettingsScroll)
+        if space.value as? String != "0" { space.tap() }
+        XCTAssertEqual(space.value as? String, "0")
+        XCTAssertFalse(app.segmentedControls["app-settings.layout-profile"].exists)
+        exerciseInlineTableOptions(prefix: "app-settings", punctuation: "中英混合", in: appKeyboardSettingsScroll)
+        keepAppSettingsEvidence("physical-inline-table-settings")
+        closeAppKeyboardSettings()
+
+        openAppKeyboardSettings(.virtual, expandPhonetic: false)
+        setSettingsGroup("phonetic", prefix: "app-settings", expanded: true, in: appKeyboardSettingsScroll)
+        revealSetting(space, in: appKeyboardSettingsScroll)
+        XCTAssertEqual(space.value as? String, "1")
+        setSettingsGroup("tables", prefix: "app-settings", expanded: true, in: appKeyboardSettingsScroll)
+        XCTAssertTrue(app.segmentedControls["app-settings.table.cangjie.punctuation"].buttons["半形"].isSelected)
+        closeAppKeyboardSettings()
+        openAppKeyboardSettings(.physical, expandPhonetic: false)
+        setSettingsGroup("phonetic", prefix: "app-settings", expanded: true, in: appKeyboardSettingsScroll)
+        revealSetting(space, in: appKeyboardSettingsScroll)
+        XCTAssertEqual(space.value as? String, "0")
+        setSettingsGroup("tables", prefix: "app-settings", expanded: true, in: appKeyboardSettingsScroll)
+        XCTAssertTrue(app.segmentedControls["app-settings.table.cangjie.punctuation"].buttons["中英混合"].isSelected)
+        closeAppKeyboardSettings()
+        homeButton("open-hardware-editor").tap()
+        let settings = app.buttons["hardware-editor.settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 5))
+        settings.tap()
+        XCTAssertTrue(app.navigationBars["實體鍵盤調整設定（App 編輯器）"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["app-settings.apply-to-keyboard"].exists)
+        XCTAssertFalse(appKeyboardSettingsScroll.buttons["app-settings.open-virtual"].exists)
+        setSettingsGroup("phonetic", prefix: "app-settings", expanded: true, in: appKeyboardSettingsScroll)
+        revealSetting(space, in: appKeyboardSettingsScroll)
+        if space.value as? String != "1" { space.tap() }
+        app.navigationBars.buttons["完成"].tap()
+        XCTAssertTrue(settings.waitForExistence(timeout: 3))
+
+        // An editor-only choice must survive applying the App's virtual defaults.
+        app.terminate()
+        app.launch()
+        openAppKeyboardSettings(.virtual, expandPhonetic: false)
+        app.buttons["app-settings.apply-to-keyboard"].tap()
+        XCTAssertTrue(app.staticTexts["已送出虛擬鍵盤設定。重新叫出鍵盤後生效。"].exists)
+        closeAppKeyboardSettings()
+        openAppKeyboardSettings(.physical)
+        revealSetting(space, in: appKeyboardSettingsScroll)
+        XCTAssertEqual(space.value as? String, "0", "虛擬套用不改寫 App 的實體預設")
+        closeAppKeyboardSettings()
+        homeButton("open-hardware-editor").tap()
+        XCTAssertTrue(settings.waitForExistence(timeout: 5))
+        settings.tap()
+        setSettingsGroup("phonetic", prefix: "app-settings", expanded: true, in: appKeyboardSettingsScroll)
+        revealSetting(space, in: appKeyboardSettingsScroll)
+        XCTAssertEqual(space.value as? String, "1", "虛擬套用保留實體編輯器當下的選擇")
+        keepAppSettingsEvidence("physical-choice-survives-virtual-apply")
+        app.navigationBars.buttons["完成"].tap()
+    }
+
+    private func assertAppSettingsHelp(_ identifier: String, title: String, contains fragments: [String],
+                                       in scroll: XCUIElement) {
+        let info = app.buttons[identifier]
+        revealSetting(info, in: scroll)
+        info.tap()
+        let alert = app.alerts[title]
+        XCTAssertTrue(alert.waitForExistence(timeout: 3))
+        for fragment in fragments {
+            XCTAssertTrue(alert.staticTexts.allElementsBoundByIndex.contains { $0.label.contains(fragment) },
+                          "說明應交代：\(fragment)")
+        }
+        alert.buttons["關閉"].tap()
+    }
+
+    private func assertKeyboardSettingsHelp(_ identifier: String, title: String, contains fragments: [String],
+                                            in scroll: XCUIElement) {
+        let info = app.buttons["keyboard-settings.help." + identifier]
+        revealSetting(info, in: scroll)
+        info.tap()
+        let heading = app.staticTexts["keyboard-settings.help.title"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 3))
+        XCTAssertEqual(heading.label, title)
+        let message = app.staticTexts["keyboard-settings.help.message"].label
+        for fragment in fragments { XCTAssertTrue(message.contains(fragment), "說明應交代：\(fragment)") }
+        keepAppSettingsEvidence("keyboard-help-" + identifier)
+        app.buttons["keyboard-settings.help.close"].tap()
+    }
+
+    private func homeButton(_ identifier: String) -> XCUIElement {
+        let button = app.buttons[identifier]
+        revealSetting(button, in: app.scrollViews.firstMatch)
+        return button
+    }
+
+    private var appKeyboardSettingsScroll: XCUIElement {
+        app.scrollViews.containing(.button, identifier: "app-settings.group.phonetic").firstMatch
+    }
+
+    private func openAppKeyboardSettings(_ profile: KeyboardSettingsProfile = .virtual,
+                                         expandPhonetic: Bool = true) {
+        homeButton("app-settings.open-" + profile.rawValue).tap()
+        XCTAssertTrue(app.navigationBars[profile.title].waitForExistence(timeout: 3))
+        if expandPhonetic {
+            for name in ["phonetic", "tables"] + (profile == .virtual ? ["appearance"] : []) {
+                setSettingsGroup(name, prefix: "app-settings", expanded: true, in: appKeyboardSettingsScroll)
+            }
+            revealSetting(app.segmentedControls["app-settings.composition-mode"], in: appKeyboardSettingsScroll)
+        }
+    }
+
+    private func setSettingsGroup(_ name: String, prefix: String, expanded: Bool, in scroll: XCUIElement) {
+        let header = app.buttons[prefix + ".group." + name]
+        revealSetting(header, in: scroll)
+        let value = expanded ? "expanded" : "collapsed"
+        if header.value as? String != value { header.tap() }
+        XCTAssertEqual(header.value as? String, value)
+    }
+
+    private func assertSettingsGroupsCollapsed(prefix: String, appearance: Bool) {
+        for name in ["phonetic", "tables"] + (appearance ? ["appearance"] : []) {
+            let header = app.buttons[prefix + ".group." + name]
+            XCTAssertTrue(header.waitForExistence(timeout: 3))
+            XCTAssertEqual(header.value as? String, "collapsed")
+        }
+        if !appearance { XCTAssertFalse(app.buttons[prefix + ".group.appearance"].exists) }
+    }
+
+    private func setInlineTableSwitch(_ method: String, _ name: String, prefix: String,
+                                      enabled: Bool, in scroll: XCUIElement) {
+        let control = app.switches[prefix + ".table." + method + "." + name]
+        revealSetting(control, in: scroll)
+        XCTAssertTrue(control.isEnabled)
+        if control.value as? String != (enabled ? "1" : "0") { control.tap() }
+        XCTAssertEqual(control.value as? String, enabled ? "1" : "0")
+    }
+
+    private func exerciseInlineTableOptions(prefix: String, punctuation: String, in scroll: XCUIElement) {
+        setSettingsGroup("tables", prefix: prefix, expanded: true, in: scroll)
+        XCTAssertFalse(scroll.buttons["table-options.cangjie"].exists)
+        XCTAssertFalse(scroll.buttons["table-options.cangjie.physical"].exists)
+        XCTAssertFalse(scroll.buttons["table-options.simplex"].exists)
+        setInlineTableSwitch("cangjie", "realtime", prefix: prefix, enabled: true, in: scroll)
+        setInlineTableSwitch("cangjie", "prefix", prefix: prefix, enabled: true, in: scroll)
+        setInlineTableSwitch("cangjie", "realtime", prefix: prefix, enabled: false, in: scroll)
+        let retained = app.switches[prefix + ".table.cangjie.prefix"]
+        XCTAssertFalse(retained.isEnabled)
+        XCTAssertEqual(retained.value as? String, "1", "停用前綴候選時仍保存原選擇")
+        setInlineTableSwitch("cangjie", "clear", prefix: prefix, enabled: true, in: scroll)
+        XCTAssertEqual(app.switches[prefix + ".table.cangjie.realtime"].value as? String, "0")
+        setInlineTableSwitch("cangjie", "realtime", prefix: prefix, enabled: true, in: scroll)
+        XCTAssertEqual(app.switches[prefix + ".table.cangjie.clear"].value as? String, "0")
+        XCTAssertTrue(retained.isEnabled)
+        XCTAssertEqual(retained.value as? String, "1")
+        for name in ["maximum", "learning"] {
+            XCTAssertTrue(app.switches[prefix + ".table.cangjie." + name].exists)
+        }
+        let punctuationControl = app.segmentedControls[prefix + ".table.cangjie.punctuation"]
+        revealSetting(punctuationControl, in: scroll)
+        punctuationControl.buttons[punctuation].tap()
+        XCTAssertTrue(punctuationControl.buttons[punctuation].isSelected)
+        setInlineTableSwitch("simplex", "realtime", prefix: prefix, enabled: true, in: scroll)
+        XCTAssertEqual(app.switches[prefix + ".table.simplex.clear"].value as? String, "0")
+        setInlineTableSwitch("simplex", "clear", prefix: prefix, enabled: true, in: scroll)
+        XCTAssertEqual(app.switches[prefix + ".table.simplex.realtime"].value as? String, "0")
+    }
+
+    private func closeAppKeyboardSettings() {
+        let pageTitle = app.navigationBars.firstMatch.identifier
+        app.navigationBars.buttons["完成"].tap()
+        XCTAssertTrue(waitForLayout { !self.app.navigationBars[pageTitle].exists })
+        XCTAssertTrue(app.staticTexts["app-settings.title"].waitForExistence(timeout: 3))
+    }
+
+    private func keepAppSettingsEvidence(_ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    private func resetAppLearningFromHome(returnTo profile: KeyboardSettingsProfile? = nil,
+                                          requireEditorReset: Bool = false) {
+        if app.buttons["app-settings.group.phonetic"].exists { closeAppKeyboardSettings() }
+        homeButton("app-settings.reset-learning").tap()
+        let confirmation = app.alerts["重設好打注音學習紀錄？"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 3))
+        confirmation.buttons["重設"].tap()
+        let result = app.alerts["好打注音學習紀錄"]
+        XCTAssertTrue(result.waitForExistence(timeout: 5))
+        if requireEditorReset {
+            XCTAssertTrue(result.staticTexts.allElementsBoundByIndex.contains {
+                $0.label.contains("App 內編輯器已重設")
+            }, "The test requires an independently reset App learning store")
+        }
+        result.buttons["知道了"].tap()
+        if let profile { openAppKeyboardSettings(profile) }
+    }
+
     func testAppSettingsEntryOpensAndPersistsCompositionMode() {
         app = XCUIApplication()
         app.launch()
 
-        let entry = app.buttons["open-input-method-settings"]
-        XCTAssertTrue(entry.waitForExistence(timeout: 8))
-        entry.tap()
-        XCTAssertTrue(app.navigationBars["輸入法設定"].waitForExistence(timeout: 3))
+        openAppKeyboardSettings()
+        XCTAssertTrue(app.navigationBars["虛擬鍵盤調整設定"].waitForExistence(timeout: 3))
         let apply = app.buttons["app-settings.apply-to-keyboard"]
         XCTAssertTrue(apply.isHittable)
         XCTAssertLessThan(apply.frame.maxY, app.segmentedControls["app-settings.composition-mode"].frame.minY)
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(
-            format: "label CONTAINS %@", "包含首頁的關聯詞詞庫"
+        app.buttons["app-settings.apply-to-keyboard.info"].tap()
+        let applyHelp = app.alerts["套用到鍵盤"]
+        XCTAssertTrue(applyHelp.waitForExistence(timeout: 3))
+        XCTAssertTrue(applyHelp.staticTexts.matching(NSPredicate(
+            format: "label CONTAINS %@", "關聯詞詞庫"
         )).firstMatch.exists)
+        applyHelp.buttons["關閉"].tap()
         apply.tap()
-        XCTAssertTrue(app.staticTexts["已送出 App 設定。重新叫出鍵盤後生效。"].exists)
+        XCTAssertTrue(app.staticTexts["已送出虛擬鍵盤設定。重新叫出鍵盤後生效。"].exists)
         XCTAssertTrue(app.segmentedControls["app-settings.candidate-color"].exists)
         XCTAssertTrue(app.switches["app-settings.input-clicks"].exists)
         let omission = app.switches["app-settings.omit-tones"]
@@ -108,16 +362,16 @@ final class KeyKeyUITests: XCTestCase {
         layout.buttons["標準"].tap()
         XCTAssertEqual(omission.value as? String, "0")
         XCTAssertFalse(app.switches["app-settings.collection.McBopomofo"].exists)
-        XCTAssertTrue(app.buttons["app-settings.user-phrases"].exists)
-        XCTAssertTrue(app.buttons["app-settings.reset-learning"].exists)
+        XCTAssertFalse(appKeyboardSettingsScroll.buttons["app-settings.user-phrases"].exists)
+        XCTAssertFalse(appKeyboardSettingsScroll.buttons["app-settings.reset-learning"].exists)
 
         let mode = app.segmentedControls["app-settings.composition-mode"]
         mode.buttons["傳統注音"].tap()
-        app.navigationBars["輸入法設定"].buttons.element(boundBy: 0).tap()
-        entry.tap()
+        app.navigationBars.buttons["完成"].tap()
+        openAppKeyboardSettings()
         XCTAssertTrue(mode.buttons["傳統注音"].isSelected)
         mode.buttons["好打注音"].tap()
-        app.navigationBars["輸入法設定"].buttons.element(boundBy: 0).tap()
+        app.navigationBars.buttons["完成"].tap()
 
         openAppPhraseCollections()
         XCTAssertTrue(app.cells["app-settings.phrases.McBopomofo"].exists)
@@ -135,7 +389,7 @@ final class KeyKeyUITests: XCTestCase {
         test00KeyboardOptInIsConfigured()
         app = XCUIApplication()
         app.launch()
-        app.buttons["open-input-method-settings"].tap()
+        openAppKeyboardSettings()
         app.segmentedControls["app-settings.composition-mode"].buttons["好打注音"].tap()
         app.segmentedControls["app-settings.keyboard-layout"].buttons["標準"].tap()
         let omission = app.switches["app-settings.omit-tones"]
@@ -145,8 +399,7 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(toggle.exists)
         if toggle.value as? String != "0" { toggle.tap() }
         XCTAssertEqual(toggle.value as? String, "0")
-        app.buttons["app-settings.reset-learning"].tap()
-        app.alerts.buttons["重設"].tap()
+        resetAppLearningFromHome(returnTo: .virtual)
         app.buttons["app-settings.apply-to-keyboard"].tap()
         launchHostApp()
         XCTAssertTrue(revealField("message"))
@@ -170,14 +423,14 @@ final class KeyKeyUITests: XCTestCase {
         app.terminate()
         app = XCUIApplication()
         app.launch()
-        app.buttons["open-input-method-settings"].tap()
+        openAppKeyboardSettings()
         let enabled = app.switches["app-settings.space-selects-candidates"]
         if enabled.value as? String != "1" { enabled.tap() }
         XCTAssertEqual(enabled.value as? String, "1")
         app.buttons["app-settings.apply-to-keyboard"].tap()
         app.terminate()
         app.launch()
-        app.buttons["open-input-method-settings"].tap()
+        openAppKeyboardSettings()
         XCTAssertEqual(app.switches["app-settings.space-selects-candidates"].value as? String, "1")
         launchHostApp()
         XCTAssertTrue(revealField("message"))
@@ -191,7 +444,7 @@ final class KeyKeyUITests: XCTestCase {
         app.terminate()
         app = XCUIApplication()
         app.launch()
-        app.buttons["open-input-method-settings"].tap()
+        openAppKeyboardSettings()
         let restored = app.switches["app-settings.space-selects-candidates"]
         if restored.value as? String != "0" { restored.tap() }
         XCTAssertEqual(restored.value as? String, "0")
@@ -201,17 +454,18 @@ final class KeyKeyUITests: XCTestCase {
     func testSharedSpaceSelectionAndIndependentDownArrow() {
         app = XCUIApplication()
         app.launch()
-        let settings = app.buttons["open-input-method-settings"]
-        settings.tap()
+        openAppKeyboardSettings()
         app.segmentedControls["app-settings.composition-mode"].buttons["好打注音"].tap()
         app.segmentedControls["app-settings.keyboard-layout"].buttons["標準"].tap()
         let toggle = app.switches["app-settings.space-selects-candidates"]
         XCTAssertTrue(toggle.exists)
         if toggle.value as? String != "0" { toggle.tap() }
-        app.buttons["app-settings.reset-learning"].tap()
-        app.alerts.buttons["重設"].tap()
-        app.navigationBars["輸入法設定"].buttons.element(boundBy: 0).tap()
-        app.buttons["open-hardware-editor"].tap()
+        resetAppLearningFromHome(returnTo: .virtual)
+        closeAppKeyboardSettings()
+        openAppKeyboardSettings(.physical)
+        if toggle.value as? String != "0" { toggle.tap() }
+        app.navigationBars.buttons["完成"].tap()
+        homeButton("open-hardware-editor").tap()
         let output = app.textViews["hardware-editor.output"]
         XCTAssertTrue(output.waitForExistence(timeout: 3))
         for key in "su3" { app.typeKey(String(key), modifierFlags: []) }
@@ -237,15 +491,15 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["hardware-editor.enter"].tap()
         XCTAssertEqual(output.value as? String, "你")
         app.navigationBars["實體鍵盤編輯器"].buttons.element(boundBy: 0).tap()
-        settings.tap()
+        openAppKeyboardSettings(.physical)
         toggle.tap()
         XCTAssertEqual(toggle.value as? String, "1")
         app.terminate()
         app.launch()
-        settings.tap()
+        openAppKeyboardSettings(.physical)
         XCTAssertEqual(toggle.value as? String, "1")
-        app.navigationBars["輸入法設定"].buttons.element(boundBy: 0).tap()
-        app.buttons["open-hardware-editor"].tap()
+        app.navigationBars.buttons["完成"].tap()
+        homeButton("open-hardware-editor").tap()
         for key in "su3" { app.typeKey(String(key), modifierFlags: []) }
         app.buttons["hardware-editor.space"].tap()
         XCTAssertTrue(app.buttons["hardware-editor.candidate.1"].label.contains("你"))
@@ -254,7 +508,7 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["hardware-editor.enter"].tap()
         XCTAssertEqual(output.value as? String, "你")
         app.navigationBars["實體鍵盤編輯器"].buttons.element(boundBy: 0).tap()
-        settings.tap()
+        openAppKeyboardSettings(.physical)
         toggle.tap()
         XCTAssertEqual(toggle.value as? String, "0")
     }
@@ -263,9 +517,7 @@ final class KeyKeyUITests: XCTestCase {
         test00KeyboardOptInIsConfigured()
         app = XCUIApplication()
         app.launch()
-        let entry = app.buttons["open-input-method-settings"]
-        XCTAssertTrue(entry.waitForExistence(timeout: 8))
-        entry.tap()
+        openAppKeyboardSettings()
         let layout = app.segmentedControls["app-settings.keyboard-layout"]
         app.buttons["app-settings.keyboard-layout.info"].tap()
         let layoutHelp = app.alerts["注音鍵盤"]
@@ -277,14 +529,14 @@ final class KeyKeyUITests: XCTestCase {
         layout.buttons["許氏鍵盤"].tap()
         app.terminate()
         app.launch()
-        entry.tap()
+        openAppKeyboardSettings()
         XCTAssertTrue(layout.buttons["許氏鍵盤"].isSelected)
 
         launchHostApp()
         XCTAssertTrue(revealField("message"))
         field("message").tap()
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         let keyboardLayout = app.segmentedControls["bopomofo-keyboard-layout"]
         let layoutInfo = app.buttons["keyboard-settings.help.keyboard-layout"]
         revealSetting(layoutInfo, in: app.scrollViews["keyboard-settings.scroll"])
@@ -304,7 +556,7 @@ final class KeyKeyUITests: XCTestCase {
         candidate.tap()
         XCTAssertTrue(waitForLayout { (self.field("message").value as? String) == "你" })
 
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         keyboardLayout.buttons["標準"].tap()
         app.segmentedControls["bopomofo-composition-mode"].buttons["好打注音"].tap()
         app.buttons["完成"].tap()
@@ -312,7 +564,7 @@ final class KeyKeyUITests: XCTestCase {
         app.terminate()
         app = XCUIApplication()
         app.launch()
-        app.buttons["open-input-method-settings"].tap()
+        openAppKeyboardSettings()
         XCTAssertTrue(app.segmentedControls["app-settings.keyboard-layout"].buttons["許氏鍵盤"].isSelected)
         app.buttons["app-settings.apply-to-keyboard"].tap()
 
@@ -320,7 +572,7 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(revealField("message"))
         field("message").tap()
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         XCTAssertTrue(keyboardLayout.buttons["許氏鍵盤"].isSelected)
         keyboardLayout.buttons["標準"].tap()
         app.buttons["完成"].tap()
@@ -329,7 +581,7 @@ final class KeyKeyUITests: XCTestCase {
         app.terminate()
         app = XCUIApplication()
         app.launch()
-        app.buttons["open-input-method-settings"].tap()
+        openAppKeyboardSettings()
         app.segmentedControls["app-settings.keyboard-layout"].buttons["標準"].tap()
     }
 
@@ -362,7 +614,7 @@ final class KeyKeyUITests: XCTestCase {
             XCUIDevice.shared.orientation = .portrait
             if !settings.isHittable { self.tapInputField(output) }
             guard settings.waitForExistence(timeout: 2), settings.isHittable else { return }
-            settings.tap()
+            openKeyboardSettings()
             if layout.buttons["標準"].isHittable { layout.buttons["標準"].tap() }
             if method.buttons["好打注音"].isHittable { method.buttons["好打注音"].tap() }
             self.revealSetting(omission, in: scroll)
@@ -370,7 +622,7 @@ final class KeyKeyUITests: XCTestCase {
             if close.isHittable { close.tap() }
         }
 
-        settings.tap()
+        openKeyboardSettings()
         XCTAssertTrue(layout.buttons["標準"].waitForExistence(timeout: 3))
         method.buttons["好打注音"].tap()
         layout.buttons["標準"].tap()
@@ -399,7 +651,7 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertFalse(candidates.firstMatch.exists)
         XCTAssertTrue(app.buttons["3"].isHittable)
 
-        settings.tap()
+        openKeyboardSettings()
         XCTAssertTrue(layout.buttons["許氏鍵盤"].waitForExistence(timeout: 3))
         layout.buttons["許氏鍵盤"].tap()
         revealSetting(omission, in: scroll)
@@ -422,7 +674,7 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertEqual(output.value as? String, "你好nehw")
 
         let pinyinHostPrefix = "你好" + hsuReplacement + "好"
-        settings.tap()
+        openKeyboardSettings()
         XCTAssertTrue(layout.buttons["漢語拼音"].waitForExistence(timeout: 3))
         layout.buttons["漢語拼音"].tap()
         revealSetting(omission, in: scroll)
@@ -433,14 +685,14 @@ final class KeyKeyUITests: XCTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         assertAppRotation(.landscapeLeft, relativeToPortrait: portraitFrame)
         XCTAssertTrue(waitForLayout { self.app.buttons["n"].isHittable })
-        settings.tap()
+        openKeyboardSettings()
         let spaceInfo = app.buttons["keyboard-settings.help.space-selects-candidates"]
         revealSetting(spaceInfo, in: scroll)
         let spaceInfoFrame = spaceInfo.frame
         spaceInfo.tap()
         XCTAssertTrue(helpTitle.waitForExistence(timeout: 3))
         XCTAssertEqual(helpTitle.label, "好打注音使用空白鍵選字")
-        XCTAssertTrue(helpMessage.label.contains("輸入法設定"))
+        XCTAssertTrue(helpMessage.label.contains("空白鍵可完成讀音"))
         XCTAssertTrue(closeHelp.isHittable)
         closeHelp.tap()
         XCTAssertTrue(spaceInfo.isHittable)
@@ -502,13 +754,13 @@ final class KeyKeyUITests: XCTestCase {
             guard let self else { return }
             if !settings.isHittable { self.tapInputField(output) }
             guard settings.waitForExistence(timeout: 2) else { return }
-            settings.tap()
+            openKeyboardSettings()
             if layout.buttons["標準"].isHittable { layout.buttons["標準"].tap() }
             if method.buttons["好打注音"].isHittable { method.buttons["好打注音"].tap() }
             if closeSettings.isHittable { closeSettings.tap() }
         }
 
-        settings.tap()
+        openKeyboardSettings()
         XCTAssertTrue(layout.buttons["漢語拼音"].waitForExistence(timeout: 3))
         layout.buttons["漢語拼音"].tap()
         method.buttons["傳統注音"].tap()
@@ -552,7 +804,7 @@ final class KeyKeyUITests: XCTestCase {
         let done = app.windows.containing(.scrollView, identifier: "keyboard-settings.scroll")
             .firstMatch.buttons["完成"]
 
-        settings.tap()
+        openKeyboardSettings()
         method.buttons["傳統注音"].tap()
         revealSetting(layout, in: scroll)
         layout.buttons["倚天"].tap()
@@ -571,7 +823,7 @@ final class KeyKeyUITests: XCTestCase {
         candidate.tap()
         XCTAssertTrue(waitForLayout { output.value as? String == "你" })
 
-        settings.tap()
+        openKeyboardSettings()
         method.buttons["好打注音"].tap()
         revealSetting(omission, in: scroll)
         if omission.value as? String == "0" { omission.tap() }
@@ -591,7 +843,7 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["ENTER"].tap()
         XCTAssertTrue(waitForLayout { (output.value as? String)?.hasPrefix("你你好") == true })
 
-        settings.tap()
+        openKeyboardSettings()
         revealSetting(omission, in: scroll)
         omission.tap()
         revealSetting(layout, in: scroll)
@@ -1042,7 +1294,7 @@ final class KeyKeyUITests: XCTestCase {
         addTeardownBlock { XCUIDevice.shared.orientation = .portrait }
         app = XCUIApplication()
         app.launch()
-        app.buttons["open-hardware-editor"].tap()
+        homeButton("open-hardware-editor").tap()
         let method = app.buttons["hardware-editor.composition-mode"]
         let layout = app.buttons["hardware-editor.keyboard-layout"]
         XCTAssertTrue(method.waitForExistence(timeout: 3))
@@ -1076,7 +1328,7 @@ final class KeyKeyUITests: XCTestCase {
     func testPhysicalCangjiePrefixSettingAndNumberSelection() throws {
         app = XCUIApplication()
         app.launch()
-        app.buttons["open-hardware-editor"].tap()
+        homeButton("open-hardware-editor").tap()
         let method = app.buttons["hardware-editor.composition-mode"]
         XCTAssertTrue(method.waitForExistence(timeout: 3))
         method.tap(); app.buttons["倉頡"].tap()
@@ -1427,9 +1679,7 @@ final class KeyKeyUITests: XCTestCase {
         addTeardownBlock { XCUIDevice.shared.orientation = .portrait }
         app = XCUIApplication()
         app.launch()
-        let settings = app.buttons["open-input-method-settings"]
-        XCTAssertTrue(settings.waitForExistence(timeout: 8))
-        settings.tap()
+        openAppKeyboardSettings()
         let scroll = app.scrollViews.firstMatch
         let mode = app.segmentedControls["app-settings.composition-mode"]
         revealSetting(mode, in: scroll)
@@ -1440,18 +1690,18 @@ final class KeyKeyUITests: XCTestCase {
         let space = app.switches["app-settings.space-selects-candidates"]
         revealSetting(space, in: scroll)
         if space.value as? String != "0" { space.tap() }
-        let reset = app.buttons["app-settings.reset-learning"]
-        revealSetting(reset, in: scroll)
-        reset.tap()
-        app.alerts.buttons["重設"].tap()
-        let result = app.alerts["好打注音學習紀錄"]
-        XCTAssertTrue(result.waitForExistence(timeout: 5))
-        XCTAssertTrue(result.staticTexts.allElementsBoundByIndex.contains {
-            $0.label.contains("App 內編輯器已重設")
-        }, "The test requires an independently reset App learning store")
-        result.buttons["知道了"].tap()
-        app.navigationBars["輸入法設定"].buttons.element(boundBy: 0).tap()
-        app.buttons["open-hardware-editor"].tap()
+        resetAppLearningFromHome(requireEditorReset: true)
+        openAppKeyboardSettings(.physical)
+        revealSetting(mode, in: app.scrollViews.firstMatch)
+        mode.buttons["好打注音"].tap()
+        revealSetting(layout, in: app.scrollViews.firstMatch)
+        layout.buttons["標準"].tap()
+        revealSetting(space, in: app.scrollViews.firstMatch)
+        if space.value as? String != "0" { space.tap() }
+        let omitted = app.switches["app-settings.omit-tones"]
+        if omitted.value as? String != "0" { omitted.tap() }
+        app.navigationBars.buttons["完成"].tap()
+        homeButton("open-hardware-editor").tap()
         let output = app.textViews["hardware-editor.output"]
         XCTAssertTrue(output.waitForExistence(timeout: 3))
         XCTAssertEqual(output.value as? String, "")
@@ -1732,7 +1982,7 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode("傳統注音")
         selectLayoutProfile(.aligned)
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         XCTAssertFalse(app.buttons["全部關閉"].exists)
         app.buttons["完成"].tap()
@@ -1857,7 +2107,7 @@ final class KeyKeyUITests: XCTestCase {
         let cancel = app.buttons["keyboard-height.cancel"]
         func openHeightEditor() {
             XCTAssertTrue(waitForStableKeyboardFrames(identifiers: ["SETTINGS", "ENTER"]))
-            app.buttons["SETTINGS"].tap()
+            openKeyboardSettings()
             let entry = app.buttons["keyboard-settings.keyboard-height"]
             let scroll = app.scrollViews["keyboard-settings.scroll"]
             revealSetting(entry, in: scroll)
@@ -2001,7 +2251,7 @@ final class KeyKeyUITests: XCTestCase {
             return
         }
         try selectCompositionMode("好打注音")
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         let omission = app.switches["keyboard-settings.omit-tones"]
         if omission.value as? String != "0" { omission.tap() }
@@ -2126,7 +2376,7 @@ final class KeyKeyUITests: XCTestCase {
         tapInputField(field("default"))
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode("好打注音")
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
         selectLayoutProfile(.aligned)
@@ -2176,7 +2426,7 @@ final class KeyKeyUITests: XCTestCase {
         }
         XCTAssertTrue(activated, keyboardActivationFailureMessage)
         try selectCompositionMode("好打注音")
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
         selectLayoutProfile(.aligned)
@@ -2253,7 +2503,7 @@ final class KeyKeyUITests: XCTestCase {
         tapInputField(field("default"))
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         assertSplitKeyboardGeometry()
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         XCTAssertTrue(app.segmentedControls["keyboard.layout-profile"].buttons[KeyboardLayoutProfile.alignedSplit.displayName].isSelected)
         app.buttons["完成"].tap()
         selectLayoutProfile(.aligned)
@@ -2269,7 +2519,7 @@ final class KeyKeyUITests: XCTestCase {
         tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode(ChineseInputMethod.smart.displayName)
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         app.segmentedControls["bopomofo-keyboard-layout"]
             .buttons[BopomofoKeyboardLayout.standard.displayName].tap()
         closeKeyboardSettings()
@@ -2359,7 +2609,7 @@ final class KeyKeyUITests: XCTestCase {
         tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode("好打注音")
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
         selectLayoutProfile(.alignedSplit)
@@ -2466,7 +2716,7 @@ final class KeyKeyUITests: XCTestCase {
         tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode("好打注音")
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
         selectLayoutProfile(.alignedSplit)
@@ -2524,7 +2774,7 @@ final class KeyKeyUITests: XCTestCase {
         tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode("好打注音")
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
         selectLayoutProfile(.alignedSplit)
@@ -2610,7 +2860,7 @@ final class KeyKeyUITests: XCTestCase {
         tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode("好打注音")
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
         selectLayoutProfile(.alignedSplit)
@@ -2833,7 +3083,7 @@ final class KeyKeyUITests: XCTestCase {
         tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode(ChineseInputMethod.smart.displayName)
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         closeKeyboardSettings()
         selectLayoutOptions(layout: .standard, spacing: .small, fontSize: .normal,
@@ -2896,7 +3146,7 @@ final class KeyKeyUITests: XCTestCase {
         tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode(ChineseInputMethod.smart.displayName)
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         app.segmentedControls["bopomofo-keyboard-layout"]
             .buttons[BopomofoKeyboardLayout.standard.displayName].tap()
         closeKeyboardSettings()
@@ -3056,7 +3306,7 @@ final class KeyKeyUITests: XCTestCase {
         tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode(ChineseInputMethod.smart.displayName)
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         closeKeyboardSettings()
         let originalValue = output.value as? String
@@ -3116,9 +3366,8 @@ final class KeyKeyUITests: XCTestCase {
     func testLayoutOptionsFollowCandidateColorAndPersistIndependently() throws {
         app = XCUIApplication()
         app.launch()
-        app.buttons["open-input-method-settings"].tap()
-        let appScroll = app.scrollViews.containing(.segmentedControl,
-                                                  identifier: "app-settings.candidate-color").firstMatch
+        openAppKeyboardSettings()
+        let appScroll = appKeyboardSettingsScroll
         assertLayoutOptionsFollowCandidateColor(prefix: "app-settings.",
             color: app.segmentedControls["app-settings.candidate-color"], scroll: appScroll)
         assertFontSizeChoices(prefix: "app-settings.", scroll: appScroll)
@@ -3141,7 +3390,7 @@ final class KeyKeyUITests: XCTestCase {
 
         app.terminate()
         app.launch()
-        app.buttons["open-input-method-settings"].tap()
+        openAppKeyboardSettings()
         assertAppearanceOptions(prefix: "app-settings.", layout: .standard,
                                 spacing: .large, fontSize: .extraLarge, deletePosition: .leftOfEnter)
 
@@ -3151,7 +3400,7 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(revealField("default"))
         tapInputField(field("default"))
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         let keyboardScroll = app.scrollViews["keyboard-settings.scroll"]
         assertLayoutOptionsFollowCandidateColor(prefix: "keyboard.",
             color: app.segmentedControls["candidate-color"], scroll: keyboardScroll)
@@ -3178,7 +3427,7 @@ final class KeyKeyUITests: XCTestCase {
                 XCTAssertEqual(delete.midY, enter.midY, accuracy: 1)
                 XCTAssertLessThanOrEqual(delete.maxX, enter.minX + 1)
             }
-            app.buttons["SETTINGS"].tap()
+            openKeyboardSettings()
         }
         selectAppearanceOptions(prefix: "keyboard.", scroll: keyboardScroll,
                                 layout: .standard, spacing: .small, fontSize: .normal,
@@ -3189,9 +3438,8 @@ final class KeyKeyUITests: XCTestCase {
         app.terminate()
         app = XCUIApplication()
         app.launch()
-        app.buttons["open-input-method-settings"].tap()
-        let restoreScroll = app.scrollViews.containing(.segmentedControl,
-                                                      identifier: "app-settings.candidate-color").firstMatch
+        openAppKeyboardSettings()
+        let restoreScroll = appKeyboardSettingsScroll
         selectAppearanceOptions(prefix: "app-settings.", scroll: restoreScroll,
                                 layout: .standard, spacing: .small, fontSize: .normal,
                                 deletePosition: .aboveEnter)
@@ -3204,7 +3452,7 @@ final class KeyKeyUITests: XCTestCase {
         tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode(ChineseInputMethod.smart.displayName)
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         closeKeyboardSettings()
         selectLayoutOptions(layout: .alignedSplit, spacing: .small, fontSize: .normal,
@@ -3249,6 +3497,7 @@ final class KeyKeyUITests: XCTestCase {
     }
 
     func testSettingsLongPressDoesNotOpenLayoutMenu() throws {
+        test00KeyboardOptInIsConfigured()
         launchHostApp()
         XCTAssertTrue(revealField("default"))
         tapInputField(field("default"))
@@ -3262,10 +3511,60 @@ final class KeyKeyUITests: XCTestCase {
         if app.scrollViews["keyboard-settings.scroll"].exists { closeKeyboardSettings() }
         XCTAssertTrue(app.buttons["SETTINGS"].isHittable)
         XCTAssertEqual(app.state, .runningForeground)
+        openKeyboardSettings(expandPhonetic: false)
+        assertSettingsGroupsCollapsed(prefix: "keyboard-settings", appearance: true)
+        let scroll = app.scrollViews["keyboard-settings.scroll"]
+        assertKeyboardSettingsHelp("simplified-chinese-output", title: "繁體中文轉簡體",
+                                   contains: ["虛擬鍵盤調整設定", "套用到鍵盤"], in: scroll)
+        setSettingsGroup("appearance", prefix: "keyboard-settings", expanded: true, in: scroll)
+        let fontSize = app.segmentedControls["keyboard.key-font-size"]
+        revealSetting(fontSize, in: scroll)
+        XCTAssertEqual(fontSize.label, "字體大小")
+        assertKeyboardSettingsHelp("key-font-size", title: "字體大小", contains: ["標準", "提示"], in: scroll)
+        setSettingsGroup("appearance", prefix: "keyboard-settings", expanded: false, in: scroll)
+        setSettingsGroup("phonetic", prefix: "keyboard-settings", expanded: true, in: scroll)
+        assertKeyboardSettingsHelp("reset-learning", title: "重設好打注音學習紀錄",
+                                   contains: ["此鍵盤", "自訂詞"], in: scroll)
+        setSettingsGroup("phonetic", prefix: "keyboard-settings", expanded: false, in: scroll)
+        exerciseInlineTableOptions(prefix: "keyboard-settings", punctuation: "半形", in: scroll)
+        setSettingsGroup("tables", prefix: "keyboard-settings", expanded: false, in: scroll)
+        setSettingsGroup("tables", prefix: "keyboard-settings", expanded: true, in: scroll)
+        XCTAssertTrue(app.segmentedControls["keyboard-settings.table.cangjie.punctuation"].buttons["半形"].isSelected)
+        let prefix = app.switches["keyboard-settings.table.cangjie.prefix"]
+        XCTAssertEqual(prefix.value as? String, "1")
+        keepAppSettingsEvidence("extension-inline-table-settings")
+        let method = app.segmentedControls["bopomofo-composition-mode"]
+        revealSetting(method, in: scroll)
+        method.buttons["倉頡"].tap()
+        closeKeyboardSettings()
+        let output = field("default")
+        app.buttons["m"].tap()
+        let first = app.buttons["第 1 個候選，一"]
+        XCTAssertTrue(first.waitForExistence(timeout: 3))
+        first.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "一" })
+        openKeyboardSettings(expandPhonetic: false)
+        setSettingsGroup("tables", prefix: "keyboard-settings", expanded: true, in: scroll)
+        setInlineTableSwitch("cangjie", "clear", prefix: "keyboard-settings", enabled: true, in: scroll)
+        XCTAssertFalse(prefix.isEnabled)
+        XCTAssertEqual(prefix.value as? String, "1")
+        closeKeyboardSettings()
+        app.buttons["m"].tap()
+        XCTAssertFalse(first.exists, "關閉即時候選後，delegate須恢復等空白查詢的模式")
+        app.buttons["SPACE"].tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "一一" })
+        keepKeyboardEvidence("extension-inline-options-use-existing-delegate", output: output)
+        openKeyboardSettings(expandPhonetic: false)
+        setSettingsGroup("tables", prefix: "keyboard-settings", expanded: true, in: scroll)
+        setInlineTableSwitch("cangjie", "realtime", prefix: "keyboard-settings", enabled: true, in: scroll)
+        revealSetting(method, in: scroll)
+        method.buttons["好打注音"].tap()
+        closeKeyboardSettings()
     }
 
     private func assertLayoutOptionsFollowCandidateColor(prefix: String, color: XCUIElement,
                                                          scroll: XCUIElement) {
+        setSettingsGroup("appearance", prefix: prefix == "keyboard." ? "keyboard-settings" : "app-settings", expanded: true, in: scroll)
         revealSetting(color, in: scroll)
         // Segmented controls are stable AX elements; do not enumerate transient
         // scroll indicators or compare the clipped frames of offscreen rows.
@@ -3283,6 +3582,7 @@ final class KeyKeyUITests: XCTestCase {
     }
 
     private func assertFontSizeChoices(prefix: String, scroll: XCUIElement) {
+        setSettingsGroup("appearance", prefix: prefix == "keyboard." ? "keyboard-settings" : "app-settings", expanded: true, in: scroll)
         let control = app.segmentedControls[prefix + "key-font-size"]
         revealSetting(control, in: scroll)
         XCTAssertEqual(control.buttons.count, KeyboardKeyFontSize.allCases.count)
@@ -3296,6 +3596,7 @@ final class KeyKeyUITests: XCTestCase {
                                          spacing: KeyboardKeycapArea? = nil,
                                          fontSize: KeyboardKeyFontSize? = nil,
                                          deletePosition: KeyboardDeleteShiftPosition? = nil) {
+        setSettingsGroup("appearance", prefix: prefix == "keyboard." ? "keyboard-settings" : "app-settings", expanded: true, in: scroll)
         let selections: [(String, String?)] = [
             ("layout-profile", layout?.displayName),
             ("keycap-area", spacing?.displayName),
@@ -3332,11 +3633,23 @@ final class KeyKeyUITests: XCTestCase {
                                       spacing: KeyboardKeycapArea? = nil,
                                       fontSize: KeyboardKeyFontSize? = nil,
                                       deletePosition: KeyboardDeleteShiftPosition? = nil) {
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         selectAppearanceOptions(prefix: "keyboard.", scroll: app.scrollViews["keyboard-settings.scroll"],
                                 layout: layout, spacing: spacing, fontSize: fontSize,
                                 deletePosition: deletePosition)
         closeKeyboardSettings()
+    }
+
+    private func openKeyboardSettings(expandPhonetic: Bool = true) {
+        app.buttons["SETTINGS"].tap()
+        let scroll = app.scrollViews["keyboard-settings.scroll"]
+        XCTAssertTrue(scroll.waitForExistence(timeout: 3))
+        if expandPhonetic {
+            for name in ["phonetic", "tables", "appearance"] {
+                setSettingsGroup(name, prefix: "keyboard-settings", expanded: true, in: scroll)
+            }
+            revealSetting(app.segmentedControls["bopomofo-composition-mode"], in: scroll)
+        }
     }
 
     private func closeKeyboardSettings() {
@@ -3482,14 +3795,7 @@ final class KeyKeyUITests: XCTestCase {
     }
 
     private func openAppPhraseCollections() {
-        let entry = app.buttons["open-phrase-collections"]
-        XCTAssertTrue(entry.waitForExistence(timeout: 8))
-        for _ in 0..<4 {
-            if entry.isHittable { break }
-            app.scrollViews.firstMatch.swipeUp(velocity: .slow)
-        }
-        XCTAssertTrue(entry.isHittable)
-        entry.tap()
+        homeButton("open-phrase-collections").tap()
         XCTAssertTrue(app.navigationBars["關聯詞詞庫"].waitForExistence(timeout: 3))
     }
 
@@ -3515,7 +3821,7 @@ final class KeyKeyUITests: XCTestCase {
     }
 
     private func selectCompositionMode(_ label: String) throws {
-        app.buttons["SETTINGS"].tap()
+        openKeyboardSettings()
         let control = app.segmentedControls["bopomofo-composition-mode"]
         XCTAssertTrue(control.waitForExistence(timeout: 2), "找不到注音模式設定")
         let option = control.buttons[label]

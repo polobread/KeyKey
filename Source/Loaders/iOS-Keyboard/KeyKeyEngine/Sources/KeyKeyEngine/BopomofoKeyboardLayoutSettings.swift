@@ -5,9 +5,9 @@ public final class BopomofoKeyboardLayoutSettings {
     private let store: KeyboardPreferenceStore
 
     public init(defaults: UserDefaults = .standard, sharedDefaults: UserDefaults? = nil,
-                writesShared: Bool = false) {
+                writesShared: Bool = false, profile: KeyboardSettingsProfile = .virtual) {
         store = KeyboardPreferenceStore(defaults: defaults, sharedDefaults: sharedDefaults,
-                                        writesShared: writesShared)
+                                        writesShared: writesShared, profile: profile)
     }
 
     public var layout: BopomofoKeyboardLayout {

@@ -241,14 +241,16 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     private let sharedDefaults = UserDefaults(
         suiteName: KeyboardPreferenceStore.appGroupIdentifier
     )
-    private lazy var phraseSettings = PhraseSettings(sharedDefaults: sharedDefaults)
-    private lazy var methodSettings = ChineseInputMethodSettings(sharedDefaults: sharedDefaults)
-    private lazy var simplifiedOutputSettings = SimplifiedChineseOutputSettings(sharedDefaults: sharedDefaults)
+    private lazy var phraseSettings = PhraseSettings(sharedDefaults: sharedDefaults, applyDefaultsProfile: .physical)
+    private lazy var methodSettings = ChineseInputMethodSettings(sharedDefaults: sharedDefaults, profile: .physical)
+    private lazy var simplifiedOutputSettings = SimplifiedChineseOutputSettings(sharedDefaults: sharedDefaults, profile: .physical)
     private lazy var compositionModeSettings = BopomofoCompositionModeSettings(
-        sharedDefaults: sharedDefaults
+        sharedDefaults: sharedDefaults, profile: .physical
     )
-    private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(sharedDefaults: sharedDefaults)
-    private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults)
+    private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(sharedDefaults: sharedDefaults, profile: .physical)
+    private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults, profile: .physical)
+    private lazy var toneSettings = SmartMandarinToneOmissionSettings(sharedDefaults: sharedDefaults, profile: .physical)
+    private lazy var typingSettings = KeyboardTypingSettings(sharedDefaults: sharedDefaults, profile: .physical)
     private var committedText = ""
     private var insertionCharacterIndex = 0
     private var displayedCaretUTF16Offset = 0
@@ -277,6 +279,11 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         navigationItem.rightBarButtonItem?.accessibilityIdentifier = "hardware-editor.help"
         navigationItem.rightBarButtonItem?.accessibilityLabel = "實體鍵盤操作說明"
 
+        let settings = UIBarButtonItem(image: UIImage(systemName: "gearshape"), style: .plain,
+            target: self, action: #selector(openHardwareSettings))
+        settings.accessibilityLabel = "實體鍵盤調整設定"
+        settings.accessibilityIdentifier = "hardware-editor.settings"
+        navigationItem.rightBarButtonItems = [settings, navigationItem.rightBarButtonItem!]
         configureViews()
         loadEngine()
         observeKeyboardConnection()
@@ -293,8 +300,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         if let engine {
-            apply(engine.setKeyboardLayout(layoutSettings.layout))
-            engine.spaceSelectsCandidates = spaceSettings.enabled
+            engine.applyPreferencesWhenReady(currentPreferences)
             do { try engine.refreshUserPhrases(from: guanyinmaPhraseData) }
             catch { transientStatus = "Guanyinma 自訂詞同步失敗：\(error.localizedDescription)" }
         }
@@ -939,6 +945,22 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         actionsStack.distribution = .fillEqually
     }
 
+    private var currentPreferences: KeyboardInputPreferences {
+        let method = methodSettings.method
+        return KeyboardInputPreferences(method: method, layout: layoutSettings.layout,
+            tableOptions: methodSettings.options(for: method), spaceSelectsCandidates: spaceSettings.enabled,
+            omitsTones: toneSettings.enabled, typingOptions: typingSettings.options)
+    }
+    @objc private func openHardwareSettings() {
+        let controller = KeyboardProfileSettingsViewController(profile: .physical, writesShared: false)
+        controller.settingsDidChange = { [weak self] in
+            guard let self else { return }
+            self.engine?.applyPreferencesWhenReady(self.currentPreferences)
+            self.refresh()
+        }
+        present(UINavigationController(rootViewController: controller), animated: true)
+    }
+
     private func loadEngine() {
         guard let url = embeddedDatabaseURL() else {
             transientStatus = "找不到內嵌字庫，請重新安裝 App。"
@@ -973,6 +995,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
                 keyboardLayout: layoutSettings.layout,
                 tableOptions: methodSettings.options(for: methodSettings.method),
                 spaceSelectsCandidates: spaceSettings.enabled,
+                omitsTones: toneSettings.enabled, typingOptions: typingSettings.options,
                 associatedPhrases: phrases,
                 candidateFilter: CandidateGlyphSupport.shared.canDisplay
             )
@@ -1866,7 +1889,7 @@ extension HardwareKeyboardEditorViewController: HardwareKeyboardCaptureViewDeleg
             ), engine.displayedCandidates.indices.contains(index) {
                 apply(engine.selectDisplayedCandidate(index))
             } else {
-                apply(engine.handleHardwareCharacter(character), widenASCII: true)
+                apply(engine.handleHardwareCharacter(character, modifiers: modifiers), widenASCII: true)
             }
         case .returnKey:
             apply(engine.enter())

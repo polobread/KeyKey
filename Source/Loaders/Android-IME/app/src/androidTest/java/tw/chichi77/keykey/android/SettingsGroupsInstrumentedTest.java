@@ -36,18 +36,17 @@ public final class SettingsGroupsInstrumentedTest {
         SupporterState.setSupporter(context, false);
         Activity activity = null;
         try {
-            activity = instrumentation.startActivitySync(new Intent(context,
-                    SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            activity = instrumentation.startActivitySync(SettingsActivity.intent(context, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             SettingsActivity settings = (SettingsActivity) activity;
             instrumentation.runOnMainSync(() -> {
                 ViewGroup root = settings.findViewById(android.R.id.content);
                 ScrollView scroll = (ScrollView) root.getChildAt(0);
                 LinearLayout page = (LinearLayout) scroll.getChildAt(0);
-                assertEquals(7, page.getChildCount()); // title + method picker + four groups + supporter
+                assertEquals(6, page.getChildCount()); // title + method picker + three groups + supporter
 
                 View supporter = page.getChildAt(1);
                 assertTrue(containsText(supporter, "支持開發"));
-                for (String title : new String[]{"注音與選字", "倉頡與簡易", "外觀與操作", "實體鍵盤"}) {
+                for (String title : new String[]{"注音與選字", "倉頡與簡易", "外觀與操作"}) {
                     LinearLayout group = findGroup(page, title);
                     assertEquals(View.GONE, group.getChildAt(1).getVisibility());
                 }
@@ -63,7 +62,7 @@ public final class SettingsGroupsInstrumentedTest {
                 assertSame(supporter, page.getChildAt(page.getChildCount() - 1));
                 assertTrue(containsText(supporter, "感謝你支持琦琦輸入法"));
                 assertFalse(containsText(supporter, "歡迎一次付費支持"));
-                assertTrue(containsText(page.getChildAt(page.getChildCount() - 2), "實體鍵盤"));
+                assertTrue(containsText(page.getChildAt(page.getChildCount() - 2), "外觀與操作"));
                 settings.onStateChanged(true, false, null);
                 assertSame(supporter, page.getChildAt(1));
                 LinearLayout appearance = findGroup(page, "外觀與操作");
@@ -117,7 +116,7 @@ public final class SettingsGroupsInstrumentedTest {
         String message = context.getString(R.string.smart_omit_tone_description);
         String close = context.getString(R.string.settings_close_help);
         boolean initiallyChecked = BopomofoCompositionModeSettings.omitTone(context);
-        Activity activity = instrumentation.startActivitySync(new Intent(context, SettingsActivity.class)
+        Activity activity = instrumentation.startActivitySync(SettingsActivity.intent(context, true)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         try {
             instrumentation.runOnMainSync(() -> {
@@ -222,8 +221,8 @@ public final class SettingsGroupsInstrumentedTest {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         Context context = instrumentation.getTargetContext();
         var preferences = CandidateWindowSettings.preferences(context);
-        String layoutKey = BopomofoKeyboardLayoutSettings.KEY_LAYOUT;
-        String omitKey = BopomofoCompositionModeSettings.KEY_OMIT_TONE;
+        String layoutKey = KeyboardSettingsProfile.key(true, BopomofoKeyboardLayoutSettings.KEY_LAYOUT);
+        String omitKey = KeyboardSettingsProfile.key(true, BopomofoCompositionModeSettings.KEY_OMIT_TONE);
         var previous = preferences.getAll();
         Activity activity = null;
         CheckBox[] option = {null};
@@ -231,7 +230,7 @@ public final class SettingsGroupsInstrumentedTest {
         try {
             BopomofoKeyboardLayoutSettings.setLayout(context, BopomofoKeyboardLayout.STANDARD);
             BopomofoCompositionModeSettings.setOmitTone(context, true);
-            activity = instrumentation.startActivitySync(new Intent(context, SettingsActivity.class)
+            activity = instrumentation.startActivitySync(SettingsActivity.intent(context, true)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             Activity initial = activity;
             instrumentation.runOnMainSync(() -> {
@@ -252,7 +251,7 @@ public final class SettingsGroupsInstrumentedTest {
             assertSame(BopomofoKeyboardLayout.HSU, BopomofoKeyboardLayoutSettings.layout(context));
             assertTrue(preferences.getBoolean(omitKey, false));
 
-            activity = instrumentation.startActivitySync(new Intent(context, SettingsActivity.class)
+            activity = instrumentation.startActivitySync(SettingsActivity.intent(context, true)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             Activity reopened = activity;
             instrumentation.runOnMainSync(() -> {
@@ -310,8 +309,7 @@ public final class SettingsGroupsInstrumentedTest {
         try {
             var profiles = KeyboardLayoutProfile.available();
             for (int index = 0; index < profiles.size(); index++) {
-                activity = instrumentation.startActivitySync(new Intent(context,
-                        SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                activity = instrumentation.startActivitySync(SettingsActivity.intent(context, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                 Activity current = activity;
                 int selected = index;
                 instrumentation.runOnMainSync(() -> {
@@ -333,8 +331,7 @@ public final class SettingsGroupsInstrumentedTest {
                 assertEquals("Visual profiles must not change Standard/Hsu input mapping",
                         mapping, BopomofoKeyboardLayoutSettings.layout(context));
                 instrumentation.runOnMainSync(current::finish);
-                activity = instrumentation.startActivitySync(new Intent(context,
-                        SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                activity = instrumentation.startActivitySync(SettingsActivity.intent(context, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                 Activity reopened = activity;
                 instrumentation.runOnMainSync(() -> {
                     Spinner selector = revealProfileSelector(reopened, context);
@@ -367,8 +364,7 @@ public final class SettingsGroupsInstrumentedTest {
         try {
             // The previous largest font is now named extra large without reducing its size.
             restoreLayoutPreferences(context, java.util.Map.of(KeyboardLayoutProfileSettings.KEY_FONT_SIZE, "large"));
-            activity = instrumentation.startActivitySync(new Intent(context,
-                    SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            activity = instrumentation.startActivitySync(SettingsActivity.intent(context, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             Activity initial = activity;
             instrumentation.runOnMainSync(() -> {
                 Spinner profile = revealProfileSelector(initial, context);
@@ -423,8 +419,7 @@ public final class SettingsGroupsInstrumentedTest {
                 }
                 instrumentation.runOnMainSync(current::finish);
                 instrumentation.waitForIdleSync();
-                activity = instrumentation.startActivitySync(new Intent(context,
-                        SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                activity = instrumentation.startActivitySync(SettingsActivity.intent(context, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                 Activity reopened = activity;
                 instrumentation.runOnMainSync(() -> {
                     var body = (View) revealProfileSelector(reopened, context).getParent();

@@ -16,10 +16,11 @@ public struct PhraseSettings {
 
     public init(
         defaults: UserDefaults = .standard, sharedDefaults: UserDefaults? = nil,
-        writesShared: Bool = false
+        writesShared: Bool = false, applyDefaultsProfile: KeyboardSettingsProfile = .virtual
     ) {
         store = KeyboardPreferenceStore(
-            defaults: defaults, sharedDefaults: sharedDefaults, writesShared: writesShared
+            defaults: defaults, sharedDefaults: sharedDefaults, writesShared: writesShared,
+            applyDefaultsProfile: applyDefaultsProfile
         )
     }
 
