@@ -1,12 +1,14 @@
 # Windows 安裝與使用指南
 
-本指南對應琦琦輸入法 **1.5.1**，提供好打注音、傳統注音、倉頡與簡易。安裝後，先在 Windows 加入琦琦鍵盤，再用 **Win + Space** 切換，就能在記事本或其他文字 App 開始打字。
+本指南以最新版琦琦輸入法為準。四種輸入法為好打注音、傳統注音、倉頡與簡易；加入琦琦鍵盤後，用 **Win + Space** 切換即可開始打字。
+
+想按功能找操作，請看[功能圖解與索引](docs/WINDOWS_FEATURE_GUIDE.md)：省略聲調、Shift、Caps Lock、符號表、倉頡提前選字及候選窗比例。
 
 第一次使用可照著 **下載 → 安裝 → 新增鍵盤 → 選用琦琦 → 試打選字**完成設定。一般使用者不需要安裝開發工具或 .NET；安裝程式登記輸入法後，仍須由你在 Windows 設定新增鍵盤。
 
 ## 新核心升級準備
 
-四種輸入法自 1.5.0 起統一使用 Guanyinma（觀音嬤），保留 Windows 原生 TSF、候選窗與設定介面。升級前先用原版本備份資料；新版使用獨立 `GuanyinmaUserData.db`，可明確唯讀匯入舊 Windows 詞庫，不會自動搬移學習。安裝與試打畫面使用 1.5.1。新版安裝包、跨架構及升級驗收見 [1.5.1 發布準備](docs/CROSS_PLATFORM_V1_5_1_RELEASE.md)。
+四種輸入法統一使用 Guanyinma（觀音嬤），保留 Windows 原生 TSF、候選窗與設定介面。升級前先用原版本備份資料；新版使用獨立 `GuanyinmaUserData.db`，可明確唯讀匯入舊 Windows 詞庫，不會自動搬移學習。資料說明見 [Windows 核心接合](docs/GUANYINMA_WINDOWS_ADAPTER.md)。
 
 ## 1. 確認系統，下載安裝包
 
@@ -18,27 +20,25 @@
 | **32 位元 x86 Windows** | 下載 x86 ZIP，完整解壓縮後執行 `Install.cmd`。 |
 | **ARM64 Windows** | 目前沒有本指南涵蓋的安裝包。 |
 
-1.5.1 資產上傳後，打開 [Windows 1.5.1 正式版下載頁](https://github.com/polobread/KeyKey/releases/tag/v1.5.1)，往下找到 **Assets**，選擇名稱包含自己架構的檔案。檔名多了 `.sha256` 的是校驗檔，請與安裝包一起下載。
+打開 [最新正式版下載頁](https://github.com/polobread/KeyKey/releases/latest)，往下找到 **Assets**，選擇名稱包含自己架構的檔案。檔名多了 `.sha256` 的是校驗檔，請與安裝包一起下載。
 
-![正式 1.3.7 的 Assets，列出 Windows x64 安裝程式、x64／x86 ZIP 與各自的 SHA-256 檔](docs/images/keykey-windows-v137-win01-release-assets-win11.png)
+![正式發布頁的 Assets，列出 Windows x64 安裝程式、x64／x86 ZIP 與各自的 SHA-256 檔](docs/images/keykey-windows-v137-win01-release-assets-win11.png)
 
 *選擇 x64 Setup EXE，或符合架構的 ZIP；同名 `.sha256` 是校驗檔。此圖為未登入 GitHub 的發布頁。*
 
-本頁下載入口與檔名統一為 **1.5.1**，資產發布上傳後即可下載。請選 Windows 對應架構的安裝包及同版校驗檔。
-
 ### 也能使用台灣 AWS CDN
 
-同一個發布頁的 **台灣 AWS 下載點**提供相同檔案，不需要登入 GitHub。也可從下表直接下載；兩個來源任選一個即可。
+同一個發布頁的 **台灣 AWS 下載點**提供相同檔案，不需要登入 GitHub。從該區選擇符合下表的安裝包及同名校驗檔；兩個來源任選一個即可。
 
 ![台灣 AWS 下載點列出 Windows x64 安裝程式、x64 ZIP 與 x86 ZIP，右側有校驗檔連結](docs/images/keykey-windows-v137-win01b-aws-cdn-win11.png)
 
 *Windows 三列分別提供 Setup EXE、x64 ZIP 與 x86 ZIP；右側 `.sha256` 用來核對下載內容。*
 
-| 安裝方式 | AWS CDN 下載 | 校驗檔 |
-| --- | --- | --- |
-| x64 安裝精靈 | [chichi77-KeyKey-1.5.1-windows-x64-setup.exe](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/chichi77-KeyKey-1.5.1-windows-x64-setup.exe) | [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/chichi77-KeyKey-1.5.1-windows-x64-setup.exe.sha256) |
-| x64 ZIP | [chichi77-KeyKey-1.5.1-windows-x64.zip](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/chichi77-KeyKey-1.5.1-windows-x64.zip) | [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/chichi77-KeyKey-1.5.1-windows-x64.zip.sha256) |
-| x86 ZIP（32 位元 Windows） | [chichi77-KeyKey-1.5.1-windows-x86.zip](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/chichi77-KeyKey-1.5.1-windows-x86.zip) | [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/chichi77-KeyKey-1.5.1-windows-x86.zip.sha256) |
+| 安裝方式 | 檔名辨識 |
+| --- | --- |
+| x64 安裝精靈 | 結尾為 `windows-x64-setup.exe` |
+| x64 ZIP | 結尾為 `windows-x64.zip` |
+| x86 ZIP（32 位元 Windows） | 結尾為 `windows-x86.zip` |
 
 核對安裝包的 SHA-256 與同名 `.sha256` 內的值一致，再依前述方式確認發行者簽章及安裝。CDN 下載不改變簽章與安裝流程。
 
@@ -48,13 +48,13 @@
 
 連按兩下 x64 的 **setup.exe**。Windows 詢問是否允許變更裝置時，確認是剛下載的琦琦安裝檔，再依提示授權。歡迎頁按 **下一步**，閱讀授權內容後繼續。
 
-![1.5.1 x64 安裝精靈的歡迎頁，右下方有下一步與取消](docs/images/keykey-windows-v151-win02a-installer-welcome-win11.png)
+![x64 安裝精靈的歡迎頁，右下方有下一步與取消](docs/images/keykey-windows-v151-win02a-installer-welcome-win11.png)
 
 *按「下一步」閱讀授權內容。*
 
 接受最後一頁授權後，安裝會自動開始。等進度完成後按 **下一步**，最後在完成頁按 **完成**。安裝位置由程式管理，無須選擇或手動搬動版本資料夾。
 
-![1.5.1 安裝精靈最後一頁，說明共用琦琦鍵盤入口及升級後登出再登入](docs/images/keykey-windows-v151-win02b-installer-finished-win11.png)
+![安裝精靈最後一頁，說明共用琦琦鍵盤入口及升級後登出再登入](docs/images/keykey-windows-v151-win02b-installer-finished-win11.png)
 
 *按「完成」結束精靈。畫面提醒：首次使用須到 Windows 語言選項加入琦琦；升級後先登出再登入，載入新版。*
 
@@ -120,6 +120,18 @@ Windows 10 的入口是 **設定 → 時間與語言 → 語言 → 繁體中文
 
 *第二行仍在組字，底線範圍可用左右方向鍵移動後再選字。回到句尾可按 End，完成時按 Enter 確認。長句前方若有已固定的詞段，仍可用記事本的一般編輯功能修改。*
 
+### 好打注音省略聲調
+
+開啟 **輸入法設定… → 注音 → 省略聲調**，按 **套用**。此選項預設關閉，只用於好打注音；不需要同時開啟「空白鍵開啟候選」。
+
+![注音設定中已開啟省略聲調，使用標準注音及12345678選字鍵](docs/images/keykey-windows-v152-phonetic-omit-tone.png)
+
+回記事本選用 **好打注音**，標準注音連打 **S、U、C、L**（ㄋㄧㄏㄠ），不打聲調也能組成「你好」。**↓** 開候選，依畫面選字，**Enter** 送出；也能像 `su3cl` 一樣混用聲調。
+
+![連打sucl後，記事本組成你好，按下箭頭開啟原生候選](docs/images/keykey-windows-v152-omit-tone-candidates.png)
+
+支援標準、許氏、倚天、倚天 26 鍵及漢語拼音。更多注音與選字選項見[功能圖解](docs/WINDOWS_FEATURE_GUIDE.md#省略聲調與注音)。
+
 ## 5. 切換模式，使用倉頡提前選字
 
 在工作列的「ㄅ／英」上按滑鼠右鍵，可選 **好打注音、傳統注音、倉頡、簡易**。同一個選單也提供中英文、全半形及 **輸入法設定…** 入口。
@@ -130,7 +142,7 @@ Windows 10 的入口是 **設定 → 時間與語言 → 語言 → 繁體中文
 
 想用倉頡提早選字，打開 **輸入法設定… → 倉頡／簡易**，在倉頡區塊開啟 **即時候選**與 **未打完也能選字**，按 **套用**。桌面版這兩項預設關閉。
 
-![1.5.1 倉頡設定中的即時候選與未打完也能選字均已勾選](docs/images/keykey-windows-v151-win09a-cangjie-settings-win11.png)
+![倉頡設定中的即時候選與未打完也能選字均已勾選](docs/images/keykey-windows-v152-cangjie-settings.png)
 
 *開啟「即時候選」時，設定會關閉「找不到候選時清除字根」。*
 
@@ -138,53 +150,50 @@ Windows 10 的入口是 **設定 → 時間與語言 → 語言 → 繁體中文
 
 ![記事本第三行仍在組字竹大，候選窗的第 4 項是喬](docs/images/keykey-windows-v151-win09b-cangjie-candidates-win11.png)
 
-*打完 H、K 時，組字仍顯示「竹大」。本例可按 4 選「喬」。*
+*打完 H、K 時，組字仍顯示「竹大」。依自己的畫面選「喬」，候選編號可能因字型與設定而不同。*
 
 倉頡最多五碼，空白或 Enter 查詢；簡易滿兩碼自動查詢。用數字選字、Page Up／Page Down 翻頁、Backspace 刪字根、Esc 取消；倉頡也支援 `?`／`*` 萬用字元。
 
 ## 6. 調整設定、自訂詞與符號
 
-從工作列選 **輸入法設定…**。先在「注音」選熟悉的鍵盤配置，再到「一般」調整候選窗方向及大小；改好按 **套用**，回記事本試打。
+從工作列選 **輸入法設定…**，改好按 **套用**，回記事本試打。各頁用途與 macOS 對照見[功能索引](docs/WINDOWS_FEATURE_GUIDE.md#功能索引)。
 
 「一般 → 鍵盤與輸入法」的 **中文模式忽略 Caps Lock（微軟新舊注音）** 預設開啟，英文模式仍保留 Caps Lock 大小寫。啟動時使用中文或英文也可在一般設定選擇，下次輸入法服務啟用時生效。
 
-![1.5.1 一般設定中的啟動中英文模式、中文忽略 Caps Lock 與四種輸入法顯示選項](docs/images/keykey-windows-v151-win12a-general-win11.png)
+![一般設定中的啟動中英文模式、中文忽略 Caps Lock 與四種輸入法顯示選項](docs/images/keykey-windows-v152-general.png)
 
 *本機使用啟動中文，已勾選中文模式忽略 Caps Lock，四種輸入法均顯示於工作列選單。*
 
 在「一般 → 選字窗」中，「大小」預設為 **跟隨 Windows（預設）**，會使用目前顯示器的縮放比例。也可在清單中選固定比例，範圍為 70% 至 300%。這個設定同時套用到符號表與 Emoji。
 
-![1.5.1 一般設定的選字窗採垂直排列，大小為跟隨 Windows，反白色為紫色](docs/images/keykey-windows-v151-win12c-candidate-settings-win11.png)
+![選字窗設定，圖中使用垂直排列、100%及紫色反白](docs/images/keykey-windows-v152-candidate-settings.png)
 
-「注音」的好打注音進階設定可調整組字與選字習慣；關聯詞在「關聯詞庫」勾選。初次使用先保留預設，需要時再調整。
-
-![注音設定中的空白鍵開候選、選字目標、選字按鍵、組字長度與 Esc 選項](docs/images/keykey-windows-v137-win12b-smart-settings-win11.png)
-
-*本機使用標準注音、`12345678` 選字與 10 音節組字；空白鍵開候選、選字目標在游標前方及 Esc 清除整句均未勾選。*
+*本圖使用固定 100%；[功能圖解](docs/WINDOWS_FEATURE_GUIDE.md#候選窗大小)另有 100%／200% 實際候選比較。*
 
 在 **自訂詞**輸入常用詞，按 **取得讀音**後選擇符合詞義的讀音，再依畫面新增。也可匯入／匯出資料；重設好打注音學習紀錄會保留自訂詞。
 
-![自訂詞頁輸入重新出發並取得逐字讀音，重已選擇ㄔㄨㄥˊ](docs/images/keykey-windows-v137-win10-phrase-readings-win11.png)
+![自訂詞頁輸入重新出發並取得逐字讀音](docs/images/keykey-windows-v152-user-phrases.png)
 
 *輸入「重新出發」後按「取得讀音」，再依詞義把「重」選為 ㄔㄨㄥˊ。逐字候選僅供參考；圖中尚未按「新增」。*
 
-需要標點或 Emoji，可從琦琦選單開啟 **符號表**，先點回文字欄位，再選想插入的符號。
+需要標點或 Emoji，可從琦琦選單開啟 **符號表**，或在中文模式按 **左 Ctrl + 左 Alt + ,**。先點回文字欄位，再選想插入的符號。
 
 ![記事本旁的符號表已切到 Emoji 分類，顯示可捲動的表情符號格](docs/images/keykey-windows-v137-win11a-emoji-panel-win11.png)
 
 *從符號表上方的分類選單選 Emoji；先點回記事本要插入的位置，再點想用的符號。*
 
-![在 Emoji 符號表點選讚後，記事本的新一行已插入讚的 Emoji](docs/images/keykey-windows-v137-win11b-emoji-inserted-win11.png)
-
-*點選後，👍 已出現在記事本第三行。符號表保持開啟，可繼續選取；按右上角 × 或 Esc 關閉。*
+符號表保持開啟，可繼續選取；按右上角 × 或 Esc 關閉。
 
 ### 常用按鍵
 
 | 按鍵 | 用途 |
 | --- | --- |
 | **Win + Space** | 切換 Windows 已加入的輸入法。 |
+| **單按 Shift** | 在琦琦內切換中英文；長按或組合鍵保留原有用途。 |
 | **Ctrl + Space** | 在琦琦內切換中英文，保留並送出目前組字。 |
+| `Ctrl + \` | 另一組中英切換鍵，可在一般設定關閉。 |
 | **Shift + Space** | 切換半形／全形。 |
+| **左 Ctrl + 左 Alt + ,** | 中文模式開啟符號表，可在一般設定關閉。 |
 | **↓** | 好打注音組字時開候選。 |
 | **1–9**、滑鼠或方向鍵後 Enter | 選取對應候選，以實際編號為準。 |
 | 候選窗中的 **Space／Page Down**、**Page Up** | 候選翻頁。 |
@@ -195,9 +204,9 @@ Windows 10 的入口是 **設定 → 時間與語言 → 語言 → 繁體中文
 
 從工作列琦琦選單開啟 **輸入法設定… → 更新**。按 **立即檢查更新**，即可查看是否有新版；即使關閉自動檢查，仍可手動檢查。
 
-![Windows 更新頁顯示目前已是最新版本，並提供每週通知、beta 與重新安裝目前版本入口](docs/images/keykey-windows-v137-win13-update-current-win11.png)
+![更新設定頁提供每週通知、beta、手動檢查及同版本重新安裝入口](docs/images/keykey-windows-v152-update-settings.png)
 
-*這台電腦的 1.3.7 查詢結果為「目前已是最新版本」。圖中沿用原本關閉每週檢查的設定，未開啟 beta；不代表全新安裝的預設值。*
+*圖中保留每週通知關閉的既有設定；可用按鈕依安裝版本與更新設定而異，不代表全新安裝預設值。*
 
 ### 每週通知怎麼運作
 
@@ -217,7 +226,7 @@ Windows 10 的入口是 **設定 → 時間與語言 → 語言 → 繁體中文
 
 **重新安裝目前版本…**會查詢官方發布頁，確認有與目前版本及架構相符的套件後開啟該頁，由你下載並手動安裝。它不會自行下載或啟動安裝程式，也不會改選其他版號；使用前同樣先儲存設定與自訂詞。
 
-查詢失敗或逾時時，先確認網路，再按「立即檢查更新」重試，或使用本指南第 1 節的正式下載頁。這次只實拍同版檢查結果，未執行新版下載或安裝；技術與驗收範圍見[桌面更新說明](update/README.md)。
+查詢失敗或逾時時，先確認網路，再按「立即檢查更新」重試，或使用本指南第 1 節的正式下載頁。技術說明見[桌面更新說明](update/README.md)。
 
 ## 遇到問題時
 
@@ -247,8 +256,10 @@ Windows 切換鍵盤的系統操作可參考 [Microsoft 的語言與鍵盤設定
 
 ## 圖片與適用範圍
 
-1.5.1 安裝、鍵盤、設定與組字畫面攝於 2026-11-15，使用 Windows 11 26H2（26300.9457）x64 繁體中文虛擬機。測試從乾淨系統安裝由提交 `e8d4c29e` 建置的本機未簽章測試包，並核對已安裝版號及內附的最新共用詞庫。同一套件也在 Windows 10 22H2（19045.2006）x64 虛擬機全新安裝，確認工作列能顯示「ㄅ／英」並在記事本組字、選字及提交。
+新版設定、無聲調輸入與候選窗比例畫面於 2026-11-19 在 Windows 11 x64 實拍；圖中勾選狀態不代表全部預設值。
 
-三種試打圖均使用實際按鍵，擷取於候選開啟或組字底線仍可見時。下載頁、部分設定與更新畫面沿用 2026-10-24 在 Windows 11 26H2（26300.9711）x64 實機拍攝的 1.3.7 畫面。32 位元 Windows、正式發布資產、升級與移除的驗收另依發布流程執行。
+安裝、鍵盤與其他組字畫面攝於 2026-11-15，使用 Windows 11 26H2（26300.9457）x64 繁體中文虛擬機。當次使用由提交 `e8d4c29e` 建置的本機未簽章測試包；同一套件也在 Windows 10 22H2（19045.2006）x64 虛擬機全新安裝，確認工作列與記事本輸入。這些是較早版本的操作示例，不代表最新正式包已完成同樣驗收。
+
+輸入示範使用實際按鍵。下載頁與符號表示例沿用 2026-10-24 在 Windows 11 26H2（26300.9711）x64 實機拍攝的畫面。圖片中的版本文字僅供辨識拍攝時的環境；下載與安裝以最新正式發布頁為準。32 位元 Windows、正式發布資產、升級與移除的驗收另依發布流程執行。
 
 自行建置與部署細節見 [BUILDING.md](BUILDING.md#windows-10-與-11)及 [Windows TSF 技術文件](Source/Loaders/Windows-TSF/README.md)。
