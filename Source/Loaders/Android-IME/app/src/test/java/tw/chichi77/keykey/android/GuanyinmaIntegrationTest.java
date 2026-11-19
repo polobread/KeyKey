@@ -70,6 +70,78 @@ public final class GuanyinmaIntegrationTest {
         }
     }
 
+    @Test public void hardwareEscapeClearsCompletedTextOnlyWhenEnabled() throws Exception {
+        for (boolean clear : new boolean[] {false, true}) {
+            try (Fixture fixture = new Fixture();
+                    GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
+                engine.setHardwareOptions(new HardwareSmartSettings.Options(false, false, false, clear, 10, false, false));
+                engine.setHardwareSmartEditing(true);
+                type(engine, "su3", true);
+                assertEquals("你", engine.completedSmartText());
+                InputEngine.Result result = engine.escape();
+                assertEquals("", result.committedText());
+                assertFalse(result.deleteBeforeCursor());
+                assertFalse(result.sendEnter());
+                assertEquals(clear, result.discardComposingText());
+                assertEquals(!clear, engine.hasComposition());
+                assertEquals(clear ? "" : "你", engine.completedSmartText());
+                assertNull(engine.lastError());
+            }
+        }
+    }
+
+    @Test public void hardwareEscapeCancelsRawReadingWithEitherClearChoice() throws Exception {
+        for (boolean clear : new boolean[] {false, true}) {
+            try (Fixture fixture = new Fixture();
+                    GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
+                engine.setHardwareOptions(new HardwareSmartSettings.Options(false, false, false, clear, 10, false, false));
+                engine.setHardwareSmartEditing(true);
+                type(engine, "su", true);
+                assertEquals("ㄋㄧ", engine.composingText());
+                InputEngine.Result cancelled = engine.escape();
+                assertEquals("", cancelled.committedText());
+                assertFalse(cancelled.deleteBeforeCursor());
+                assertFalse(cancelled.sendEnter());
+                assertTrue(cancelled.discardComposingText());
+                assertFalse(engine.hasComposition());
+
+                // Cancelling a later raw reading must retain completed syllables.
+                type(engine, "su3c", true);
+                assertEquals("你", engine.completedSmartText());
+                assertEquals("ㄏ", engine.readingText());
+                assertUpdate(engine.escape());
+                assertEquals("你", engine.completedSmartText());
+                assertEquals("", engine.readingText());
+                type(engine, "cl3", true);
+                assertEquals("你好", engine.completedSmartText());
+                assertNull(engine.lastError());
+            }
+        }
+    }
+
+    @Test public void hardwareEscapeClosesCandidatesBeforeClearingAndLeavesCommitsAlone() throws Exception {
+        try (Fixture fixture = new Fixture();
+                GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
+            engine.setHardwareOptions(new HardwareSmartSettings.Options(false, false, false, true, 10, false, false));
+            engine.setHardwareSmartEditing(true);
+            type(engine, "su3cl3", true);
+            engine.openSmartCandidates();
+            assertFalse(engine.displayedCandidates().isEmpty());
+            assertUpdate(engine.escape());
+            assertEquals("你好", engine.completedSmartText());
+            assertTrue(engine.hasComposition());
+            assertTrue(engine.displayedCandidates().isEmpty());
+            assertTrue(engine.escape().discardComposingText());
+            assertFalse(engine.hasComposition());
+            assertUpdate(engine.escape());
+            type(engine, "cl3", true);
+            assertEquals("好", engine.enter().committedText());
+            assertFalse(engine.hasComposition());
+            assertUpdate(engine.escape());
+            assertNull(engine.lastError());
+        }
+    }
+
     @Test public void realJNIMapsTouchSnapshotAndOneShotHostEffects() throws Exception {
         try (Fixture fixture = new Fixture(); GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
             type(engine, "su3cl3", false);

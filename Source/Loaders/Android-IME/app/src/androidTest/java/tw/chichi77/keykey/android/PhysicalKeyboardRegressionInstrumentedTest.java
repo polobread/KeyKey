@@ -140,6 +140,71 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
         }
     }
 
+    @Test public void hardwareEscapeClearsOnlyMarkedTextAndPreservesCommittedSurroundings() throws Exception {
+        boolean saved = HardwareSmartSettings.enabled(context, HardwareSmartSettings.CLEAR_ESCAPE);
+        prepareHost("off", 0);
+        try {
+            for (boolean clear : new boolean[] {false, true}) {
+                main(() -> { HardwareSmartSettings.setEnabled(context, HardwareSmartSettings.CLEAR_ESCAPE, clear); return true; });
+                fresh("smart");
+                main(() -> { editor.setText("前:後"); editor.setSelection(2); return true; });
+                restartEditor();
+                type("su3");
+                expectText("前:你後");
+                assertEquals(2, (int) main(() -> BaseInputConnection.getComposingSpanStart(editor.getText())));
+                key(KeyEvent.KEYCODE_ESCAPE);
+                expectText(clear ? "前:後" : "前:你後");
+                assertEquals(!clear, main(() -> engine().hasComposition()));
+                record(clear ? "escape-clears-only-marked-text" : "escape-disabled-keeps-completed-text");
+                if (clear) captureHardwareEvidence("escape-preserves-committed-surroundings");
+                if (!clear) key(KeyEvent.KEYCODE_ENTER);
+                String committed = text();
+                key(KeyEvent.KEYCODE_ESCAPE);
+                expectText(committed);
+                assertEquals(-1, (int) main(() -> BaseInputConnection.getComposingSpanStart(editor.getText())));
+
+                // Incomplete phonetics are cancelled even when whole-sentence
+                // clearing is disabled; the next reading still enters here.
+                type("c");
+                assertTrue(main(() -> engine().hasComposition()));
+                key(KeyEvent.KEYCODE_ESCAPE);
+                expectText(committed);
+                assertFalse(main(() -> engine().hasComposition()));
+                type("cl3");
+                expectText(clear ? "前:好後" : "前:你好後");
+                key(KeyEvent.KEYCODE_ENTER);
+                String after = text();
+                key(KeyEvent.KEYCODE_ESCAPE);
+                expectText(after);
+                assertFalse(main(() -> engine().hasComposition()));
+                assertNull(main(() -> ((HostInputEngine) engine()).coreError()));
+            }
+
+            main(() -> { HardwareSmartSettings.setEnabled(context, HardwareSmartSettings.CLEAR_ESCAPE, true); return true; });
+            fresh("smart");
+            type("su3cl3");
+            key(KeyEvent.KEYCODE_DPAD_DOWN);
+            assertTrue(main(() -> engine().isShowingSmartCandidates()));
+            key(KeyEvent.KEYCODE_ESCAPE);
+            expectText("你好");
+            assertFalse(main(() -> engine().isShowingSmartCandidates()));
+            assertTrue(main(() -> engine().hasComposition()));
+            key(KeyEvent.KEYCODE_ESCAPE);
+            expectText("");
+            assertFalse(main(() -> engine().hasComposition()));
+            type("cl3");
+            expectText("好");
+            key(KeyEvent.KEYCODE_ENTER);
+            key(KeyEvent.KEYCODE_ESCAPE);
+            expectText("好");
+            assertNull(main(() -> ((HostInputEngine) engine()).coreError()));
+            record("escape-candidate-close-clear-and-next-input");
+        } finally {
+            if (activity != null) main(() -> { activity.finish(); return true; });
+            main(() -> { HardwareSmartSettings.setEnabled(context, HardwareSmartSettings.CLEAR_ESCAPE, saved); return true; });
+        }
+    }
+
     @Test public void touchSelectionStillReturnsToTheEditableTail() throws Exception {
         try (GuanyinmaInputEngine engine = isolatedEngine()) {
             for (char key : "su3cl3".toCharArray()) engine.handleSoftKey(String.valueOf(key));

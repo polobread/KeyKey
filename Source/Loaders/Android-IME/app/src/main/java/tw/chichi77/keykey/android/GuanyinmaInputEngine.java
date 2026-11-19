@@ -453,7 +453,13 @@ final class GuanyinmaInputEngine implements InputEngine {
     @Override public InputEngine.Result escape() {
         if (overlay != Overlay.NONE) { clearOverlay(); return InputEngine.Result.update(); }
         if (!hardwareSmartEditing) { boolean had = hasComposition(); reset(); return had && lastError == null ? InputEngine.Result.discardComposition() : InputEngine.Result.update(); }
-        return key("escape");
+        boolean hadComposition = hasComposition();
+        InputEngine.Result result = key("escape");
+        // Finishing an Android marked range preserves its text. Replace the
+        // range only when Escape actually cancelled the core composition.
+        return new InputEngine.Result(result.committedText(), result.deleteBeforeCursor(), result.sendEnter(),
+                result.discardComposingText() || (hadComposition && lastError == null
+                        && !hasComposition() && result.committedText().isEmpty()));
     }
     @Override public InputEngine.Result selectDisplayedCandidate(int index) {
         List<String> values = displayedCandidates();
