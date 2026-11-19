@@ -143,7 +143,7 @@ final class FloatingCandidateWindow {
         candidateList.setOrientation(horizontal ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
         content.addView(candidateList, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        CandidateColorSettings.CandidateColor candidateColor = CandidateColorSettings.color(context);
+        CandidateColorSettings.CandidateColor candidateColor = CandidateColorSettings.color(context, false);
         int highlightColor = CandidateColorSettings.backgroundColor(candidateColor);
         int highlightTextColor = CandidateColorSettings.textColor(candidateColor);
 

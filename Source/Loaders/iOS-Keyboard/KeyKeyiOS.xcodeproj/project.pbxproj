@@ -21,6 +21,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+        C77000000000000000000810 /* KeyboardSettingsGroup.swift in App Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000812 /* KeyboardSettingsGroup.swift */; };
+        C77000000000000000000811 /* KeyboardSettingsGroup.swift in Keyboard Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000812 /* KeyboardSettingsGroup.swift */; };
 		C77000000000000000000061 /* KeyKeyEngine in Frameworks */ = {isa = PBXBuildFile; productRef = C77000000000000000000062 /* KeyKeyEngine */; };
 		C77000000000000000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000002 /* AppDelegate.swift */; };
 		C77000000000000000000003 /* SetupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000004 /* SetupViewController.swift */; };
@@ -94,6 +96,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+        C77000000000000000000812 /* KeyboardSettingsGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared/KeyboardSettingsGroup.swift; sourceTree = "<group>"; };
 		C77000000000000000000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C77000000000000000000004 /* SetupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupViewController.swift; sourceTree = "<group>"; };
 		C77000000000000000000701 /* KeyboardHeightEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardHeightEditor.swift; sourceTree = "<group>"; };
@@ -153,7 +156,8 @@
 		C77000000000000000000015 = {
 			isa = PBXGroup;
 			children = (
-				C77000000000000000000092 /* SimulatorGeometryProbe.swift */,
+				C77000000000000000000812 /* KeyboardSettingsGroup.swift */,
+                C77000000000000000000092 /* SimulatorGeometryProbe.swift */,
 				C77000000000000000000016 /* ContainerApp */,
 				C77000000000000000000017 /* Keyboard */,
 				C77000000000000000000044 /* KeyKeyUITests */,
@@ -426,7 +430,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C77000000000000000000090 /* SimulatorGeometryProbe.swift in App Sources */,
+				C77000000000000000000810 /* KeyboardSettingsGroup.swift in App Sources */,
+                C77000000000000000000090 /* SimulatorGeometryProbe.swift in App Sources */,
 				C77000000000000000000001 /* AppDelegate.swift in Sources */,
 				C77000000000000000000003 /* SetupViewController.swift in Sources */,
 				C77000000000000000000056 /* HardwareKeyboardEditorViewController.swift in Sources */,
@@ -438,7 +443,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C77000000000000000000091 /* SimulatorGeometryProbe.swift in Keyboard Sources */,
+				C77000000000000000000811 /* KeyboardSettingsGroup.swift in Keyboard Sources */,
+                C77000000000000000000091 /* SimulatorGeometryProbe.swift in Keyboard Sources */,
 				C77000000000000000000702 /* KeyboardHeightEditor.swift in Sources */,
 				C77000000000000000000005 /* KeyboardViewController.swift in Sources */,
 				C77000000000000000000031 /* KeyboardView.swift in Sources */,

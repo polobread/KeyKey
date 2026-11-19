@@ -62,8 +62,7 @@ public final class CandidateGlyphSupportInstrumentedTest {
         field.setAccessible(true);
         Map<?, ?> cache = (Map<?, ?>) field.get(glyphs);
         assertTrue(cache.containsKey(oldEntry));
-        Activity activity = instrumentation.startActivitySync(new Intent(context,
-                SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        Activity activity = instrumentation.startActivitySync(SettingsActivity.intent(context, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         try {
             instrumentation.runOnMainSync(() -> findReset(activity.findViewById(android.R.id.content)).performClick());
             instrumentation.waitForIdleSync();

@@ -8,18 +8,19 @@ public final class KeyboardInputEngine: InputEngine {
     private var phraseSource: SharedPhrasePublication?
     private var phraseRefreshPending = false
     private var pendingHostEffects = false
+    private var pendingPreferences: KeyboardInputPreferences?
     private var publicationError: Error?
     public private(set) var coreError: String?
 
     public init(modelURL: URL, userDatabaseURL: URL, method: ChineseInputMethod = .smart,
                 hardwareSmartEditing: Bool = false, keyboardLayout: BopomofoKeyboardLayout = .standard,
                 tableOptions: TableInputOptions = TableInputOptions(method: .cangjie),
-                spaceSelectsCandidates: Bool = false, omitsTones: Bool = false, associatedPhrases: AssociatedPhraseSource? = nil,
+                spaceSelectsCandidates: Bool = false, omitsTones: Bool = false, typingOptions: KeyboardTypingOptions = KeyboardTypingOptions(), associatedPhrases: AssociatedPhraseSource? = nil,
                 candidateFilter: @escaping (String) -> Bool = { _ in true }) throws {
         backend = try GuanyinmaInputEngine(modelURL: modelURL, userDatabaseURL: userDatabaseURL,
             method: method, hardwareSmartEditing: hardwareSmartEditing, keyboardLayout: keyboardLayout,
             tableOptions: tableOptions, spaceSelectsCandidates: spaceSelectsCandidates,
-            omitsTones: omitsTones,
+            omitsTones: omitsTones, typingOptions: typingOptions,
             associatedPhrases: associatedPhrases, primeSmartMandarin: true, candidateFilter: candidateFilter)
     }
 
@@ -28,7 +29,20 @@ public final class KeyboardInputEngine: InputEngine {
     private var safeToRefresh: Bool {
         !pendingHostEffects && !backend.hasComposition && backend.displayedCandidates.isEmpty
     }
+    public func applyPreferencesWhenReady(_ preferences: KeyboardInputPreferences) {
+        pendingPreferences = preferences
+        refreshIfReady()
+    }
     private func refreshIfReady() {
+        if safeToRefresh, let preferences = pendingPreferences {
+            pendingPreferences = nil
+            _ = backend.setChineseInputMethod(preferences.method)
+            _ = backend.setKeyboardLayout(preferences.layout)
+            backend.tableOptions = preferences.tableOptions
+            backend.setTypingOptions(preferences.typingOptions)
+            backend.spaceSelectsCandidates = preferences.spaceSelectsCandidates
+            backend.omitsTones = preferences.omitsTones
+        }
         guard phraseRefreshPending && safeToRefresh else { return }
         do {
             try backend.refreshUserPhrases(from: phraseSource)
@@ -44,6 +58,7 @@ public final class KeyboardInputEngine: InputEngine {
         refreshIfReady()
         let result = action(backend)
         pendingHostEffects = pendingHostEffects || !result.text.isEmpty || result.deletesBackward || result.sendsReturn
+        refreshIfReady()
         updateError()
         return result
     }
@@ -112,6 +127,7 @@ public final class KeyboardInputEngine: InputEngine {
     @discardableResult public func selectTouchSmartCell(_ index: Int) -> Bool { performSelection { $0.selectTouchSmartCell(index) } }
     @discardableResult public func handleSoftKey(_ key: String) -> KeyboardInput.Result { perform { $0.handleSoftKey(key) } }
     @discardableResult public func handleHardwareCharacter(_ key: Character) -> KeyboardInput.Result { perform { $0.handleHardwareCharacter(key) } }
+    @discardableResult public func handleHardwareCharacter(_ key: Character, modifiers: HardwareKeyboardModifiers) -> KeyboardInput.Result { perform { $0.handleHardwareCharacter(key, modifiers: modifiers) } }
     @discardableResult public func toggleHardwareLanguage() -> KeyboardInput.Result { perform { $0.toggleHardwareLanguage() } }
     @discardableResult public func showHardwareSymbols() -> KeyboardInput.Result { perform { $0.showHardwareSymbols() } }
     @discardableResult public func commitHardwarePunctuation(_ punctuation: String) -> KeyboardInput.Result { perform { $0.commitHardwarePunctuation(punctuation) } }
@@ -134,5 +150,22 @@ public final class KeyboardInputEngine: InputEngine {
     public func finishCompositionForKeyboardDismissal() -> (result: KeyboardInput.Result, succeeded: Bool) {
         let result = perform { $0.finishCompositionForKeyboardDismissal() }
         return (result, backend.lastError == nil)
+    }
+}
+
+/// A settings snapshot is applied only after the original host accepted pending text.
+public struct KeyboardInputPreferences: Equatable, Sendable {
+    public var method: ChineseInputMethod
+    public var layout: BopomofoKeyboardLayout
+    public var tableOptions: TableInputOptions
+    public var spaceSelectsCandidates: Bool
+    public var omitsTones: Bool
+    public var typingOptions: KeyboardTypingOptions
+    public init(method: ChineseInputMethod, layout: BopomofoKeyboardLayout,
+                tableOptions: TableInputOptions, spaceSelectsCandidates: Bool,
+                omitsTones: Bool, typingOptions: KeyboardTypingOptions) {
+        self.method = method; self.layout = layout; self.tableOptions = tableOptions
+        self.spaceSelectsCandidates = spaceSelectsCandidates; self.omitsTones = omitsTones
+        self.typingOptions = typingOptions
     }
 }

@@ -28,8 +28,8 @@ public final class InitialSelectionProbeInstrumentedTest {
         Context context = instrumentation.getTargetContext();
         var preferences = CandidateWindowSettings.preferences(context);
         var previous = preferences.getAll();
-        String[] keys = {ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
-                BopomofoCompositionModeSettings.KEY_OMIT_TONE, BopomofoKeyboardLayoutSettings.KEY_LAYOUT};
+        String[] keys = {KeyboardSettingsProfile.key(true, ChineseInputMethodSettings.KEY_METHOD), BopomofoCompositionModeSettings.KEY_MODE,
+                KeyboardSettingsProfile.key(true, BopomofoCompositionModeSettings.KEY_OMIT_TONE), KeyboardSettingsProfile.key(true, BopomofoKeyboardLayoutSettings.KEY_LAYOUT)};
         try {
             preferences.edit().putString(keys[0], ChineseInputMethod.SMART.name())
                     .putString(keys[1], BopomofoCompositionModeSettings.valueForMode(BopomofoCompositionMode.SMART))

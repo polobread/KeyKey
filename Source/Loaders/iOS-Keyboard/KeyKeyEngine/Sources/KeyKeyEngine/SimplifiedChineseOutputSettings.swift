@@ -9,10 +9,10 @@ public struct SimplifiedChineseOutputSettings {
 
     public init(
         defaults: UserDefaults = .standard, sharedDefaults: UserDefaults? = nil,
-        writesShared: Bool = false
+        writesShared: Bool = false, profile: KeyboardSettingsProfile = .virtual
     ) {
         store = KeyboardPreferenceStore(
-            defaults: defaults, sharedDefaults: sharedDefaults, writesShared: writesShared
+            defaults: defaults, sharedDefaults: sharedDefaults, writesShared: writesShared, profile: profile
         )
     }
 

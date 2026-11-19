@@ -59,26 +59,34 @@ public final class KeyboardBottomSpaceInstrumentedTest {
                     .putBoolean(keys[2], true).remove(keys[3]).commit();
             assertFalse(KeyboardBottomControlsSettings.enabled(context));
             assertTrue(KeyboardBottomSpaceSettings.hardwareEnabled(context));
-            activity = openSettings(context);
+            activity = openSettings(context, true);
             Activity current = activity;
             instrumentation.runOnMainSync(() -> {
-                LinearLayout page = settingsPage(current);
-                LinearLayout appearance = findGroup(page, "外觀與操作");
-                LinearLayout hardware = findGroup(page, "實體鍵盤");
+                LinearLayout appearance = findGroup(settingsPage(current),
+                        context.getString(R.string.settings_group_appearance));
                 appearance.getChildAt(0).performClick();
-                hardware.getChildAt(0).performClick();
                 assertNull("Touch bottom space is determined automatically",
-                        findCheck(appearance.getChildAt(1), "預留底部切換語言空間"));
+                        findCheck(appearance.getChildAt(1), context.getString(R.string.bottom_language_space_enabled)));
                 CheckBox integrated = findCheck(appearance.getChildAt(1),
                         context.getString(R.string.integrated_bottom_controls_enabled));
-                CheckBox hardwareSpace = findCheck(hardware.getChildAt(1), "預留底部切換語言空間");
-                CheckBox floating = findCheck(hardware.getChildAt(1), "使用浮動候選字窗");
-                CheckBox numbers = findCheck(hardware.getChildAt(1), "顯示虛擬數字與符號鍵");
                 assertNotNull(integrated);
                 assertFalse(integrated.isChecked());
-                assertTrue(hardwareSpace.isChecked());
                 integrated.performClick();
                 assertTrue(KeyboardBottomControlsSettings.enabled(context));
+                assertTrue(KeyboardBottomSpaceSettings.hardwareEnabled(context));
+                current.finish();
+            });
+            instrumentation.waitForIdleSync();
+            activity = openSettings(context, false);
+            Activity physical = activity;
+            instrumentation.runOnMainSync(() -> {
+                LinearLayout hardware = findGroup(settingsPage(physical),
+                        context.getString(R.string.settings_group_hardware));
+                hardware.getChildAt(0).performClick();
+                CheckBox hardwareSpace = findCheck(hardware.getChildAt(1), context.getString(R.string.bottom_language_space_enabled));
+                CheckBox floating = findCheck(hardware.getChildAt(1), context.getString(R.string.floating_candidates_enabled));
+                CheckBox numbers = findCheck(hardware.getChildAt(1), context.getString(R.string.hardware_number_row_enabled));
+                assertTrue(hardwareSpace.isChecked());
                 assertTrue(hardwareSpace.isEnabled());
                 assertTrue(KeyboardBottomSpaceSettings.hardwareEnabled(context));
                 hardwareSpace.performClick();
@@ -99,24 +107,32 @@ public final class KeyboardBottomSpaceInstrumentedTest {
                 assertEquals(1f, hardwareSpace.getAlpha(), 0f);
                 assertFalse(hardwareSpace.isChecked());
                 assertTrue(numbers.isChecked());
-                current.finish();
+                physical.finish();
             });
-            activity = openSettings(context);
+            instrumentation.waitForIdleSync();
+            activity = openSettings(context, true);
             Activity reopened = activity;
             instrumentation.runOnMainSync(() -> {
-                LinearLayout page = settingsPage(reopened);
-                var appearance = findGroup(page, "外觀與操作");
-                var hardware = findGroup(page, "實體鍵盤");
+                var appearance = findGroup(settingsPage(reopened),
+                        context.getString(R.string.settings_group_appearance));
                 CheckBox integrated = findCheck(appearance.getChildAt(1),
                         context.getString(R.string.integrated_bottom_controls_enabled));
-                CheckBox hardwareSpace = findCheck(hardware.getChildAt(1), "預留底部切換語言空間");
                 assertTrue(integrated.isChecked());
-                assertFalse(hardwareSpace.isChecked());
-                assertTrue(hardwareSpace.isEnabled());
                 integrated.performClick();
                 assertFalse(KeyboardBottomControlsSettings.enabled(context));
                 assertFalse(KeyboardBottomSpaceSettings.hardwareEnabled(context));
-                assertTrue(findCheck(hardware.getChildAt(1), "顯示虛擬數字與符號鍵").isChecked());
+                reopened.finish();
+            });
+            instrumentation.waitForIdleSync();
+            activity = openSettings(context, false);
+            Activity reopenedPhysical = activity;
+            instrumentation.runOnMainSync(() -> {
+                var hardware = findGroup(settingsPage(reopenedPhysical),
+                        context.getString(R.string.settings_group_hardware));
+                CheckBox hardwareSpace = findCheck(hardware.getChildAt(1), context.getString(R.string.bottom_language_space_enabled));
+                assertFalse(hardwareSpace.isChecked());
+                assertTrue(hardwareSpace.isEnabled());
+                assertTrue(findCheck(hardware.getChildAt(1), context.getString(R.string.hardware_number_row_enabled)).isChecked());
             });
         } finally {
             if (activity != null) {
@@ -1090,9 +1106,11 @@ public final class KeyboardBottomSpaceInstrumentedTest {
         return bitmap;
     }
 
-    private static Activity openSettings(Context context) {
-        return InstrumentationRegistry.getInstrumentation().startActivitySync(new Intent(context,
-                SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+    private static Activity openSettings(Context context) { return openSettings(context, true); }
+
+    private static Activity openSettings(Context context, boolean virtual) {
+        return InstrumentationRegistry.getInstrumentation().startActivitySync(SettingsActivity.intent(context, virtual)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
     }
 
     private static LinearLayout settingsPage(Activity activity) {

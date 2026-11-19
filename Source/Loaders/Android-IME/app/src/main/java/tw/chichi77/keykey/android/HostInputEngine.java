@@ -18,6 +18,10 @@ final class HostInputEngine implements InputEngine {
         rust = new GuanyinmaInputEngine(modelPath, userDatabasePath, method, layout, options,
                 spaceSelects, useBigrams, false, true, filter);
     }
+    void setHardwareOptions(HardwareSmartSettings.Options value) { update(engine -> rust.setHardwareOptions(value)); }
+    InputEngine.Result handleHardwareCharacter(char value, boolean shift, boolean capsLock) {
+        return perform(engine -> rust.handleHardwareCharacter(value, shift, capsLock));
+    }
     private InputEngine backend() { return rust; }
     String coreError() { return transactionError != null ? transactionError : rust.lastError(); }
     void acknowledgeHostEffects() { pendingHostEffects = false; transactionError = null; }

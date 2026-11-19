@@ -173,10 +173,42 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
     @Test public void quickSettingsSingleRow() throws Exception { exerciseQuickSettings(false); }
     @Test public void quickSettingsSmartTwoRows() throws Exception { exerciseQuickSettings(true); }
 
+    @Test public void desktopProfileOmitToneAndMiddleCandidateUseTheSameService() throws Exception {
+        prepareHost("off", 0);
+        BopomofoKeyboardLayoutSettings.setLayout(context, BopomofoKeyboardLayout.HANYU_PINYIN, false);
+        BopomofoCompositionModeSettings.setOmitTone(context, true, false);
+        HardwareSmartSettings.setEnabled(context, HardwareSmartSettings.CURSOR_AT_END, true);
+        HardwareSmartSettings.setEnabled(context, HardwareSmartSettings.RETURNS_TO_END, false);
+        try {
+            fresh("smart");
+            type("nihao");
+            assertTrue(main(() -> ((HostInputEngine) engine()).hasPendingPhoneticReading()));
+            key(KeyEvent.KEYCODE_ENTER);
+            expectText("你好");
+            BopomofoCompositionModeSettings.setOmitTone(context, false, false);
+            BopomofoKeyboardLayoutSettings.setLayout(context, BopomofoKeyboardLayout.STANDARD, false);
+            type("su3cl3");
+            expectText("你好你好");
+            key(KeyEvent.KEYCODE_DPAD_LEFT);
+            key(KeyEvent.KEYCODE_DPAD_DOWN);
+            assertTrue(main(() -> engine().displayedCandidates().contains("妳")));
+            int index = main(() -> engine().displayedCandidates().indexOf("妳"));
+            key(KeyEvent.KEYCODE_1 + index);
+            key(KeyEvent.KEYCODE_ENTER);
+            expectText("你好妳好");
+            assertNull(main(() -> ((HostInputEngine) engine()).coreError()));
+        } finally {
+            if (activity != null) main(() -> { activity.finish(); return true; });
+            BopomofoCompositionModeSettings.setOmitTone(context, false, false);
+            BopomofoKeyboardLayoutSettings.setLayout(context, BopomofoKeyboardLayout.STANDARD, false);
+            HardwareSmartSettings.setEnabled(context, HardwareSmartSettings.CURSOR_AT_END, false);
+        }
+    }
+
     private void exerciseQuickSettings(boolean twoRows) throws Exception {
         prepareHost("off", 0);
         CandidateWindowSettings.setSmartTwoRowsEnabled(context, twoRows);
-        ChineseInputMethodSettings.setSimplifiedChineseOutput(context, false);
+        ChineseInputMethodSettings.setSimplifiedChineseOutput(context, false, false);
         try {
             fresh("smart");
             assertEquals(twoRows, main(() -> engine().isTouchSmartComposition()));
@@ -416,7 +448,7 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
         CandidateWindowSettings.preferences(context).edit()
                 .putBoolean(CandidateWindowSettings.KEY_SMART_TWO_ROWS, false)
                 .putBoolean(CandidateWindowSettings.KEY_NUMBER_ROW, false)
-                .putString(BopomofoKeyboardLayoutSettings.KEY_LAYOUT, BopomofoKeyboardLayout.STANDARD.value).commit();
+                .putString(KeyboardSettingsProfile.key(false, BopomofoKeyboardLayoutSettings.KEY_LAYOUT), BopomofoKeyboardLayout.STANDARD.value).commit();
     }
 
     private void exercise(String mode, int pose) throws Exception {

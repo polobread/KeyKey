@@ -66,6 +66,7 @@ public final class GuanyinmaInputEngine: InputEngine {
     private var options: TableInputOptions
     public private(set) var lastError: Error?
     public private(set) var keyboardLayout: BopomofoKeyboardLayout
+    public private(set) var typingOptions: KeyboardTypingOptions
     private var toneOmissionEnabled: Bool
     private var touchPhoneticGridEnabled = false
     public var omitsTones: Bool {
@@ -106,7 +107,7 @@ public final class GuanyinmaInputEngine: InputEngine {
     public init(modelURL: URL, userDatabaseURL: URL, method: ChineseInputMethod = .smart,
                 hardwareSmartEditing: Bool = false, keyboardLayout: BopomofoKeyboardLayout = .standard,
                 tableOptions: TableInputOptions = TableInputOptions(method: .cangjie),
-                spaceSelectsCandidates: Bool = false, omitsTones: Bool = false, associatedPhrases: AssociatedPhraseSource? = nil,
+                spaceSelectsCandidates: Bool = false, omitsTones: Bool = false, typingOptions: KeyboardTypingOptions = KeyboardTypingOptions(), associatedPhrases: AssociatedPhraseSource? = nil,
                 primeSmartMandarin: Bool = false,
                 candidateFilter: @escaping (String) -> Bool = { _ in true }) throws {
         self.modelURL = modelURL
@@ -115,17 +116,19 @@ public final class GuanyinmaInputEngine: InputEngine {
         self.options = tableOptions
         self.spaceSelectsCandidates = spaceSelectsCandidates
         self.toneOmissionEnabled = omitsTones
+        self.typingOptions = typingOptions
         self.associatedSource = try Self.associatedPhraseSource(associatedPhrases, modelURL: modelURL)
         glyphContext = GuanyinmaGlyphContext(candidateFilter)
         try FileManager.default.createDirectory(at: userDatabaseURL.deletingLastPathComponent(),
                                                 withIntermediateDirectories: true)
-        let smart: [String: Any] = Self.smartConfiguration(hardware: hardwareSmartEditing, space: spaceSelectsCandidates)
+        let smart: [String: Any] = Self.smartConfiguration(hardware: hardwareSmartEditing, space: spaceSelectsCandidates, omitsTones: omitsTones, options: typingOptions)
         let configuration: [String: Any] = [
             "method": method.rawValue, "profile": hardwareSmartEditing ? "desktop" : "touch",
             "layout": Self.layoutName(keyboardLayout), "user_database": userDatabaseURL.path,
             "prime_smart_mandarin": primeSmartMandarin,
             "traditional_selection_keys": "123456789", "table_selection_keys": "123456789",
             "smart": smart,
+            "behaviors": ["ignore_caps_lock_in_chinese": typingOptions.ignoreCapsLockInChinese, "literal_keypad": false],
             "learning": ["user_phrases": true, "candidate_overrides": true, "bigrams": true, "table_learning": true],
             "cangjie": Self.tableConfiguration(method == .cangjie ? tableOptions : TableInputOptions(method: .cangjie)),
             "simplex": Self.tableConfiguration(method == .simplex ? tableOptions : TableInputOptions(method: .simplex))
@@ -179,23 +182,46 @@ public final class GuanyinmaInputEngine: InputEngine {
         case .eten26: return "eten26"
         }
     }
-    private static func smartConfiguration(hardware: Bool, space: Bool, phoneticGrid: Bool = false) -> [String: Any] {
-        ["max_completed_syllables": phoneticGrid ? 12 : 10, "shift_at_limit": !hardware,
-         "selection_returns_to_end": !hardware, "candidate_cursor_at_end": false,
-         "space_opens_candidates": space, "candidate_selection_keys": "123456789"]
+    static func smartConfiguration(hardware: Bool, space: Bool, phoneticGrid: Bool = false,
+                                   omitsTones: Bool = false,
+                                   options: KeyboardTypingOptions = KeyboardTypingOptions()) -> [String: Any] {
+        ["max_completed_syllables": phoneticGrid ? 12 : hardware ? min(20, max(10, options.maximumCompletedSyllables)) : 10,
+         "shift_at_limit": !hardware,
+         "selection_returns_to_end": hardware ? options.selectionReturnsToEnd : true,
+         "candidate_cursor_at_end": hardware && options.candidateCursorAtEnd,
+         "space_opens_candidates": space, "candidate_selection_keys": "123456789",
+         "omit_tone": hardware && omitsTones,
+         "use_bigrams": options.useBigrams,
+         "clear_composing_with_escape": hardware && options.clearComposingWithEscape,
+         "shift_always_uppercase": hardware && options.shiftAlwaysUppercase]
     }
     private var smartConfiguration: [String: Any] {
         Self.smartConfiguration(hardware: hardwareSmartEditing, space: spaceSelectsCandidates,
-                                phoneticGrid: touchPhoneticGridEnabled)
+                                phoneticGrid: touchPhoneticGridEnabled,
+                                omitsTones: toneOmissionEnabled, options: typingOptions)
+    }
+    public func setTypingOptions(_ value: KeyboardTypingOptions) {
+        guard !hasComposition, value != typingOptions else { return }
+        let previous = typingOptions
+        typingOptions = value
+        do {
+            _ = try apply(["type": "set_smart_options", "options": smartConfiguration])
+            _ = try apply(["type": "set_behaviors", "behaviors": [
+                "ignore_caps_lock_in_chinese": value.ignoreCapsLockInChinese, "literal_keypad": false]])
+        } catch { typingOptions = previous; lastError = error }
     }
     private var supportsTouchPhoneticGrid: Bool {
         !hardwareSmartEditing && chineseInputMethod == .smart
     }
     private func updateTouchPhoneticGrid() throws {
         let enabled = toneOmissionEnabled && supportsTouchPhoneticGrid
+        if hardwareSmartEditing {
+            _ = try apply(["type": "set_smart_options", "options": smartConfiguration])
+            return
+        }
         guard enabled != touchPhoneticGridEnabled else { return }
         let options = Self.smartConfiguration(hardware: hardwareSmartEditing, space: spaceSelectsCandidates,
-                                              phoneticGrid: enabled)
+                                              phoneticGrid: enabled, omitsTones: toneOmissionEnabled, options: typingOptions)
         _ = try apply(["type": "set_smart_options", "options": options])
         do {
             _ = try apply(["type": "set_touch_phonetic_grid", "enabled": enabled])
@@ -452,6 +478,9 @@ public final class GuanyinmaInputEngine: InputEngine {
         return offeringAssociated(operate(["type": type, "text": raw.lowercased()]))
     }
     @discardableResult public func handleHardwareCharacter(_ key: Character) -> KeyboardInput.Result {
+        handleHardwareCharacter(key, modifiers: [])
+    }
+    @discardableResult public func handleHardwareCharacter(_ key: Character, modifiers: HardwareKeyboardModifiers) -> KeyboardInput.Result {
         if temporaryEnglish { endTemporaryEnglish() }
         if overlay == .symbols, let number = key.wholeNumberValue, (1...9).contains(number) {
             return selectDisplayedCandidate(number - 1)
@@ -459,7 +488,12 @@ public final class GuanyinmaInputEngine: InputEngine {
         if chineseInputMethod.isTable, !displayedCandidates.isEmpty, key == "<" || key == ">" {
             changePage(by: key == "<" ? -1 : 1); return .update
         }
-        return character(String(key), touch: false)
+        clearOverlay()
+        if mode != .bopomofo { return direct(String(key)) }
+        return offeringAssociated(operate(["type": "character", "text": String(key), "modifiers": [
+            "shift": modifiers.contains(.shift), "caps_lock": modifiers.contains(.capsLock),
+            "control": modifiers.contains(.control), "alt": modifiers.contains(.option),
+            "command": modifiers.contains(.command)]]))
     }
     @discardableResult public func toggleHardwareLanguage() -> KeyboardInput.Result {
         temporaryEnglish = false; shifted = false
@@ -494,7 +528,8 @@ public final class GuanyinmaInputEngine: InputEngine {
         if !snapshot.reading.isEmpty { return key("space") }
         if !snapshot.candidates.isEmpty { changePage(by: 1); return .update }
         guard !snapshot.readings.isEmpty else { return .update }
-        let index = hardwareSmartEditing ? min(snapshot.readingCursor, snapshot.readings.count - 1) : snapshot.readings.count - 1
+        let target = snapshot.readingCursor - (typingOptions.candidateCursorAtEnd ? 1 : 0)
+        let index = hardwareSmartEditing ? max(0, min(target, snapshot.readings.count - 1)) : snapshot.readings.count - 1
         return operate(["type": "open_candidates", "index": index])
     }
     @discardableResult public func enter() -> KeyboardInput.Result {

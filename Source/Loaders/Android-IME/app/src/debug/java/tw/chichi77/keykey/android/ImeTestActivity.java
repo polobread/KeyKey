@@ -136,10 +136,13 @@ public final class ImeTestActivity extends Activity {
     }
 
     private void applyTestConfiguration() {
+        var configuration = getResources().getConfiguration();
+        boolean virtual = configuration.keyboard == android.content.res.Configuration.KEYBOARD_NOKEYS
+                || configuration.hardKeyboardHidden != android.content.res.Configuration.HARDKEYBOARDHIDDEN_NO;
         String method = getIntent().getStringExtra("method");
         if (method != null) {
             ChineseInputMethodSettings.setMethod(this,
-                    ChineseInputMethod.valueOf(method.toUpperCase(java.util.Locale.ROOT)));
+                    ChineseInputMethod.valueOf(method.toUpperCase(java.util.Locale.ROOT)), virtual);
         }
         if (getIntent().hasExtra("supporter")) {
             SupporterState.setSupporter(this,
@@ -147,7 +150,7 @@ public final class ImeTestActivity extends Activity {
         }
         if (getIntent().hasExtra("bigram")) {
             BopomofoCompositionModeSettings.setBigramEnabled(this,
-                    getIntent().getBooleanExtra("bigram", true));
+                    getIntent().getBooleanExtra("bigram", true), virtual);
         }
         String floating = getIntent().getStringExtra("floating");
         if ("off".equals(floating)) {

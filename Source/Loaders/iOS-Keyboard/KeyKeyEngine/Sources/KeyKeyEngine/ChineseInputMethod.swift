@@ -27,9 +27,9 @@ public final class ChineseInputMethodSettings {
     public static let key = "chineseInputMethod"
     private let store: KeyboardPreferenceStore
     public init(defaults: UserDefaults = .standard, sharedDefaults: UserDefaults? = nil,
-                writesShared: Bool = false) {
+                writesShared: Bool = false, profile: KeyboardSettingsProfile = .virtual) {
         store = KeyboardPreferenceStore(defaults: defaults, sharedDefaults: sharedDefaults,
-                                        writesShared: writesShared)
+                                        writesShared: writesShared, profile: profile)
     }
     public var method: ChineseInputMethod {
         if let raw = store.object(forKey: Self.key) as? String,

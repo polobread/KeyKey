@@ -302,8 +302,8 @@ public final class IntegratedBottomControlsInstrumentedTest {
         String[] keys = {KeyboardBottomControlsSettings.KEY_ENABLED,
                 KeyboardLayoutProfileSettings.KEY_LAYOUT, KeyboardSizeSettings.KEY_PORTRAIT_PERCENT,
                 KeyboardSizeSettings.KEY_LANDSCAPE_PERCENT, KeyboardLayoutProfileSettings.KEY_SPACING,
-                ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
-                BopomofoKeyboardLayoutSettings.KEY_LAYOUT};
+                KeyboardSettingsProfile.key(true, ChineseInputMethodSettings.KEY_METHOD), BopomofoCompositionModeSettings.KEY_MODE,
+                KeyboardSettingsProfile.key(true, BopomofoKeyboardLayoutSettings.KEY_LAYOUT)};
         Activity activity = null;
         int originalRotation = Surface.ROTATION_0;
         boolean originalAutoRotate = Settings.System.getInt(context.getContentResolver(),
@@ -520,8 +520,8 @@ public final class IntegratedBottomControlsInstrumentedTest {
         var preferences = CandidateWindowSettings.preferences(context);
         Map<String, ?> previous = preferences.getAll();
         String[] keys = {KeyboardBottomControlsSettings.KEY_ENABLED, KeyboardLayoutProfileSettings.KEY_LAYOUT,
-                ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
-                BopomofoKeyboardLayoutSettings.KEY_LAYOUT, KeyboardLayoutProfileSettings.KEY_DELETE_POSITION};
+                KeyboardSettingsProfile.key(true, ChineseInputMethodSettings.KEY_METHOD), BopomofoCompositionModeSettings.KEY_MODE,
+                KeyboardSettingsProfile.key(true, BopomofoKeyboardLayoutSettings.KEY_LAYOUT), KeyboardLayoutProfileSettings.KEY_DELETE_POSITION};
         Activity activity = null;
         try {
             preferences.edit().putBoolean(keys[0], false)
@@ -660,7 +660,7 @@ public final class IntegratedBottomControlsInstrumentedTest {
         Context context = instrumentation.getTargetContext();
         var preferences = CandidateWindowSettings.preferences(context);
         var previous = preferences.getAll();
-        String[] keys = {ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE};
+        String[] keys = {KeyboardSettingsProfile.key(true, ChineseInputMethodSettings.KEY_METHOD), BopomofoCompositionModeSettings.KEY_MODE};
         try {
             for (var method : ChineseInputMethod.values()) {
                 instrumentation.runOnMainSync(() -> ChineseInputMethodSettings.setMethod(context, method));
@@ -710,8 +710,8 @@ public final class IntegratedBottomControlsInstrumentedTest {
         Context context = instrumentation.getTargetContext();
         var preferences = CandidateWindowSettings.preferences(context);
         Map<String, ?> previous = preferences.getAll();
-        String[] keys = {ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
-                BopomofoCompositionModeSettings.KEY_OMIT_TONE, BopomofoKeyboardLayoutSettings.KEY_LAYOUT};
+        String[] keys = {KeyboardSettingsProfile.key(true, ChineseInputMethodSettings.KEY_METHOD), BopomofoCompositionModeSettings.KEY_MODE,
+                KeyboardSettingsProfile.key(true, BopomofoCompositionModeSettings.KEY_OMIT_TONE), KeyboardSettingsProfile.key(true, BopomofoKeyboardLayoutSettings.KEY_LAYOUT)};
         ImeTestActivity host = null;
         try {
             preferences.edit().putString(keys[0], ChineseInputMethod.SMART.name())
@@ -776,9 +776,9 @@ public final class IntegratedBottomControlsInstrumentedTest {
         var preferences = CandidateWindowSettings.preferences(context);
         Map<String, ?> previous = preferences.getAll();
         String[] keys = {KeyboardBottomControlsSettings.KEY_ENABLED, KeyboardLayoutProfileSettings.KEY_LAYOUT,
-                ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
-                BopomofoKeyboardLayoutSettings.KEY_LAYOUT, KeyboardLayoutProfileSettings.KEY_DELETE_POSITION,
-                BopomofoCompositionModeSettings.KEY_OMIT_TONE};
+                KeyboardSettingsProfile.key(true, ChineseInputMethodSettings.KEY_METHOD), BopomofoCompositionModeSettings.KEY_MODE,
+                KeyboardSettingsProfile.key(true, BopomofoKeyboardLayoutSettings.KEY_LAYOUT), KeyboardLayoutProfileSettings.KEY_DELETE_POSITION,
+                KeyboardSettingsProfile.key(true, BopomofoCompositionModeSettings.KEY_OMIT_TONE)};
         Activity activity = null;
         try {
             preferences.edit().putBoolean(keys[0], false)
@@ -857,8 +857,8 @@ public final class IntegratedBottomControlsInstrumentedTest {
         Context context = instrumentation.getTargetContext();
         var preferences = CandidateWindowSettings.preferences(context);
         Map<String, ?> previous = preferences.getAll();
-        String[] keys = {ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
-                BopomofoKeyboardLayoutSettings.KEY_LAYOUT, BopomofoCompositionModeSettings.KEY_OMIT_TONE};
+        String[] keys = {KeyboardSettingsProfile.key(true, ChineseInputMethodSettings.KEY_METHOD), BopomofoCompositionModeSettings.KEY_MODE,
+                KeyboardSettingsProfile.key(true, BopomofoKeyboardLayoutSettings.KEY_LAYOUT), KeyboardSettingsProfile.key(true, BopomofoCompositionModeSettings.KEY_OMIT_TONE)};
         Activity activity = null;
         try {
             preferences.edit().putString(keys[0], ChineseInputMethod.SMART.name())

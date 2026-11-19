@@ -21,28 +21,34 @@ final class BopomofoCompositionModeSettings {
         preferences(context).edit().putString(KEY_MODE, valueForMode(mode)).apply();
     }
 
-    static boolean spaceSelectsCandidates(Context context) {
-        return preferences(context).getBoolean(KEY_SPACE_SELECTS_CANDIDATES, false);
+    static boolean spaceSelectsCandidates(Context context) { return spaceSelectsCandidates(context, true); }
+    static boolean spaceSelectsCandidates(Context context, boolean virtual) {
+        return KeyboardSettingsProfile.preferences(context).getBoolean(KeyboardSettingsProfile.key(virtual, KEY_SPACE_SELECTS_CANDIDATES), false);
     }
 
-    static void setSpaceSelectsCandidates(Context context, boolean enabled) {
-        preferences(context).edit().putBoolean(KEY_SPACE_SELECTS_CANDIDATES, enabled).apply();
+    static void setSpaceSelectsCandidates(Context context, boolean enabled) { setSpaceSelectsCandidates(context, enabled, true); }
+    static void setSpaceSelectsCandidates(Context context, boolean enabled, boolean virtual) {
+        KeyboardSettingsProfile.preferences(context).edit().putBoolean(KeyboardSettingsProfile.key(virtual, KEY_SPACE_SELECTS_CANDIDATES), enabled).apply();
     }
 
-    static boolean omitTone(Context context) {
-        return preferences(context).getBoolean(KEY_OMIT_TONE, false);
+    static boolean omitTone(Context context) { return omitTone(context, true); }
+    static boolean omitTone(Context context, boolean virtual) {
+        return KeyboardSettingsProfile.preferences(context).getBoolean(KeyboardSettingsProfile.key(virtual, KEY_OMIT_TONE), false);
     }
 
-    static void setOmitTone(Context context, boolean enabled) {
-        preferences(context).edit().putBoolean(KEY_OMIT_TONE, enabled).apply();
+    static void setOmitTone(Context context, boolean enabled) { setOmitTone(context, enabled, true); }
+    static void setOmitTone(Context context, boolean enabled, boolean virtual) {
+        KeyboardSettingsProfile.preferences(context).edit().putBoolean(KeyboardSettingsProfile.key(virtual, KEY_OMIT_TONE), enabled).apply();
     }
 
-    static boolean bigramEnabled(Context context) {
-        return preferences(context).getBoolean(KEY_BIGRAM_ENABLED, true);
+    static boolean bigramEnabled(Context context) { return bigramEnabled(context, true); }
+    static boolean bigramEnabled(Context context, boolean virtual) {
+        return KeyboardSettingsProfile.preferences(context).getBoolean(KeyboardSettingsProfile.key(virtual, KEY_BIGRAM_ENABLED), true);
     }
 
-    static void setBigramEnabled(Context context, boolean enabled) {
-        preferences(context).edit().putBoolean(KEY_BIGRAM_ENABLED, enabled).apply();
+    static void setBigramEnabled(Context context, boolean enabled) { setBigramEnabled(context, enabled, true); }
+    static void setBigramEnabled(Context context, boolean enabled, boolean virtual) {
+        KeyboardSettingsProfile.preferences(context).edit().putBoolean(KeyboardSettingsProfile.key(virtual, KEY_BIGRAM_ENABLED), enabled).apply();
     }
 
     static BopomofoCompositionMode modeFromValue(String value) {

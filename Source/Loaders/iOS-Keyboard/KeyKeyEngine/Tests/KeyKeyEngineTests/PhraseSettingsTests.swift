@@ -55,6 +55,31 @@ struct PhraseSettingsTests {
 
 @Suite("Apply App keyboard defaults")
 struct ApplyAppKeyboardDefaultsTests {
+    @Test func virtualApplyKeepsEditorCollectionChoiceWhileAppCollectionChangesRemainShared() {
+        let shared = UserDefaults(suiteName: "keykey.phrase-apply.shared.\(UUID())")!
+        let keyboardDefaults = UserDefaults(suiteName: "keykey.phrase-apply.keyboard.\(UUID())")!
+        let editorDefaults = UserDefaults(suiteName: "keykey.phrase-apply.editor.\(UUID())")!
+        let app = PhraseSettings(sharedDefaults: shared, writesShared: true)
+        let keyboard = PhraseSettings(defaults: keyboardDefaults, sharedDefaults: shared)
+        let editor = PhraseSettings(defaults: editorDefaults, sharedDefaults: shared, applyDefaultsProfile: .physical)
+        app.setEnabledCollections(["taiwan"])
+        keyboard.setEnabledCollections([PhraseSettings.baseCollection])
+        editor.setEnabledCollections(["china"])
+        KeyboardPreferenceStore.applyAppDefaults(in: shared, profile: .virtual)
+        #expect(keyboard.enabledCollections == ["taiwan"])
+        #expect(editor.enabledCollections == ["china"])
+        #expect(PhraseSettings(defaults: editorDefaults, sharedDefaults: shared,
+                               applyDefaultsProfile: .physical).enabledCollections == ["china"])
+        // A direct change to the common App source still propagates to both.
+        app.setEnabledCollections(["hongkong-macao"])
+        #expect(keyboard.enabledCollections == ["hongkong-macao"])
+        #expect(editor.enabledCollections == ["hongkong-macao"])
+        editor.setEnabledCollections([])
+        KeyboardPreferenceStore.applyAppDefaults(in: shared, profile: .virtual)
+        #expect(keyboard.enabledCollections == ["hongkong-macao"])
+        #expect(editor.enabledCollections.isEmpty)
+    }
+
     @Test func replacesKeyboardChoicesWithAppValuesAndBuiltInDefaults() throws {
         let localName = "keykey.keyboard-defaults.local.\(UUID())"
         let sharedName = "keykey.keyboard-defaults.shared.\(UUID())"
@@ -70,7 +95,7 @@ struct ApplyAppKeyboardDefaultsTests {
         let appLayout = BopomofoKeyboardLayoutSettings(sharedDefaults: shared, writesShared: true)
         let appProfile = KeyboardLayoutProfileSettings(sharedDefaults: shared, writesShared: true)
         let appPhrases = PhraseSettings(sharedDefaults: shared, writesShared: true)
-        let sharedSpace = SmartMandarinSpaceSettings(sharedDefaults: shared)
+        let sharedSpace = SmartMandarinSpaceSettings(sharedDefaults: shared, writesShared: true)
         appMethod.setMethod(.simplex)
         appScript.setEnabled(true)
         appLayout.setLayout(.hsu)
@@ -122,7 +147,7 @@ struct ApplyAppKeyboardDefaultsTests {
         #expect(method.method == .traditional)
         #expect(toneOmission.enabled)
         #expect(!phrases.enabledCollections.isEmpty)
-        KeyboardPreferenceStore.applyAppDefaults(in: shared)
+        KeyboardPreferenceStore.applyAppDefaults(in: shared, profile: .virtual)
 
         #expect(method.method == .simplex)
         #expect(method.options(for: .cangjie, virtualKeyboard: true) == virtualCangjie)
@@ -146,7 +171,7 @@ struct ApplyAppKeyboardDefaultsTests {
         toneOmission.setEnabled(true)
         #expect(!SimplifiedChineseOutputSettings(defaults: local, sharedDefaults: shared).enabled)
         #expect(toneOmission.enabled)
-        KeyboardPreferenceStore.applyAppDefaults(in: shared)
+        KeyboardPreferenceStore.applyAppDefaults(in: shared, profile: .virtual)
         #expect(script.enabled)
         #expect(!toneOmission.enabled)
     }

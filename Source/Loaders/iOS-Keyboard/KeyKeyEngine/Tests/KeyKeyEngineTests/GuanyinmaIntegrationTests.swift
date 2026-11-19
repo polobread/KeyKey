@@ -65,6 +65,49 @@ struct GuanyinmaIntegrationTests {
         }
     }
 
+    @Test func profilePreferencesWaitForCompositionAndLatestRequestWins() throws {
+        let f = try Fixture()
+        let engine = try KeyboardInputEngine(modelURL: f.model, userDatabaseURL: f.user,
+                                             hardwareSmartEditing: true)
+        _ = engine.handleHardwareCharacter("s")
+        let oldReading = engine.readingText
+        var next = KeyboardInputPreferences(method: .traditional, layout: .hsu,
+            tableOptions: TableInputOptions(method: .traditional), spaceSelectsCandidates: true,
+            omitsTones: true, typingOptions: KeyboardTypingOptions())
+        engine.applyPreferencesWhenReady(next)
+        #expect(engine.chineseInputMethod == .smart)
+        #expect(engine.readingText == oldReading)
+        next.omitsTones = false // a later App publication supersedes an earlier keyboard choice
+        engine.applyPreferencesWhenReady(next)
+        for key in "u3" { _ = engine.handleHardwareCharacter(key) }
+        let result = engine.enter()
+        #expect(result.text == "你")
+        #expect(engine.chineseInputMethod == .smart) // original host has not accepted its text yet
+        engine.acknowledgeHostEffects()
+        #expect(engine.chineseInputMethod == .traditional)
+        #expect(engine.keyboardLayout == .hsu)
+        #expect(!engine.omitsTones)
+    }
+    @Test func hardwareProfileOptionsReachNativeModifiersAndCompositionLimit() throws {
+        let f = try Fixture()
+        var options = KeyboardTypingOptions()
+        options.maximumCompletedSyllables = 20
+        options.ignoreCapsLockInChinese = true
+        options.shiftAlwaysUppercase = true
+        options.clearComposingWithEscape = true
+        let engine = try GuanyinmaInputEngine(modelURL: f.model, userDatabaseURL: f.user,
+            hardwareSmartEditing: true, typingOptions: options)
+        _ = engine.handleHardwareCharacter("S", modifiers: [.capsLock])
+        #expect(engine.readingText == "ㄋ")
+        _ = engine.escape()
+        let literal = engine.handleHardwareCharacter("s", modifiers: [.shift, .capsLock])
+        #expect(literal.text == "S")
+        for _ in 0..<11 { for key in "su3" { _ = engine.handleHardwareCharacter(key) } }
+        #expect(engine.smartCompositionReadingCount == 11)
+        _ = engine.escape()
+        #expect(!engine.hasComposition)
+    }
+
     @Test func realCABIMapsTouchCompositionAndHostEffects() throws {
         let f = try Fixture(), engine = try f.engine()
         type("su3cl3", in: engine)
@@ -196,7 +239,8 @@ struct GuanyinmaIntegrationTests {
         let hardware = try fixture.engine(hardware: true, layout: .hanyuPinyin)
         hardware.omitsTones = true
         type("nihao", in: hardware, hardware: true)
-        #expect(!hardware.hasPendingPhoneticInput && hardware.displayedCandidates.isEmpty)
+        #expect(!hardware.usesTouchPhoneticGrid)
+        #expect(hardware.enter().text == "你好")
     }
 
     @Test func toneOmissionPinyinKeepsAnElevenCellWindowWhenTheHostPrefixShifts() throws {

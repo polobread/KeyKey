@@ -47,6 +47,29 @@ public final class GuanyinmaIntegrationTest {
             if (hardware) engine.handleHardwareCharacter(value); else engine.handleSoftKey(String.valueOf(value));
         }
     }
+    @Test public void hardwareProfilesUseDesktopOptionsAndKeepTouchBoundaries() throws Exception {
+        try (Fixture fixture = new Fixture(); GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
+            var options = new HardwareSmartSettings.Options(true, true, true, true, 16, true, true);
+            engine.setHardwareOptions(options);
+            engine.setHardwareSmartEditing(true);
+            engine.setKeyboardLayout(BopomofoKeyboardLayout.HANYU_PINYIN);
+            type(engine, "nihao", true);
+            assertNull(engine.lastError());
+            assertTrue(engine.composingText(), engine.composingText().contains("你好"));
+            assertEquals("你好", engine.enter().committedText());
+            engine.handleHardwareCharacter('N', false, true);
+            assertTrue(engine.hasPendingPhoneticReading());
+            engine.escape();
+            assertFalse(engine.hasComposition());
+            engine.setHardwareSmartEditing(false); // same stored choices must not change touch behavior
+            engine.setKeyboardLayout(BopomofoKeyboardLayout.STANDARD);
+            type(engine, "su3cl3", false);
+            assertEquals("你好", engine.completedSmartText());
+            assertEquals("你好", engine.enter().committedText());
+            assertNull(engine.lastError());
+        }
+    }
+
     @Test public void realJNIMapsTouchSnapshotAndOneShotHostEffects() throws Exception {
         try (Fixture fixture = new Fixture(); GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
             type(engine, "su3cl3", false);

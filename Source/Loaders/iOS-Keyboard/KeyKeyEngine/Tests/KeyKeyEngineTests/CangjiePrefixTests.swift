@@ -67,6 +67,10 @@ struct CangjieProfileSettingsTests {
         var migratedVirtual = migrated.options(for: .cangjie, virtualKeyboard: true)
         migratedVirtual.composeWhileTyping = false
         migrated.setOptions(migratedVirtual, for: .cangjie, virtualKeyboard: true)
-        #expect(migrated.options(for: .cangjie).composeWhileTyping)
+        // A newly opened physical profile snapshots the legacy physical choice;
+        // the already-migrated virtual profile must not re-read a changed old blob.
+        let physicalMigration = ChineseInputMethodSettings(defaults: old, profile: .physical)
+        #expect(physicalMigration.options(for: .cangjie).composeWhileTyping)
+        #expect(!migrated.options(for: .cangjie, virtualKeyboard: true).composeWhileTyping)
     }
 }

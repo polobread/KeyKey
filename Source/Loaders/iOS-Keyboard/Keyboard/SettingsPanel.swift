@@ -9,6 +9,8 @@ protocol SettingsPanelDelegate: AnyObject {
         _ panel: SettingsPanel, didChangeCompositionMode mode: BopomofoCompositionMode
     )
     func settingsPanel(_ panel: SettingsPanel, didChangeSimplifiedOutput enabled: Bool)
+    func settingsPanel(_ panel: SettingsPanel, didChangeSpaceSelection enabled: Bool)
+    func settingsPanel(_ panel: SettingsPanel, didChangeUseBigrams enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeToneOmission enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeInputClicksEnabled enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeCandidateColor color: CandidateColor)
@@ -46,6 +48,7 @@ final class SettingsPanel: UIView {
         items: ChineseInputMethod.allCases.map(\.displayName)
     )
     private let resetLearningButton = UIButton(configuration: .tinted())
+    private var tableOptionViews: [KeyboardTableOptionsView] = []
     private var resetConfirmation = false
     private var helpOverlay: UIView?
     private weak var helpSource: UIButton?
@@ -85,7 +88,7 @@ final class SettingsPanel: UIView {
 
     private func buildInterface() {
         let title = UILabel()
-        title.text = "輸入法設定"
+        title.text = "虛擬鍵盤調整設定"
         title.font = .systemFont(ofSize: 16, weight: .semibold)
         title.textColor = Palette.primaryText
 
@@ -109,13 +112,22 @@ final class SettingsPanel: UIView {
         resize.setTitle("調整鍵盤高度", for: .normal)
         resize.addTarget(self, action: #selector(keyboardHeightTapped), for: .touchUpInside)
         resize.accessibilityIdentifier = "keyboard-settings.keyboard-height"
+        let phonetic = KeyboardSettingsGroup(title: "注音與選字", identifier: "keyboard-settings.group.phonetic")
+        for row in [toneOmissionRow(), spaceSelectionRow(), bigramRow(), keyboardLayoutRow(), resetLearningRow(), statusLabel] {
+            phonetic.content.addArrangedSubview(row)
+        }
+        let tables = KeyboardSettingsGroup(title: "倉頡與簡易", identifier: "keyboard-settings.group.tables")
+        for method in [ChineseInputMethod.cangjie, .simplex] {
+            let view = tableOptionsView(for: method)
+            tableOptionViews.append(view)
+            tables.content.addArrangedSubview(view)
+        }
+        let appearance = KeyboardSettingsGroup(title: "外觀與操作", identifier: "keyboard-settings.group.appearance")
+        for row in [candidateColorRow(), resize, layoutProfileRow(), keycapAreaRow(), fontSizeRow(), deleteShiftRow(), feedbackRow()] {
+            appearance.content.addArrangedSubview(row)
+        }
         let root = UIStackView(arrangedSubviews: [
-            compositionModeRow(), simplifiedOutputRow(), toneOmissionRow(), spaceSelectionRow(),
-            resetLearningButton, statusLabel,
-            keyboardLayoutRow(),
-            tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex),
-            candidateColorRow(), resize, layoutProfileRow(), keycapAreaRow(), fontSizeRow(), deleteShiftRow(),
-            feedbackRow()
+            compositionModeRow(), simplifiedOutputRow(), phonetic, tables, appearance
         ])
         resetLearningButton.setTitle("重設好打注音學習紀錄", for: .normal)
         resetLearningButton.addTarget(self, action: #selector(resetLearningTapped), for: .touchUpInside)
@@ -147,17 +159,28 @@ final class SettingsPanel: UIView {
         delegate?.settingsPanelDidRequestKeyboardHeight(self)
     }
 
+    private func resetLearningRow() -> UIView {
+        resetLearningButton.accessibilityIdentifier = "keyboard-settings.reset-learning"
+        let help = helpButton(title: "重設好打注音學習紀錄",
+            message: "僅清除此鍵盤的好打注音學習紀錄，自訂詞保留。App 內實體鍵盤編輯器的學習紀錄維持原狀。按鈕需按兩次確認。",
+            identifier: "reset-learning")
+        let row = UIStackView(arrangedSubviews: [resetLearningButton, help])
+        row.alignment = .center
+        row.spacing = 8
+        return row
+    }
+
     @objc private func resetLearningTapped() {
         if !resetConfirmation {
             resetConfirmation = true
-            resetLearningButton.setTitle("再按一次確認重設", for: .normal)
+            resetLearningButton.setTitle("再按一次重設此鍵盤", for: .normal)
             return
         }
         resetConfirmation = false
         resetLearningButton.setTitle("重設好打注音學習紀錄", for: .normal)
         statusLabel.isHidden = false
         statusLabel.text = delegate?.settingsPanelResetLearning(self) == true
-            ? "學習紀錄已重設，自訂詞保留。" : "無法重設學習紀錄。"
+            ? "此鍵盤學習紀錄已重設，自訂詞保留。" : "無法重設此鍵盤學習紀錄。"
     }
 
     private func layoutProfileRow() -> UIView {
@@ -189,9 +212,12 @@ final class SettingsPanel: UIView {
         let control = UISegmentedControl(items: KeyboardKeyFontSize.allCases.map(\.displayName))
         control.selectedSegmentIndex = KeyboardKeyFontSize.allCases.firstIndex(of: fontSize) ?? 0
         control.accessibilityIdentifier = "keyboard.key-font-size"
-        control.accessibilityLabel = "字體"
+        control.accessibilityLabel = "字體大小"
         control.addTarget(self, action: #selector(fontSizeChanged(_:)), for: .valueChanged)
-        return layoutOptionRow(title: "字體", control: control)
+        let help = helpButton(title: "字體大小",
+            message: "「標準」保留英文鍵位提示；選擇「中」、「大」或「特大」會隱藏提示，放大主要字。",
+            identifier: "key-font-size")
+        return layoutOptionRow(title: "字體大小", control: control, help: help)
     }
 
     @objc private func fontSizeChanged(_ sender: UISegmentedControl) {
@@ -209,12 +235,13 @@ final class SettingsPanel: UIView {
         return layoutOptionRow(title: "刪除鍵位置", control: control)
     }
 
-    private func layoutOptionRow(title: String, control: UIView) -> UIView {
+    private func layoutOptionRow(title: String, control: UIView, help: UIButton? = nil) -> UIView {
         let label = UILabel()
         label.text = title
         label.font = .systemFont(ofSize: 15)
         label.textColor = Palette.primaryText
-        let stack = UIStackView(arrangedSubviews: [label, control])
+        let heading: UIView = help.map { helpRow(label, help: $0) } ?? label
+        let stack = UIStackView(arrangedSubviews: [heading, control])
         stack.axis = .vertical
         stack.spacing = 6
         return stack
@@ -292,7 +319,7 @@ final class SettingsPanel: UIView {
         toggle.addTarget(self, action: #selector(simplifiedOutputChanged(_:)), for: .valueChanged)
         let help = helpButton(
             title: title,
-            message: "開啟後，接下來送出的文字會轉成簡體，組字和候選仍顯示繁體。這裡的選擇會保存在鍵盤。要套用 App 裡的所有鍵盤設定，可到琦琦 App 的「輸入法設定」，按最上方的「套用到鍵盤」。",
+            message: "開啟後，接下來送出的文字會轉成簡體，組字和候選仍顯示繁體。這裡的選擇會保存在鍵盤。要套用 App 的虛擬鍵盤設定，請到琦琦 App 首頁 →「虛擬鍵盤調整設定」，按最上方的「套用到鍵盤」。實體鍵盤設定及上下緣高度維持原狀。",
             identifier: "simplified-chinese-output"
         )
         return helpRow(label, control: toggle, help: help)
@@ -302,57 +329,51 @@ final class SettingsPanel: UIView {
         delegate?.settingsPanel(self, didChangeSimplifiedOutput: sender.isOn)
     }
 
-    private func tableOptionsButton(for method: ChineseInputMethod) -> UIButton {
-        let button = UIButton(configuration: .tinted())
-        button.setTitle(method.displayName + (method == .cangjie ? "設定（虛擬鍵盤）" : "設定"), for: .normal)
-        button.accessibilityIdentifier = "table-options." + method.rawValue
-        button.showsMenuAsPrimaryAction = true
-        refreshTableOptions(button, for: method)
-        return button
-    }
-
-    private func refreshTableOptions(_ button: UIButton, for method: ChineseInputMethod) {
-        let options = methodSettings.options(for: method, virtualKeyboard: true)
-        var children: [UIMenuElement] = options.switches(for: method).map { item in
-            UIAction(title: item.title, attributes: item.key == "prefix" && !options.composeWhileTyping ? .disabled : [], state: item.enabled ? .on : .off) { [weak self, weak button] _ in
-                guard let self, let button else { return }
-                var next = self.methodSettings.options(for: method, virtualKeyboard: true)
-                next.toggle(item.key)
-                self.methodSettings.setOptions(next, for: method, virtualKeyboard: true)
+    private func tableOptionsView(for method: ChineseInputMethod) -> KeyboardTableOptionsView {
+        KeyboardTableOptionsView(method: method, identifierPrefix: "keyboard-settings.table", foreground: Palette.primaryText,
+            read: { [weak self] in
+                self?.methodSettings.options(for: method, virtualKeyboard: true) ?? TableInputOptions(method: method)
+            }, write: { [weak self] options in
+                guard let self else { return }
+                self.methodSettings.setOptions(options, for: method, virtualKeyboard: true)
                 self.delegate?.settingsPanelDidChangeTableOptions(self)
-                self.refreshTableOptions(button, for: method)
-            }
-        }
-        if method == .cangjie {
-            children.append(UIMenu(title: "標點", children: ["原字表", "中英混合", "半形"].enumerated().map { index, title in
-                UIAction(title: title, state: options.punctuation == index ? .on : .off) { [weak self, weak button] _ in
-                    guard let self, let button else { return }
-                    var next = self.methodSettings.options(for: method, virtualKeyboard: true)
-                    next.punctuation = index
-                    self.methodSettings.setOptions(next, for: method, virtualKeyboard: true)
-                    self.delegate?.settingsPanelDidChangeTableOptions(self)
-                    self.refreshTableOptions(button, for: method)
-                }
-            }))
-        }
-        button.menu = UIMenu(title: method.displayName + "設定", children: children)
+                self.tableOptionViews.forEach { $0.refresh() }
+            }, showHelp: { [weak self] title, message, source in
+                self?.showHelp(title: title, message: message, source: source)
+            })
     }
 
     private func spaceSelectionRow() -> UIView {
         let title = "好打注音使用空白鍵選字"
-        let enabled = SmartMandarinSpaceSettings().enabled
-        let label = UILabel()
-        label.text = "\(title)：\(enabled ? "開啟" : "關閉")"
-        label.font = .preferredFont(forTextStyle: .subheadline)
-        label.adjustsFontForContentSizeCategory = true
+        let label = UILabel(); label.text = title; label.font = .preferredFont(forTextStyle: .subheadline)
         label.textColor = Palette.primaryText
-        label.accessibilityIdentifier = "space-selects-candidates"
-        let help = helpButton(
-            title: title,
-            message: "開啟後，空白鍵可完成讀音、開啟候選及翻頁。此設定與實體鍵盤共用，請至琦琦 App 的「輸入法設定」調整。",
-            identifier: "space-selects-candidates"
-        )
-        return helpRow(label, help: help)
+        let toggle = UISwitch()
+        toggle.isOn = SmartMandarinSpaceSettings().enabled
+        toggle.accessibilityIdentifier = "space-selects-candidates"
+        toggle.accessibilityLabel = title
+        toggle.addAction(UIAction { [weak self] _ in
+            guard let self else { return }
+            self.delegate?.settingsPanel(self, didChangeSpaceSelection: toggle.isOn)
+        }, for: .valueChanged)
+        return helpRow(label, control: toggle, help: helpButton(title: title,
+            message: "開啟後，空白鍵可完成讀音、開啟候選及翻頁。選擇保存在鍵盤，不需完整取用。",
+            identifier: "space-selects-candidates"))
+    }
+    private func bigramRow() -> UIView {
+        let title = "使用上下文選字"
+        let label = UILabel(); label.text = title; label.font = .preferredFont(forTextStyle: .subheadline)
+        label.textColor = Palette.primaryText
+        let shared = UserDefaults(suiteName: KeyboardPreferenceStore.appGroupIdentifier)
+        let toggle = UISwitch()
+        toggle.isOn = KeyboardTypingSettings(sharedDefaults: shared).options.useBigrams
+        toggle.accessibilityIdentifier = "keyboard-settings.use-bigrams"
+        toggle.accessibilityLabel = title
+        toggle.addAction(UIAction { [weak self] _ in
+            guard let self else { return }
+            self.delegate?.settingsPanel(self, didChangeUseBigrams: toggle.isOn)
+        }, for: .valueChanged)
+        return helpRow(label, control: toggle, help: helpButton(title: title,
+            message: "使用前後文協助好打注音選詞，預設開啟。完成目前組字後生效。", identifier: "use-bigrams"))
     }
 
     private func toneOmissionRow() -> UIView {
@@ -461,7 +482,7 @@ final class SettingsPanel: UIView {
 
     private func helpButton(title: String, message: String, identifier: String) -> UIButton {
         let button = UIButton(type: .system)
-        button.setImage(UIImage(systemName: "info.circle"), for: .normal)
+        button.setImage(UIImage(systemName: "info.circle", withConfiguration: UIImage.SymbolConfiguration(pointSize: 20)), for: .normal)
         button.tintColor = Palette.primaryText
         button.accessibilityLabel = "\(title)說明"
         button.accessibilityIdentifier = "keyboard-settings.help." + identifier
