@@ -153,6 +153,9 @@ jobs:
             --tests 'tw.chichi77.keykey.android.GuanyinmaUserDataTest' \
             --tests 'tw.chichi77.keykey.android.UserPhraseArchiveTest' \
             --tests 'tw.chichi77.keykey.android.LicenseNoticesTest' \
+            --tests 'tw.chichi77.keykey.android.KeyboardSettingsProfileTest' \
+            --tests 'tw.chichi77.keykey.android.CandidateColorSettingsTest' \
+            --tests 'tw.chichi77.keykey.android.HapticSettingsTest' \
             assembleDebug bundleRelease \
             -PkeykeyVersionName="$VERSION" \
             -PkeykeyVersionCode="$VERSION_CODE"
@@ -350,6 +353,9 @@ jobs:
             --tests 'tw.chichi77.keykey.android.GuanyinmaUserDataTest' \
             --tests 'tw.chichi77.keykey.android.UserPhraseArchiveTest' \
             --tests 'tw.chichi77.keykey.android.LicenseNoticesTest' \
+            --tests 'tw.chichi77.keykey.android.KeyboardSettingsProfileTest' \
+            --tests 'tw.chichi77.keykey.android.CandidateColorSettingsTest' \
+            --tests 'tw.chichi77.keykey.android.HapticSettingsTest' \
             bundleRelease \
             -PkeykeyVersionName="$VERSION" \
             -PkeykeyVersionCode="$VERSION_CODE"
