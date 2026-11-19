@@ -6,7 +6,7 @@
 
 在 iPhone 或 iPad 開啟[台灣 App Store 的「琦琦輸入法」頁面](https://apps.apple.com/tw/app/id6807832939)，點 **取得**並完成安裝，再按 **打開**啟動 App。若已安裝，可直接按 **打開**。首頁下方列有加入鍵盤的步驟；「琦琦輸入法設定」區塊可直接開啟虛擬或實體鍵盤設定，也能管理關聯詞詞庫、自訂詞及學習紀錄。
 
-![琦琦輸入法 1.5.2 首頁，琦琦輸入法設定區塊直接提供虛擬與實體鍵盤設定入口](docs/images/keykey-ios-v152-home-iphone-simulator.png)
+![琦琦輸入法首頁，琦琦輸入法設定區塊直接提供虛擬與實體鍵盤設定入口](docs/images/keykey-ios-v152-home-iphone-simulator.png)
 
 「支持開發」是可選擇的一次性購買，**未付費也能完整使用輸入功能**。實際金額以 Apple 付款畫面為準，曾購買者可按 **恢復購買**。購買或恢復成功後，支持區塊移到首頁最後面並顯示「謝謝支持」。
 
@@ -86,7 +86,7 @@
 - **字體大小**在「外觀與操作」內。「標準」保留英文鍵位提示；「中」、「大」、「特大」會隱藏提示，放大主要字。ⓘ 可查看說明。
 - **重設好打注音學習紀錄**在 App 首頁會立即清除 App 編輯器的學習紀錄，並於下次開啟鍵盤時清除鍵盤紀錄；鍵盤「設」內的重設只影響該鍵盤。兩者都保留自訂詞。
 
-![1.5.2 的虛擬鍵盤設定展開外觀與操作，顯示候選底色、版面、鍵帽間隔和字體大小](docs/images/keykey-ios-v152-appearance-settings-iphone-simulator.png)
+![虛擬鍵盤設定展開外觀與操作，顯示候選底色、版面、鍵帽間隔和字體大小](docs/images/keykey-ios-v152-appearance-settings-iphone-simulator.png)
 
 *點群組標題展開；用途說明由右側 ⓘ 開啟。App 裡的「調整鍵盤高度」ⓘ 會引導到鍵盤內拖曳預覽。*
 
@@ -100,7 +100,7 @@
 
 也可在 **琦琦 App → 虛擬鍵盤調整設定 → 倉頡與簡易** 設定螢幕鍵盤預設，再按頂端的 **套用到鍵盤**。下圖示範 App 頁面；實體編輯器的倉頡選項分開保存。
 
-![1.5.2 App 的倉頡與簡易群組已展開，倉頡即時候選和未打完也能選字均開啟，標點可直接切換](docs/images/keykey-ios-v152-cangjie-inline-settings-iphone-simulator.png)
+![App 的倉頡與簡易群組已展開，倉頡即時候選和未打完也能選字均開啟，標點可直接切換](docs/images/keykey-ios-v152-cangjie-inline-settings-iphone-simulator.png)
 
 *兩個選項都開啟後，可在字碼尚未輸入完成時查看候選；開啟「即時候選」會關閉「錯碼清除」。*
 
@@ -136,7 +136,7 @@ iOS 的第三方螢幕鍵盤無法接收其他 App 裡的一般 USB／藍牙鍵�
 
 在 **注音與選字** 可設定省略聲調、空白選字、游標前方選字、選字及後續輸入回句尾、Esc 清除全部組字、忽略 Caps Lock、Shift 英文字母固定大寫，以及 **10～20 個音節**的組字上限（預設 10）。用途與生效方式可點各項的 ⓘ。倉頡與簡易選項在另一個同頁群組。
 
-![1.5.2 App 的實體鍵盤設定，顯示獨立的空白選字、游標選字及 Esc 等進階選項](docs/images/keykey-ios-v152-hardware-settings-iphone-simulator.png)
+![App 的實體鍵盤設定，顯示獨立的空白選字、游標選字及 Esc 等進階選項](docs/images/keykey-ios-v152-hardware-settings-iphone-simulator.png)
 
 *這裡調整 App 內實體鍵盤編輯器，螢幕鍵盤的選擇維持原狀。*
 
@@ -215,8 +215,6 @@ iPad 也可依第 2 節新增鍵盤。若從琦琦 App 的 **開啟「設定」*
 
 ## 圖片來源
 
-首頁、虛擬設定、同頁倉頡選項及實體設定圖片使用 **1.5.2**，擷取自 iOS 26.5 的 iPhone 模擬器。
-
-加入系統鍵盤、組字選字、高度拖曳預覽與 iPad 圖片沿用 **1.5.1**，操作方式相同；畫面來自 iPhone 17 Pro 與 iPad Pro 13 吋（M5）的 iOS／iPadOS 26.5 模擬器。iPhone Duo 的分離鍵盤圖片亦為 **1.5.1**，來自 iOS 27.2 模擬器的展開內螢幕。畫面中的版本文字不代表目前商店版本。
+畫面擷取自 iPhone 17 Pro 與 iPad Pro 13 吋（M5）的 iOS／iPadOS 26.5 模擬器。iPhone Duo 的分離鍵盤圖片來自 iOS 27.2 模擬器的展開內螢幕。部分圖片沿用較早版本，操作方式相同；畫面中的版本文字不代表目前商店版本。
 
 系統操作參考：[Apple：在 iPhone 上新增或更改鍵盤](https://support.apple.com/zh-tw/guide/iphone/iph73b71eb/ios)、[Apple：在 iPad 上新增或更改鍵盤](https://support.apple.com/zh-hk/guide/ipad/ipad1aa5a19a/ipados)。技術資訊另見 [iOS 鍵盤文件](Source/Loaders/iOS-Keyboard/README.md)。

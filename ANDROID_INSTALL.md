@@ -14,7 +14,7 @@ App 首頁可直接進入 **虛擬鍵盤設定**或 **實體鍵盤設定**，輸
 
 打開 App 後，依序點 **1. 啟用輸入法 → 2. 選擇琦琦輸入法**，完成後即可開始打字。下方的 **琦琦輸入法設定**直接提供虛擬與實體兩個入口，以及自訂詞、關聯詞詞庫和學習紀錄管理。
 
-![琦琦輸入法1.5.2首頁，兩個啟用步驟下方直接提供虛擬鍵盤設定、實體鍵盤設定與詞庫管理](docs/images/keykey-android-v152-home-pixel9proxl-simulator.png)
+![琦琦輸入法首頁，兩個啟用步驟下方直接提供虛擬鍵盤設定、實體鍵盤設定與詞庫管理](docs/images/keykey-android-v152-home-pixel9proxl-simulator.png)
 
 *先完成上方兩個步驟；之後可隨時從「琦琦輸入法設定」調整各種鍵盤。*
 
@@ -86,7 +86,7 @@ App 首頁可直接進入 **虛擬鍵盤設定**或 **實體鍵盤設定**，輸
 
 選 **倉頡**後，展開 **倉頡與簡易**，找到 **倉頡設定**。確認 **即時候選**及 **未打完也能選字**都已勾選，就能在字碼尚未打完時查看候選。
 
-![1.5.2倉頡與簡易群組同頁展開，倉頡即時候選及未打完也能選字均已勾選，各列旁有資訊按鈕](docs/images/keykey-android-v152-cangjie-settings-pixel9proxl-simulator.png)
+![倉頡與簡易群組同頁展開，倉頡即時候選及未打完也能選字均已勾選，各列旁有資訊按鈕](docs/images/keykey-android-v152-cangjie-settings-pixel9proxl-simulator.png)
 
 *螢幕鍵盤與實體鍵盤各有自己的倉頡設定。*
 
@@ -102,7 +102,7 @@ App 首頁可直接進入 **虛擬鍵盤設定**或 **實體鍵盤設定**，輸
 
 先在 App 首頁選 **虛擬鍵盤設定**或 **實體鍵盤設定**。兩頁都分成 **注音與選字、倉頡與簡易、外觀與操作**三個群組，點名稱即可在同頁展開。說明集中在旁邊的 **ⓘ**，點選後以小視窗顯示。
 
-![1.5.2虛擬鍵盤設定，輸入法與繁簡開關下方為注音與選字、倉頡與簡易、外觀與操作三群組](docs/images/keykey-android-v152-virtual-settings-pixel9proxl-simulator.png)
+![虛擬鍵盤設定，輸入法與繁簡開關下方為注音與選字、倉頡與簡易、外觀與操作三群組](docs/images/keykey-android-v152-virtual-settings-pixel9proxl-simulator.png)
 
 *輸入法選單下方的「繁體中文轉簡體」預設關閉。開啟後，候選與組字仍顯示繁體，送到 App 的文字會轉成簡體，例如「臺灣」輸出為「台湾」。*
 
@@ -119,7 +119,7 @@ App 首頁可直接進入 **虛擬鍵盤設定**或 **實體鍵盤設定**，輸
 
 虛擬與實體的輸入設定及候選外觀各自保存，修改其中一頁不會改動另一頁。**關聯詞詞庫、自訂詞與學習紀錄共用**，從首頁管理。重設學習紀錄會同時影響兩種鍵盤的已學選字，自訂詞保留。
 
-![1.5.2虛擬鍵盤外觀設定，包含獨立震動、候選字底色、鍵帽間隔與字體大小](docs/images/keykey-android-v152-virtual-appearance-pixel9proxl-simulator.png)
+![虛擬鍵盤外觀設定，包含獨立震動、候選字底色、鍵帽間隔與字體大小](docs/images/keykey-android-v152-virtual-appearance-pixel9proxl-simulator.png)
 
 **字體大小**選「標準」會保留鍵帽上的英文字母提示；選「中、大、特大」會隱藏提示，讓主要字樣放大。[查看字體大小的 ⓘ 說明](docs/images/keykey-android-v152-font-size-help-pixel9proxl-simulator.png)。
 
@@ -159,7 +159,7 @@ App 首頁可直接進入 **虛擬鍵盤設定**或 **實體鍵盤設定**，輸
 
 開啟雙排選字後，部分進階選項會變灰但保留原選擇，旁邊的 ⓘ 仍可查看原因；關閉雙排後可再調整。[查看禁用項目的說明](docs/images/keykey-android-v152-physical-double-row-help-pixel9proxl-simulator.png)。
 
-![1.5.2實體鍵盤外觀設定，面板觸控震動與候選字底色各自保存，並可調整浮動窗及雙排選字](docs/images/keykey-android-v152-physical-appearance-pixel9proxl-simulator.png)
+![實體鍵盤外觀設定，面板觸控震動與候選字底色各自保存，並可調整浮動窗及雙排選字](docs/images/keykey-android-v152-physical-appearance-pixel9proxl-simulator.png)
 
 **面板觸控震動回饋**只在點選候選列、浮動窗或面板時震動，不會讓外接鍵盤的按鍵震動。候選字底色也與虛擬鍵盤分開保存。
 
@@ -188,6 +188,6 @@ App 首頁可直接進入 **虛擬鍵盤設定**或 **實體鍵盤設定**，輸
 <details>
 <summary>圖片來源</summary>
 
-首頁、輸入法選單、倉頡設定、虛擬與實體外觀及 ⓘ 說明為琦琦輸入法 **1.5.2**，在 Pixel 9 Pro XL 裝置設定的 Android 17（API 37）模擬器擷取。系統啟用／選用、注音組句／選字／續打、倉頡候選、詞庫與高度預覽保留 **1.5.1** 的操作畫面；這些步驟相同，檔名維持原版號。打字示範使用聯絡人的未儲存 Notes（備註）欄，內容只供練習。畫面中的版本文字不代表目前商店版本。
+畫面擷取自 Pixel 9 Pro XL 裝置設定的 Android 17（API 37）模擬器。部分圖片沿用較早版本，操作方式相同；畫面中的版本文字不代表目前商店版本。打字示範使用聯絡人的未儲存 Notes（備註）欄，內容只供練習。
 
 </details>
