@@ -608,8 +608,22 @@ public final class GuanyinmaIntegrationTest {
             assertTrue(engine.isTouchSmartComposition()); assertEquals(-1, engine.smartCompositionCursor());
             engine.setHardwareTouchSmartEditing(false); engine.prepareForHardwareInput();
             assertFalse(engine.isTouchSmartComposition()); assertTrue(engine.smartCompositionCursor() >= 0);
+            int desktopCursor = engine.smartCompositionCursor();
             engine.setHardwareTouchSmartEditing(true); engine.prepareForHardwareInput();
-            assertTrue(engine.isTouchSmartComposition()); assertEquals("你好", engine.completedSmartText());
+            assertNotNull(engine.lastError());
+            assertFalse(engine.isTouchSmartComposition());
+            assertEquals("你好", engine.completedSmartText());
+            assertEquals(desktopCursor, engine.smartCompositionCursor());
+            assertEquals("desktop", new JSONObject(engine.snapshotJSON()).getString("profile"));
+
+            assertEquals("你好", engine.finishCompositionForInputHandoff().committedText());
+            assertNull(engine.lastError()); assertFalse(engine.hasComposition());
+            assertEquals("", engine.finishCompositionForInputHandoff().committedText());
+            engine.setHardwareTouchSmartEditing(true); engine.prepareForHardwareInput();
+            assertNull(engine.lastError()); assertTrue(engine.isTouchSmartComposition());
+            type(engine, "su3cl3", true);
+            assertNull(engine.lastError()); assertEquals("你好", engine.completedSmartText());
+            assertEquals(-1, engine.smartCompositionCursor());
             engine.setUseBigrams(false);
             JSONObject state = new JSONObject(engine.snapshotJSON());
             assertEquals("touch", state.getString("profile"));
