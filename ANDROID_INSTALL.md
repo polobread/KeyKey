@@ -157,7 +157,9 @@ App 首頁可直接進入 **虛擬鍵盤設定**或 **實體鍵盤設定**，輸
 
 實體設定的 **注音與選字**也可調整選游標前方的字、選字及後續輸入回句尾、Esc 清除組字、10–20 音節組字長度、Caps Lock 與 Shift 大寫行為。各項 ⓘ 說明開關效果及適用範圍；有未完成組字時，輸入規則等組字完成後生效。
 
-開啟雙排選字後，部分進階選項會變灰但保留原選擇，旁邊的 ⓘ 仍可查看原因；關閉雙排後可再調整。[查看禁用項目的說明](docs/images/keykey-android-v152-physical-double-row-help-pixel9proxl-simulator.png)。
+到 **App 首頁 → 實體鍵盤設定 → 注音與選字**開啟 **好打注音省略聲調**，底部單排、雙排及浮動候選窗都能連打不帶聲調的讀音，也能照常輸入聲調。標準、許氏、漢語拼音、倚天與倚天 26 鍵均支援，與虛擬鍵盤的開關各自保存。雙排維持 9 格組字區，點一格可換字，第 10 個音節完成時擠出最前方完整詞段。
+
+開啟雙排選字後，游標及組字長度等部分進階選項會變灰但保留原選擇，旁邊的 ⓘ 仍可查看原因；省略聲調仍可調整。[查看雙排省略聲調說明](docs/images/keykey-android-v152-physical-double-row-help-pixel9proxl-simulator.png)。
 
 ![實體鍵盤外觀設定，面板觸控震動與候選字底色各自保存，並可調整浮動窗及雙排選字](docs/images/keykey-android-v152-physical-appearance-pixel9proxl-simulator.png)
 

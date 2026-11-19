@@ -238,6 +238,185 @@ public final class PhysicalKeyboardRegressionInstrumentedTest {
     @Test public void quickSettingsSingleRow() throws Exception { exerciseQuickSettings(false); }
     @Test public void quickSettingsSmartTwoRows() throws Exception { exerciseQuickSettings(true); }
 
+    @Test public void hardwareTwoRowOmissionKeepsNineCellsAndSeparateProfiles() throws Exception {
+        var preferences = CandidateWindowSettings.preferences(context);
+        var before = new java.util.HashMap<>(preferences.getAll());
+        prepareHost("off", 0);
+        try {
+            record Sample(BopomofoKeyboardLayout layout, String plain, String toned) {}
+            var samples = List.of(new Sample(BopomofoKeyboardLayout.STANDARD, "sucl", "su3cl3"),
+                    new Sample(BopomofoKeyboardLayout.HSU, "nehw", "nefhwf"),
+                    new Sample(BopomofoKeyboardLayout.ETEN, "nehz", "ne3hz3"),
+                    new Sample(BopomofoKeyboardLayout.ETEN26, "nehz", "nejhzj"),
+                    new Sample(BopomofoKeyboardLayout.HANYU_PINYIN, "nihao", "ni3hao3"));
+            main(() -> {
+                CandidateWindowSettings.setFloatingEnabled(context, false);
+                CandidateWindowSettings.setSmartTwoRowsEnabled(context, true);
+                HardwareSmartSettings.setMaxSyllables(context, 20);
+                BopomofoCompositionModeSettings.setSpaceSelectsCandidates(context, false, false);
+                ChineseInputMethodSettings.setSimplifiedChineseOutput(context, false, false);
+                BopomofoKeyboardLayoutSettings.setLayout(context, BopomofoKeyboardLayout.ETEN26, true);
+                ChineseInputMethodSettings.setMethod(context, ChineseInputMethod.TRADITIONAL, true);
+                return true;
+            });
+            for (var sample : samples) for (boolean omit : new boolean[]{false, true}) {
+                main(() -> {
+                    BopomofoKeyboardLayoutSettings.setLayout(context, sample.layout(), false);
+                    BopomofoCompositionModeSettings.setOmitTone(context, omit, false);
+                    BopomofoCompositionModeSettings.setOmitTone(context, !omit, true);
+                    return true;
+                });
+                fresh("smart");
+                assertEquals(ChineseInputMethod.SMART, main(() -> engine().chineseInputMethod()));
+                assertEquals(sample.layout(), main(() -> engine().keyboardLayout()));
+                assertTrue(main(() -> engine().isTouchSmartComposition()));
+                assertEquals(omit, main(() -> ((HostInputEngine) engine()).usesTouchPhoneticGrid()));
+                assertTrue("The real renderer must use the hardware double-row branch", main(() ->
+                        keyboardView().mode() == BopomofoKeyboardView.Mode.HARDWARE
+                                && (Boolean) field(keyboardView(), "hardwareSmartTwoRowsEnabled")
+                                && (Boolean) field(keyboardView(), "smartMode")));
+                AtomicInteger down = new AtomicInteger(), up = new AtomicInteger();
+                main(() -> {
+                    editor.setOnKeyListener((view, code, event) -> {
+                        if (code != KeyEvent.KEYCODE_ENTER) return false;
+                        if (event.getAction() == KeyEvent.ACTION_DOWN) down.incrementAndGet();
+                        if (event.getAction() == KeyEvent.ACTION_UP) up.incrementAndGet();
+                        return true;
+                    });
+                    return true;
+                });
+                type(omit ? sample.plain() : sample.toned());
+                await(() -> engine().touchSmartCells(9).equals(List.of("你", "好")));
+                if (omit) expectText(main(() -> engine().readingText()));
+                else expectText("你好");
+                record("two-row-" + sample.layout().value + "-omit-" + omit);
+                key(KeyEvent.KEYCODE_ENTER);
+                expectText("你好");
+                await(() -> down.get() == 1 && up.get() == 1 && !engine().hasComposition());
+                assertNull(main(() -> ((HostInputEngine) engine()).coreError()));
+            }
+
+            main(() -> {
+                BopomofoKeyboardLayoutSettings.setLayout(context, BopomofoKeyboardLayout.STANDARD, false);
+                BopomofoCompositionModeSettings.setOmitTone(context, true, false);
+                BopomofoCompositionModeSettings.setOmitTone(context, false, true);
+                return true;
+            });
+            fresh("smart");
+            type("su".repeat(9));
+            assertEquals(9, (int) main(() -> engine().touchSmartEditableCount()));
+            await(() -> ((List<?>) field(keyboardView(), "hits")).stream()
+                    .filter(hit -> "SMART_CELL".equals(field(hit, "kind").toString())).count() == 9);
+            assertEquals(java.util.stream.IntStream.range(0, 9).boxed().toList(), main(() ->
+                    ((List<?>) field(keyboardView(), "hits")).stream()
+                            .filter(hit -> "SMART_CELL".equals(field(hit, "kind").toString()))
+                            .map(hit -> (Integer) field(hit, "candidateIndex")).sorted().toList()));
+            assertEquals("", main(this::confirmedTwoRowPrefix));
+            type("su");
+            String prefix = main(this::confirmedTwoRowPrefix);
+            assertFalse(prefix.isEmpty());
+            assertTrue(main(() -> engine().touchSmartEditableCount() <= 9));
+            assertEquals(10, prefix.codePointCount(0, prefix.length())
+                    + (int) main(() -> engine().touchSmartEditableCount()));
+            record("two-row-nine-ten-rollover");
+            captureHardwareEvidence("two-row-omit-nine-cell-rollover");
+            // Learn only after all fixed short phrases, avoiding cross-case ranking changes.
+            String original = main(() -> engine().touchSmartCells(9).get(3));
+            tapHardwareSmartCell(3);
+            await(() -> !engine().displayedCandidates().isEmpty());
+            List<String> choices = main(() -> List.copyOf(engine().displayedCandidates()));
+            int selected = -1;
+            for (int index = 0; index < Math.min(9, choices.size()); index++) {
+                String value = choices.get(index);
+                if (value.codePointCount(0, value.length()) == 1 && !value.equals(original)) {
+                    selected = index;
+                    break;
+                }
+            }
+            assertTrue("The first page must offer a different single-character choice", selected >= 0);
+            String chosen = choices.get(selected);
+            key(KeyEvent.KEYCODE_1 + selected);
+            assertEquals(chosen, main(() -> engine().touchSmartCells(9).get(3)));
+            assertTrue(text().startsWith(prefix));
+            type("cl3");
+            String expected = main(() -> confirmedTwoRowPrefix() + String.join("", engine().touchSmartCells(9)));
+            assertEquals(11, expected.codePointCount(0, expected.length()));
+            assertTrue(expected.contains(chosen));
+            assertTrue("The next toned syllable must append at the tail", expected.endsWith("好"));
+            key(KeyEvent.KEYCODE_ENTER);
+            expectText(expected);
+            assertFalse(main(() -> engine().hasComposition()));
+
+            type("su");
+            String last = main(() -> String.join("", engine().touchSmartCells(9)));
+            main(() -> { CandidateWindowSettings.setSmartTwoRowsEnabled(context, false); return true; });
+            await(() -> !engine().isTouchSmartComposition() && !engine().hasComposition());
+            expectText(expected + last);
+            main(() -> { CandidateWindowSettings.setSmartTwoRowsEnabled(context, true); return true; });
+            await(() -> engine().isTouchSmartComposition() && ((HostInputEngine) engine()).usesTouchPhoneticGrid());
+            type("sucl");
+            String next = main(() -> String.join("", engine().touchSmartCells(9)));
+            assertEquals(2, next.codePointCount(0, next.length()));
+            key(KeyEvent.KEYCODE_ENTER);
+            expectText(expected + last + next);
+            chord(KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.KEYCODE_SPACE);
+            assertTrue(main(() -> engine().isEnglishMode()));
+            type("a");
+            expectText(expected + last + next + "a");
+            chord(KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.KEYCODE_SPACE);
+            type("b");
+            expectText(expected + last + next + "aｂ");
+            chord(KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.KEYCODE_SPACE);
+            chord(KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.KEYCODE_SPACE);
+            assertTrue(main(() -> engine().isTouchSmartComposition()));
+            assertNull(main(() -> ((HostInputEngine) engine()).coreError()));
+            record("two-row-middle-choice-continuation-and-mode-handoff");
+        } finally {
+            if (activity != null) main(() -> { activity.finish(); return true; });
+            instrumentation.waitForIdleSync();
+            main(() -> {
+                var restore = preferences.edit().clear();
+                for (var entry : before.entrySet()) {
+                    Object value = entry.getValue(); String name = entry.getKey();
+                    if (value instanceof Boolean flag) restore.putBoolean(name, flag);
+                    else if (value instanceof String text) restore.putString(name, text);
+                    else if (value instanceof Integer number) restore.putInt(name, number);
+                    else if (value instanceof Long number) restore.putLong(name, number);
+                    else if (value instanceof Float number) restore.putFloat(name, number);
+                    else if (value instanceof Set<?> values) {
+                        var strings = new HashSet<String>();
+                        for (Object item : values) strings.add((String) item);
+                        restore.putStringSet(name, strings);
+                    }
+                }
+                assertTrue(restore.commit());
+                return true;
+            });
+        }
+    }
+
+    private String confirmedTwoRowPrefix() {
+        String host = editor.getText().toString();
+        TouchSmartHostTextState tail = (TouchSmartHostTextState) field(service(), "touchHostText");
+        int suffix = tail.editableText().length() + engine().readingText().length();
+        assertTrue(host.length() >= suffix);
+        return host.substring(0, host.length() - suffix);
+    }
+
+    private void tapHardwareSmartCell(int index) {
+        float[] point = main(() -> {
+            BopomofoKeyboardView view = keyboardView();
+            Object hit = ((List<?>) field(view, "hits")).stream()
+                    .filter(item -> "SMART_CELL".equals(field(item, "kind").toString())
+                            && (Integer) field(item, "candidateIndex") == index)
+                    .findFirst().orElseThrow(() -> new AssertionError("Missing rendered smart cell " + index));
+            RectF bounds = (RectF) field(hit, "bounds");
+            int[] origin = new int[2]; view.getLocationOnScreen(origin);
+            return new float[]{origin[0] + bounds.centerX(), origin[1] + bounds.centerY()};
+        });
+        tapScreen(point[0], point[1]);
+    }
+
     @Test public void desktopProfileOmitToneAndMiddleCandidateUseTheSameService() throws Exception {
         prepareHost("off", 0);
         BopomofoKeyboardLayoutSettings.setLayout(context, BopomofoKeyboardLayout.HANYU_PINYIN, false);

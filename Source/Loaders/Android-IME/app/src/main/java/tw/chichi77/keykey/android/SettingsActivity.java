@@ -133,9 +133,8 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 BopomofoCompositionModeSettings.omitTone(this, virtualKeyboard));
         omitTone.setOnCheckedChangeListener((button, checked) ->
                 BopomofoCompositionModeSettings.setOmitTone(SettingsActivity.this, checked, virtualKeyboard));
-        if (virtualKeyboard) addHelpRow(compositionContent, omitTone, R.string.smart_omit_tone_description);
-        else addHardwareHelpRow(compositionContent, omitTone, R.string.hardware_omit_tone_description);
-        if (!virtualKeyboard) hardwareAdvancedControls.add(omitTone);
+        addHelpRow(compositionContent, omitTone,
+                virtualKeyboard ? R.string.smart_omit_tone_description : R.string.hardware_omit_tone_description);
 
         CheckBox spaceSelectsCandidates = settingsCheckBox(R.string.smart_space_selects_candidates,
                 BopomofoCompositionModeSettings.spaceSelectsCandidates(this, virtualKeyboard));

@@ -286,7 +286,6 @@ public final class BopomofoImeService extends InputMethodService
         if (connection == null) return !marked && editable.isEmpty();
         long host = cursorAnchorHostGeneration;
         long epoch = ownSelections.epoch();
-        hostSelectionWriteStarted = true;
         ExtractedText current = null;
         try {
             current = connection.getExtractedText(new ExtractedTextRequest(), 0);
@@ -303,6 +302,9 @@ public final class BopomofoImeService extends InputMethodService
         // A query may dispatch a newer real selection on this same looper.
         if ((lastSelectionStart >= 0 || lastSelectionEnd >= 0)
                 && (lastSelectionStart != anchor.start() || lastSelectionEnd != anchor.end())) return false;
+        // A failed early restart probe must not spend the first actual write's
+        // opportunity to obtain a current anchor. Valid restarts share this one.
+        hostSelectionWriteStarted = true;
         lastSelectionStart = anchor.start();
         lastSelectionEnd = anchor.end();
         pendingInitialAnchor = anchor;
@@ -437,8 +439,9 @@ public final class BopomofoImeService extends InputMethodService
 
     private void synchronizeTouchPhoneticGrid() {
         if (engine == null || hostTransactionFailed) return;
-        boolean enabled = tableVirtualKeyboard && engine.chineseInputMethod() == ChineseInputMethod.SMART
-                && BopomofoCompositionModeSettings.omitTone(this);
+        boolean enabled = (tableVirtualKeyboard || hardwareSmartTwoRows)
+                && engine.chineseInputMethod() == ChineseInputMethod.SMART
+                && BopomofoCompositionModeSettings.omitTone(this, tableVirtualKeyboard);
         if (enabled == engine.touchPhoneticGridEnabled()) return;
         commitPendingComposition();
         if (!hostTransactionFailed && !engine.hasComposition()) engine.setTouchPhoneticGrid(enabled);
@@ -775,7 +778,7 @@ public final class BopomofoImeService extends InputMethodService
         }
         if (!fieldPolicy.isKeyEnabled(key, engine.inputMode(), engine.isShifted())) return;
         useTableKeyboard(!hardwareKeyboard);
-        boolean omitTone = keyboardView != null && keyboardView.isTouchMode()
+        boolean omitTone = keyboardView != null && (keyboardView.isTouchMode() || hardwareSmartTwoRows)
                 && engine.usesTouchPhoneticGrid();
         apply(engine.handleSoftKey(key, omitTone), key.equals("ENTER"));
     }
@@ -891,8 +894,8 @@ public final class BopomofoImeService extends InputMethodService
         }
         // A key can arrive before the hardware configuration callback. Finish
         // the already-inserted touch tail before adopting marked host text.
-        if (((engine.isTouchSmartComposition() && engine.hasPendingPhoneticReading())
-                || (!hardwareSmartTwoRows && !touchHostText.editableText().isEmpty()))
+        if (!hardwareSmartTwoRows && ((engine.isTouchSmartComposition() && engine.hasPendingPhoneticReading())
+                || !touchHostText.editableText().isEmpty())
                 && !KeyEvent.isModifierKey(keyCode) && keyCode != KeyEvent.KEYCODE_CAPS_LOCK
                 && keyCode != KeyEvent.KEYCODE_NUM_LOCK && keyCode != KeyEvent.KEYCODE_SCROLL_LOCK) {
             commitPendingComposition();
@@ -1413,7 +1416,7 @@ public final class BopomofoImeService extends InputMethodService
                 && engine.inputMode() == InputEngine.InputMode.BOPOMOFO;
         keyboardView.setAssociatedPhrasesVisible(engine.isShowingAssociatedPhrases());
         boolean phoneticPending = engine.hasPendingPhoneticReading();
-        keyboardView.setPhoneticState(keyboardView.isTouchMode() && engine.usesTouchPhoneticGrid(),
+        keyboardView.setPhoneticState((keyboardView.isTouchMode() || hardwareSmartTwoRows) && engine.usesTouchPhoneticGrid(),
                 phoneticPending, engine.phoneticSpaceFirstTone());
         keyboardView.setState(engine.displayedCandidates(), engine.composingText(),
                 engine.compositionMode() == BopomofoCompositionMode.SMART
@@ -1592,13 +1595,16 @@ public final class BopomofoImeService extends InputMethodService
         // marked desktop composition and the touch keyboard's editable tail.
         boolean strategyChanged = engine != null && engine.compositionMode() == BopomofoCompositionMode.SMART
                 && engine.isTouchSmartComposition() != (!hardwareKeyboard || nextSmartTwoRows);
-        if (nextSmartTwoRows != hardwareSmartTwoRows || strategyChanged) commitPendingComposition();
+        if (nextSmartTwoRows != hardwareSmartTwoRows || strategyChanged) {
+            commitPendingComposition();
+            if (hostTransactionFailed || (engine != null && engine.hasComposition())) return;
+        }
         hardwareSmartTwoRows = nextSmartTwoRows;
-        synchronizeTouchPhoneticGrid();
         if (engine != null) {
             engine.setHardwareTouchSmartEditing(hardwareSmartTwoRows);
             engine.setHardwareSmartEditing(hardwareKeyboard && !hardwareSmartTwoRows);
         }
+        synchronizeTouchPhoneticGrid();
         if (keyboardView == null) return;
         updateKeyboardBottomSpace();
         keyboardView.setHardwareSmartTwoRowsEnabled(hardwareSmartTwoRows);

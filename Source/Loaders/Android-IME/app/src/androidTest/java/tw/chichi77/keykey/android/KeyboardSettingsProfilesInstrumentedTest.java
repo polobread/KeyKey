@@ -194,6 +194,7 @@ public final class KeyboardSettingsProfilesInstrumentedTest {
             CandidateWindowSettings.setFloatingEnabled(context, false);
             CandidateWindowSettings.setSmartTwoRowsEnabled(context, false);
             BopomofoCompositionModeSettings.setOmitTone(context, true, false);
+            BopomofoCompositionModeSettings.setOmitTone(context, false, true);
             CandidateColorSettings.setColor(context, CandidateColorSettings.CandidateColor.GREEN, true);
             CandidateColorSettings.setColor(context, CandidateColorSettings.CandidateColor.RED, false);
             HapticSettings.setDurationMs(context, 3, true);
@@ -241,15 +242,25 @@ public final class KeyboardSettingsProfilesInstrumentedTest {
                         revealGroup(root, context.getString(R.string.settings_group_composition));
                         ((CheckBox) find(root, context.getString(R.string.hardware_smart_two_rows_enabled))).setChecked(true);
                         CheckBox omission = (CheckBox) find(root, context.getString(R.string.smart_omit_tone));
-                        assertFalse(omission.isEnabled());
+                        assertTrue(omission.isEnabled());
                         assertTrue(omission.isChecked());
+                        omission.performClick();
+                        assertFalse(omission.isChecked());
+                        assertFalse(BopomofoCompositionModeSettings.omitTone(context, false));
+                        BopomofoCompositionModeSettings.setOmitTone(context, true, true);
+                        assertFalse(BopomofoCompositionModeSettings.omitTone(context, false));
+                        omission.performClick();
+                        assertTrue(omission.isChecked());
+                        assertTrue(BopomofoCompositionModeSettings.omitTone(context, false));
+                        BopomofoCompositionModeSettings.setOmitTone(context, false, true);
+                        assertTrue(BopomofoCompositionModeSettings.omitTone(context, false));
+                        assertFalse(BopomofoCompositionModeSettings.omitTone(context, true));
                         View info = described(root, context.getString(R.string.settings_show_help,
                                 context.getString(R.string.smart_omit_tone)));
-                        assertTrue("Disabled option must retain an accessible explanation", info.isEnabled());
+                        assertTrue("Enabled two-row omission keeps an accessible explanation", info.isEnabled());
                     });
                     showHelp(current, R.string.smart_omit_tone,
-                            context.getString(R.string.hardware_omit_tone_description) + "\n\n"
-                                    + context.getString(R.string.hardware_advanced_description), "physical-disabled-option-help.png");
+                            context.getString(R.string.hardware_omit_tone_description), "physical-double-row-omit-tone-help.png");
                     int[] titles = {R.string.hardware_candidate_before_cursor,
                             R.string.hardware_selection_returns_to_end, R.string.hardware_escape_clears_composition,
                             R.string.hardware_ignore_caps, R.string.hardware_shift_upper, R.string.hardware_max_syllables};
@@ -257,8 +268,18 @@ public final class KeyboardSettingsProfilesInstrumentedTest {
                             R.string.hardware_selection_returns_to_end_description, R.string.hardware_escape_clears_composition_description,
                             R.string.hardware_ignore_caps_description, R.string.hardware_shift_upper_description,
                             R.string.hardware_max_syllables_description};
-                    for (int i = 0; i < titles.length; i++) showHelp(current, titles[i],
-                            context.getString(details[i]) + "\n\n" + context.getString(R.string.hardware_advanced_description), null);
+                    for (int i = 0; i < titles.length; i++) {
+                        int title = titles[i];
+                        instrumentation.runOnMainSync(() -> {
+                            View root = current.findViewById(android.R.id.content);
+                            View control = title == R.string.hardware_max_syllables
+                                    ? described(root, context.getString(title)) : find(root, context.getString(title));
+                            assertNotNull(control);
+                            assertFalse("Other desktop options remain unavailable in two-row mode", control.isEnabled());
+                        });
+                        showHelp(current, title,
+                                context.getString(details[i]) + "\n\n" + context.getString(R.string.hardware_advanced_description), null);
+                    }
                     instrumentation.runOnMainSync(() -> {
                         View root = current.findViewById(android.R.id.content);
                         ((CheckBox) find(root, context.getString(R.string.hardware_smart_two_rows_enabled))).setChecked(false);

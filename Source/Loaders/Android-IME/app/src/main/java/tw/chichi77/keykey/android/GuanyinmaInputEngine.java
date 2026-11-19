@@ -72,7 +72,8 @@ final class GuanyinmaInputEngine implements InputEngine {
             "candidate_cursor_at_end", hardwareSmartEditing && hardwareOptions.cursorAtEnd(),
             "clear_composing_with_escape", hardwareSmartEditing && hardwareOptions.clearEscape(),
             "shift_always_uppercase", hardwareSmartEditing && hardwareOptions.shiftUpper(),
-            "max_completed_syllables", hardwareSmartEditing ? hardwareOptions.maxSyllables() : touchPhoneticGrid ? 12 : 10,
+            "max_completed_syllables", hardwareSmartEditing ? hardwareOptions.maxSyllables()
+                    : touchPhoneticGrid && !hardwareTouchSmartEditing ? 12 : 10,
             "shift_at_limit", !hardwareSmartEditing,
             "selection_returns_to_end", !hardwareSmartEditing || hardwareOptions.returnsToEnd(),
             "candidate_selection_keys", "123456789");
@@ -339,7 +340,9 @@ final class GuanyinmaInputEngine implements InputEngine {
         }
         clearOverlay();
         String key = value.toLowerCase(Locale.ROOT);
-        String operation = touch && omitTone && isTouchSmartComposition()
+        boolean phoneticGridInput = (touch && omitTone)
+                || (!touch && hardwareTouchSmartEditing && usesTouchPhoneticGrid());
+        String operation = phoneticGridInput && isTouchSmartComposition()
                 && key.length() == 1 && layout.isPhoneticKey(key.charAt(0))
                 ? "touch_phonetic" : "character";
         return offerAssociated(operate(object("type", operation, "text", key)));
@@ -377,7 +380,14 @@ final class GuanyinmaInputEngine implements InputEngine {
     }
     private boolean prepareHardware() { long before = failureEpoch; prepareForHardwareInput(); return before == failureEpoch; }
     @Override public void prepareForHardwareInput() { if (temporaryEnglish) endTemporaryEnglish(); setHardwareSmartEditing(!hardwareTouchSmartEditing); }
-    @Override public void setHardwareTouchSmartEditing(boolean enabled) { hardwareTouchSmartEditing = enabled; }
+    @Override public void setHardwareTouchSmartEditing(boolean enabled) {
+        if (enabled == hardwareTouchSmartEditing) return;
+        if (hasComposition()) { lastError = "請先完成組字後再變更實體鍵盤設定。"; return; }
+        boolean old = hardwareTouchSmartEditing;
+        hardwareTouchSmartEditing = enabled;
+        try { apply(object("type", "set_smart_options", "options", smartOptions())); }
+        catch (RuntimeException error) { hardwareTouchSmartEditing = old; failureEpoch++; lastError = diagnostic(error); }
+    }
     @Override public void setHardwareSmartEditing(boolean enabled) {
         if (enabled == hardwareSmartEditing) return;
         boolean old = hardwareSmartEditing; hardwareSmartEditing = enabled;

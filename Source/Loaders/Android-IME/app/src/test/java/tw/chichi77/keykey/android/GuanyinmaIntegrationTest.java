@@ -70,6 +70,70 @@ public final class GuanyinmaIntegrationTest {
         }
     }
 
+    @Test public void hardwareTwoRowOmissionUsesFiveLayoutsWithOrWithoutExplicitTones() throws Exception {
+        record Sample(BopomofoKeyboardLayout layout, String plain, String toned) {}
+        for (var sample : List.of(new Sample(BopomofoKeyboardLayout.STANDARD, "sucl", "su3cl3"),
+                new Sample(BopomofoKeyboardLayout.HSU, "nehw", "nefhwf"),
+                new Sample(BopomofoKeyboardLayout.ETEN, "nehz", "ne3hz3"),
+                new Sample(BopomofoKeyboardLayout.ETEN26, "nehz", "nejhzj"),
+                new Sample(BopomofoKeyboardLayout.HANYU_PINYIN, "nihao", "ni3hao3"))) {
+            for (boolean omit : new boolean[]{false, true}) {
+                try (Fixture fixture = new Fixture();
+                        GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
+                    engine.setKeyboardLayout(sample.layout());
+                    engine.setHardwareOptions(new HardwareSmartSettings.Options(omit, true, false, true, 20, true, true));
+                    engine.setHardwareTouchSmartEditing(true);
+                    engine.setTouchPhoneticGrid(omit);
+                    for (String keys : omit ? new String[]{sample.plain(), sample.toned()}
+                            : new String[]{sample.toned()}) {
+                        type(engine, keys, true);
+                        assertTrue(engine.isTouchSmartComposition());
+                        assertEquals(List.of("你", "好"), engine.touchSmartCells(9));
+                        assertEquals(2, engine.touchSmartEditableCount());
+                        assertEquals("你好", engine.enter().committedText());
+                        assertFalse(engine.hasComposition());
+                        assertEquals("", engine.finishCompositionForInputHandoff().committedText());
+                        assertNull(engine.lastError());
+                    }
+                }
+            }
+        }
+    }
+
+    @Test public void hardwareTwoRowGridKeepsNineCellsAcrossVirtualTransitions() throws Exception {
+        try (Fixture fixture = new Fixture();
+                GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
+            engine.setHardwareOptions(new HardwareSmartSettings.Options(true, false, false, false, 20, false, false));
+            engine.setTouchPhoneticGrid(true);
+            // The grid stays enabled: only the physical/virtual frontend flag changes.
+            for (boolean twoRows : new boolean[]{true, false, true}) {
+                engine.setHardwareTouchSmartEditing(twoRows);
+                int limit = twoRows ? 9 : 11;
+                StringBuilder prefix = new StringBuilder();
+                for (int syllable = 0; syllable < limit; syllable++) {
+                    for (char key : "su".toCharArray()) {
+                        InputEngine.Result result = twoRows ? engine.handleHardwareCharacter(key)
+                                : engine.handleSoftKey(String.valueOf(key), true);
+                        prefix.append(result.committedText());
+                    }
+                }
+                assertEquals("", prefix.toString());
+                assertEquals(limit, engine.touchSmartEditableCount());
+                for (char key : "su".toCharArray()) {
+                    InputEngine.Result result = twoRows ? engine.handleHardwareCharacter(key)
+                            : engine.handleSoftKey(String.valueOf(key), true);
+                    prefix.append(result.committedText());
+                }
+                assertFalse("The first complete word must roll out at the next syllable", prefix.isEmpty());
+                assertTrue(engine.touchSmartEditableCount() <= limit);
+                prefix.append(engine.enter().committedText());
+                assertEquals(limit + 1, prefix.codePointCount(0, prefix.length()));
+                assertFalse(engine.hasComposition());
+                assertNull(engine.lastError());
+            }
+        }
+    }
+
     @Test public void hardwareEscapeClearsCompletedTextOnlyWhenEnabled() throws Exception {
         for (boolean clear : new boolean[] {false, true}) {
             try (Fixture fixture = new Fixture();

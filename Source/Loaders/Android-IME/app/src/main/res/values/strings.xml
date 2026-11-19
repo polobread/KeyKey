@@ -171,7 +171,7 @@
     <string name="hardware_haptic_feedback_title">面板觸控震動回饋</string>
     <string name="hardware_haptic_feedback_description">點選候選列、浮動候選窗或面板時震動，不會讓外接鍵盤按鍵震動。可選 0–100 毫秒，0 為關閉；放開滑桿會試震一次。與另一種鍵盤分開保存。</string>
     <string name="keyboard_font_size_description">標準保留鍵帽上的英文字母提示；中、大、特大隱藏提示，讓主要字樣放大。只調整螢幕鍵帽與組字列的顯示。</string>
-    <string name="hardware_omit_tone_description">預設關閉。開啟後可連續輸入讀音，自動分音節，也能照常輸入聲調。</string>
+    <string name="hardware_omit_tone_description">預設關閉，適用好打注音的五種注音配置，以及一般候選列、雙排選字與浮動候選窗。開啟後可連續輸入讀音，自動分音節，也能照常輸入聲調。雙排維持 9 格組字區。</string>
     <string name="hardware_candidate_before_cursor_description">開啟時，按 ↓ 開啟游標前方字詞的候選；關閉時，選取游標所在位置的字詞。</string>
     <string name="hardware_selection_returns_to_end_description">開啟時，選字後回到句尾，後續讀音也從句尾接續；關閉時依目前游標位置繼續組字。</string>
     <string name="hardware_escape_clears_composition_description">開啟時，沒有未完成讀音再按 Esc 會清除整段組字；關閉時保留組字。仍有未完成讀音時，Esc 先清除讀音。</string>

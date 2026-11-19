@@ -196,6 +196,10 @@ public final class OwnSelectionTrackerTest {
     @Test public void initialSnapshotAcceptsUtf16OffsetsAndLegitimateReverseSelections() {
         assertEquals(new OwnSelectionTracker.Anchor(0, 0),
                 OwnSelectionTracker.Anchor.fromFullSnapshot(0, 0, -1, -1, 0, 0));
+        assertEquals(new OwnSelectionTracker.Anchor(0, 0),
+                OwnSelectionTracker.Anchor.fromFullSnapshot(0, 3, -1, 0, 0, 0));
+        assertEquals(new OwnSelectionTracker.Anchor(5, 5),
+                OwnSelectionTracker.Anchor.fromFullSnapshot(0, 5, -1, 5, 5, 5));
         String text = "前😀甲乙後";
         var reverse = OwnSelectionTracker.Anchor.fromFullSnapshot(10, text.length(), -1, -1, 5, 3);
         assertEquals(new OwnSelectionTracker.Anchor(15, 13), reverse);
@@ -204,7 +208,7 @@ public final class OwnSelectionTrackerTest {
 
     @Test public void initialSnapshotNeverInventsAnAnchorFromPartialOrInvalidCoordinates() {
         for (int[] input : new int[][]{{0,-1,-1,-1,0,0}, {-1,3,-1,-1,0,0}, {0,3,0,0,0,0},
-                {0,3,-1,0,0,0}, {0,3,-1,-1,-1,0}, {0,3,-1,-1,4,4}, {Integer.MAX_VALUE,3,-1,-1,1,1}}) {
+                {0,3,0,3,0,0}, {0,3,-1,-1,-1,0}, {0,3,-1,-1,4,4}, {Integer.MAX_VALUE,3,-1,-1,1,1}}) {
             assertNull(OwnSelectionTracker.Anchor.fromFullSnapshot(input[0],input[1],input[2],input[3],input[4],input[5]));
         }
     }
