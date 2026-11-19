@@ -103,9 +103,9 @@ Linux／FreeBSD 透過官方下載頁及套件管理器更新。簽章、GitHub 
 macOS [建置資訊](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/chichi77-KeyKey-1.5.1-macos-build-info.json)可核對版本、來源提交與安裝包 SHA-256。
 
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載、啟用、注音選字、詞庫設定及常見問題。
-- [Windows 1.5.1 安裝與使用指南](WINDOWS_INSTALL.md)說明安裝精靈、好打／傳統注音切換與設定畫面；自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
-- Ubuntu 24.04 使用者請看[Linux 1.5.1 安裝與使用指南](LINUX_INSTALL.md)：`.deb` 套件安裝、Fcitx 5 設定與實際桌面截圖。
-- FreeBSD 使用者請看[安裝與使用指南](FREEBSD_INSTALL.md)：套件庫安裝、ports 原始碼編譯 1.5.1、Fcitx 5 設定與操作截圖。套件資訊見 [FreshPorts：chinese/fcitx5-keykey](https://www.freshports.org/chinese/fcitx5-keykey/)。
+- [Windows 安裝與使用指南](WINDOWS_INSTALL.md)說明安裝精靈、四種輸入法與新版設定；[功能圖解與索引](docs/WINDOWS_FEATURE_GUIDE.md)以 Windows 為主，補充 macOS 差異。自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
+- Ubuntu 24.04 使用者請看[Linux 安裝與使用指南](LINUX_INSTALL.md)：`.deb` 套件安裝、Fcitx 5 設定與實際桌面截圖。
+- FreeBSD 使用者請看[安裝與使用指南](FREEBSD_INSTALL.md)：套件庫安裝、ports 原始碼編譯、Fcitx 5 設定與操作截圖。套件資訊見 [FreshPorts：chinese/fcitx5-keykey](https://www.freshports.org/chinese/fcitx5-keykey/)。
 - 想自行編譯 Linux 版，請看[`./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：下載完整原始碼、編譯測試、啟用輸入法與移除。
 - iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦輸入法》App Store 頁面](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939)安裝。
 - Android 手機／平板使用者請看[Android 安裝與使用指南](ANDROID_INSTALL.md)；可直接從[Google Play 商店](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android)安裝正式版。
@@ -159,7 +159,8 @@ Windows 由 Actions 呼叫與本機共用的 PowerShell 完成建置、測試及
 - [macOS 圖文安裝與使用指南](MACOS_INSTALL.md)：首次安裝、日常選字、符號與偏好設定
 - [macOS App Store Connect 上架可行性與發行計畫](docs/MACOS_APP_STORE_PLAN.md)：Apple
   現行政策阻礙、第三方輸入法經驗、商店外發行改善與未來上架 gate
-- [Windows 1.5.1 安裝與使用指南](WINDOWS_INSTALL.md)：新版安裝精靈、啟用、選字、設定與解除安裝
+- [功能圖解與索引](docs/WINDOWS_FEATURE_GUIDE.md)：四種輸入法、省略聲調、Shift、Caps Lock、符號表、倉頡提前選字與候選窗比例；Windows 為主、macOS 補充
+- [Windows 安裝與使用指南](WINDOWS_INSTALL.md)：安裝精靈、啟用、選字、新版設定與解除安裝
 - [Linux 安裝與使用指南](LINUX_INSTALL.md)：Ubuntu 24.04 的套件安裝、Fcitx 5 設定、注音選字與實拍圖
 - [Linux `./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：Ubuntu 24.04 的原始碼安裝、啟用、試打與移除
 - [iOS 安裝與使用指南](IOS_INSTALL.md)：App Store 安裝、加入鍵盤、日常操作與實體鍵盤編輯器
@@ -310,7 +311,7 @@ The following links provide 1.5.1 downloads once the platform assets are publish
 | Ubuntu 24.04 amd64 | 1.5.1 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.1) | [DEBs, panel, and checksums](https://github.com/polobread/KeyKey/releases/tag/v1.5.1#台灣-aws-下載點) |
 
 - First-time macOS setup, illustrated steps, and troubleshooting: [macOS installation guide (Traditional Chinese)](MACOS_INSTALL.md).
-- The [Windows 1.5.1 installation guide (Traditional Chinese)](WINDOWS_INSTALL.md) covers the installer, typing modes, and settings; see the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for building and testing.
+- The [Windows installation guide (Traditional Chinese)](WINDOWS_INSTALL.md) covers installation and settings. The [illustrated feature guide (Traditional Chinese)](docs/WINDOWS_FEATURE_GUIDE.md) covers daily Windows use with macOS notes; see the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for building and testing.
 - Ubuntu 24.04 installation, Fcitx 5 setup, and typing with desktop screenshots: [Linux installation guide (Traditional Chinese)](LINUX_INSTALL.md).
 - FreeBSD packages, ports builds, desktop setup, and screenshots: [FreeBSD installation guide (Traditional Chinese)](FREEBSD_INSTALL.md). Port information: [FreshPorts: chinese/fcitx5-keykey](https://www.freshports.org/chinese/fcitx5-keykey/).
 - Build and install the Ubuntu 24.04 version from source with `./configure`: [Linux source installation and usage guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md).
@@ -377,7 +378,8 @@ approval. See [AGENTS.md](AGENTS.md) and the
 
 - [1.5.0 shared-core migration](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md): release summary, migration boundaries, and platform acceptance requirements
 - [macOS App Store Connect feasibility and distribution plan (Traditional Chinese)](docs/MACOS_APP_STORE_PLAN.md): current Apple policy blocker, external distribution improvements, and future go/no-go gates
-- [Windows 1.5.1 installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): new installer, setup, typing, preferences, and removal
+- [Illustrated feature guide (Traditional Chinese)](docs/WINDOWS_FEATURE_GUIDE.md): Windows input methods, tone omission, shortcuts, symbols, and candidate appearance, with macOS notes
+- [Windows installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): installer, setup, typing, preferences, and removal
 - [Linux installation and use guide (Traditional Chinese)](LINUX_INSTALL.md): Ubuntu 24.04 packages, Fcitx 5 setup, typing, and desktop screenshots
 - [Linux `./configure` installation and use guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md): source build, Fcitx 5 setup, typing, and removal on Ubuntu 24.04
 - [Android installation and use guide (Traditional Chinese)](ANDROID_INSTALL.md): Google Play production installation, keyboard setup, touch and hardware keyboard use

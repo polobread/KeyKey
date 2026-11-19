@@ -1,6 +1,6 @@
 # iPhone、iPad 安裝與使用指南
 
-本指南適用於 **琦琦輸入法 1.5.2**，支援搭載 **iOS 17／iPadOS 17 以上**的 iPhone、iPad。安裝後，把琦琦加入系統鍵盤，再到文字 App 切換使用，就能開始打字。**基本輸入功能免費，不需要開啟「完整取用」。**
+本指南以最新版琦琦輸入法為準，支援搭載 **iOS 17／iPadOS 17 以上**的 iPhone、iPad。安裝後，把琦琦加入系統鍵盤，再到文字 App 切換使用，就能開始打字。**基本輸入功能免費，不需要開啟「完整取用」。**
 
 ## 1. 安裝 App，先開啟一次
 
@@ -217,6 +217,6 @@ iPad 也可依第 2 節新增鍵盤。若從琦琦 App 的 **開啟「設定」*
 
 首頁、虛擬設定、同頁倉頡選項及實體設定圖片使用 **1.5.2**，擷取自 iOS 26.5 的 iPhone 模擬器。
 
-加入系統鍵盤、組字選字、高度拖曳預覽與 iPad 圖片沿用 **1.5.1**，操作方式相同；畫面來自 iPhone 17 Pro 與 iPad Pro 13 吋（M5）的 iOS／iPadOS 26.5 模擬器。iPhone Duo 的分離鍵盤圖片亦為 **1.5.1**，來自 iOS 27.2 模擬器的展開內螢幕。
+加入系統鍵盤、組字選字、高度拖曳預覽與 iPad 圖片沿用 **1.5.1**，操作方式相同；畫面來自 iPhone 17 Pro 與 iPad Pro 13 吋（M5）的 iOS／iPadOS 26.5 模擬器。iPhone Duo 的分離鍵盤圖片亦為 **1.5.1**，來自 iOS 27.2 模擬器的展開內螢幕。畫面中的版本文字不代表目前商店版本。
 
 系統操作參考：[Apple：在 iPhone 上新增或更改鍵盤](https://support.apple.com/zh-tw/guide/iphone/iph73b71eb/ios)、[Apple：在 iPad 上新增或更改鍵盤](https://support.apple.com/zh-hk/guide/ipad/ipad1aa5a19a/ipados)。技術資訊另見 [iOS 鍵盤文件](Source/Loaders/iOS-Keyboard/README.md)。
