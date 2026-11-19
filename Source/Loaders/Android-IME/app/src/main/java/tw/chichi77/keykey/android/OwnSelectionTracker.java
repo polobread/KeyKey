@@ -9,11 +9,13 @@ final class OwnSelectionTracker {
     record Anchor(int start, int end) {
         static Anchor fromFullSnapshot(int offset, int textLength, int partialStart, int partialEnd,
                 int selectionStart, int selectionEnd) {
-            if (offset < 0 || textLength < 0 || partialStart >= 0 || partialEnd >= 0
+            if (offset < 0 || textLength < 0 || partialStart >= 0
                     || selectionStart < 0 || selectionEnd < 0
                     || selectionStart > textLength || selectionEnd > textLength
                     || (long) offset + selectionStart > Integer.MAX_VALUE
                     || (long) offset + selectionEnd > Integer.MAX_VALUE) return null;
+            // partialEnd is meaningful only for a partial update; a full snapshot
+            // is identified by partialStart == -1, even when a host populates its end.
             // Android selections can legitimately run backwards; keep direction.
             return new Anchor(offset + selectionStart, offset + selectionEnd);
         }
@@ -122,6 +124,15 @@ final class OwnSelectionTracker {
         if (matched == null) return Match.NO_MATCH;
         while (pending.removeFirst() != matched) { /* discard coalesced older intents */ }
         return pending.isEmpty() ? Match.CURRENT : Match.SUPERSEDED;
+    }
+
+    boolean hasUnknownComposing(int utf16Length) {
+        return utf16Length > 0 && pending.stream().anyMatch(token -> token.relativeLength == utf16Length);
+    }
+
+    /** A successful finish/cancel has ended this unanchored marked region. */
+    void releaseUnknownComposing() {
+        pending.removeIf(token -> token.relativeLength >= 0);
     }
 
     void clear() { pending.clear(); epoch++; }

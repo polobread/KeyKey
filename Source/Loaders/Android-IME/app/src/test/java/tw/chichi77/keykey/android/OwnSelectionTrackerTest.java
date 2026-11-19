@@ -196,6 +196,10 @@ public final class OwnSelectionTrackerTest {
     @Test public void initialSnapshotAcceptsUtf16OffsetsAndLegitimateReverseSelections() {
         assertEquals(new OwnSelectionTracker.Anchor(0, 0),
                 OwnSelectionTracker.Anchor.fromFullSnapshot(0, 0, -1, -1, 0, 0));
+        assertEquals(new OwnSelectionTracker.Anchor(0, 0),
+                OwnSelectionTracker.Anchor.fromFullSnapshot(0, 3, -1, 0, 0, 0));
+        assertEquals(new OwnSelectionTracker.Anchor(5, 5),
+                OwnSelectionTracker.Anchor.fromFullSnapshot(0, 5, -1, 5, 5, 5));
         String text = "前😀甲乙後";
         var reverse = OwnSelectionTracker.Anchor.fromFullSnapshot(10, text.length(), -1, -1, 5, 3);
         assertEquals(new OwnSelectionTracker.Anchor(15, 13), reverse);
@@ -204,7 +208,7 @@ public final class OwnSelectionTrackerTest {
 
     @Test public void initialSnapshotNeverInventsAnAnchorFromPartialOrInvalidCoordinates() {
         for (int[] input : new int[][]{{0,-1,-1,-1,0,0}, {-1,3,-1,-1,0,0}, {0,3,0,0,0,0},
-                {0,3,-1,0,0,0}, {0,3,-1,-1,-1,0}, {0,3,-1,-1,4,4}, {Integer.MAX_VALUE,3,-1,-1,1,1}}) {
+                {0,3,0,3,0,0}, {0,3,-1,-1,-1,0}, {0,3,-1,-1,4,4}, {Integer.MAX_VALUE,3,-1,-1,1,1}}) {
             assertNull(OwnSelectionTracker.Anchor.fromFullSnapshot(input[0],input[1],input[2],input[3],input[4],input[5]));
         }
     }
@@ -226,6 +230,36 @@ public final class OwnSelectionTrackerTest {
     }
 
     /** Stateful batch host: unchanged final tuples send no deferred ACK. */
+    @Test public void finishedUnknownRegionReleasesOnlyItsRelativeIntentions() {
+        OwnSelectionTracker tracker = new OwnSelectionTracker();
+        tracker.record(7, 7, -1, -1);
+        tracker.recordUnknownComposing(1);
+        tracker.recordUnknownComposing(2);
+        assertTrue(tracker.hasUnknownComposing(1));
+        assertTrue(tracker.hasUnknownComposing(2));
+        assertFalse(tracker.hasUnknownComposing(3));
+        tracker.releaseUnknownComposing();
+        assertFalse(tracker.hasUnknownComposing(1));
+        assertFalse(tracker.hasUnknownComposing(2));
+        assertEquals(1, tracker.pendingCount());
+        assertEquals(NO_MATCH, tracker.consume(3, 3, 2, 3));
+        assertEquals(NO_MATCH, tracker.consume(4, 4, 2, 4));
+        assertEquals(CURRENT, tracker.consume(7, 7, -1, -1));
+        assertEquals(0, tracker.pendingCount());
+    }
+
+    @Test public void unknownChineseHandshakeNeverClaimsAnUnmarkedMovementAsItsOwn() {
+        OwnSelectionTracker tracker = new OwnSelectionTracker();
+        tracker.recordUnknownComposing("你".length());
+        assertEquals(NO_MATCH, tracker.consume(3, 3, -1, -1));
+        assertEquals(1, tracker.pendingCount());
+        assertEquals(CURRENT, tracker.consume(3, 3, 2, 3));
+        tracker.record(3, 3, -1, -1); // Finish only the now-proven marked region.
+        assertEquals(CURRENT, tracker.consume(3, 3, -1, -1));
+        assertEquals(NO_MATCH, tracker.consume(2, 2, -1, -1));
+        assertEquals(NO_MATCH, tracker.consume(3, 3, 2, 3));
+    }
+
     private static final class BatchEditor {
         final OwnSelectionTracker tracker;
         final boolean reentrant;

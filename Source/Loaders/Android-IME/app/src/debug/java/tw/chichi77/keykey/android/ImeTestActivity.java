@@ -22,6 +22,7 @@ public final class ImeTestActivity extends Activity {
     final java.util.concurrent.atomic.AtomicInteger extractionProbeCalls = new java.util.concurrent.atomic.AtomicInteger();
     final java.util.concurrent.atomic.AtomicInteger extractionProbeCallsOnMain = new java.util.concurrent.atomic.AtomicInteger();
     final java.util.concurrent.atomic.AtomicLong extractionProbeMaxMillis = new java.util.concurrent.atomic.AtomicLong();
+    final java.util.concurrent.atomic.AtomicInteger initialSelectionBatchReleaseCount = new java.util.concurrent.atomic.AtomicInteger();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -237,13 +238,25 @@ public final class ImeTestActivity extends Activity {
                         && !initialBatchHeld[0])) return connection;
                 // Debug fault injection: an editor that never reports cursor geometry.
                 return new android.view.inputmethod.InputConnectionWrapper(connection, false) {
-                    @Override public boolean commitText(CharSequence text, int cursor) {
-                        boolean accepted = super.commitText(text, cursor);
+                    private void releaseInitialBatchAfterWrite(boolean accepted, CharSequence text) {
                         if (accepted && text.length() > 0 && initialBatchHeld[0]) {
                             initialBatchHeld[0] = false;
-                            owner.postDelayed(() -> owner.endBatchEdit(),
-                                    getIntent().getIntExtra("releaseInitialBatchAfterCommitMs", 450));
+                            owner.postDelayed(() -> {
+                                owner.endBatchEdit();
+                                initialSelectionBatchReleaseCount.incrementAndGet();
+                            }, getIntent().getIntExtra("releaseInitialBatchAfterCommitMs", 450));
                         }
+                    }
+
+                    @Override public boolean commitText(CharSequence text, int cursor) {
+                        boolean accepted = super.commitText(text, cursor);
+                        releaseInitialBatchAfterWrite(accepted, text);
+                        return accepted;
+                    }
+
+                    @Override public boolean setComposingText(CharSequence text, int cursor) {
+                        boolean accepted = super.setComposingText(text, cursor);
+                        releaseInitialBatchAfterWrite(accepted, text);
                         return accepted;
                     }
 

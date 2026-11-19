@@ -83,6 +83,47 @@ adb -s emulator-XXXX shell dumpsys input_method
 adb -s emulator-XXXX shell dumpsys window | rg 'KeyKey candidate window|BadToken|InvalidDisplay'
 ```
 
+## 宿主交易的精準回歸
+
+只修改宿主交易時，依[Android 接合契約](GUANYINMA_ANDROID_ADAPTER.md#三種互動-profile-與宿主文字)選下列相關案例，不因此重跑完整 A–L 矩陣。使用已安裝 debug／androidTest APK、已選取琦琦輸入法的可丟棄 API 30 以上 AVD；明確給予 `keykey.isolatedDevice=true`。案例會修改偏好與學習資料，不可在使用者實機執行。
+
+| 鍵盤階段／測試類別 | 精準 selector | 必須觀察的契約 |
+|---|---|---|
+| 觸控／`InitialSelectionProbeInstrumentedTest` | `firstUnavailableSnapshotKeepsCompletedTextEditableAfterItsOwnAck` | null、部分、越界及溢位快照下，不立即 Backspace；等真實批次 ACK 後首字仍可改選，續打「你好」，真游標移動後安全釋放。 |
+| 觸控／同上 | `unknownFirstWriteTemporaryChineseSurvivesHideBeforeAck` | 暫時中文字在 ACK 前收到 hide 生命週期回呼仍保留；舊組字結束，後續輸入不重送。這是公開回呼接合，不代表系統 hide 動畫測試。 |
+| 觸控／同上 | `unknownFirstWriteCaretMovePreservesChineseBeforeAck` | 真正移動至暫時 marked 中文前，核對原字後解除標記、保留字與游標；「前:你」接著輸入「好」須為「前:好你」，不可覆蓋「你」。 |
+| 實體／`HostTransactionSafetyInstrumentedTest` | `rejectedCommitStopsBeforeReplacingTheRemainingComposition` | 同程序公開 IC 拒絕前段 commit 後，不得繼續寫尾段或移游標；效果仍待確認，後續核心輸入不越過拒絕。 |
+| 實體／同上 | `removedComposingSpanAndRealHostCaretMoveDoNotReplayOldComposition` | 真 TextView 解除 marked range 並移動游標後，原句不重插；下一字在新游標插入且保留舊文字。 |
+
+觸控三案在 `hw.keyboard=no` 的 cold-boot 階段執行：
+
+```sh
+for scenario in firstUnavailableSnapshotKeepsCompletedTextEditableAfterItsOwnAck \
+  unknownFirstWriteTemporaryChineseSurvivesHideBeforeAck \
+  unknownFirstWriteCaretMovePreservesChineseBeforeAck
+do
+  adb -s "$KEYKEY_TEST_SERIAL" shell am instrument -w -r \
+    -e keykey.isolatedDevice true \
+    -e class "tw.chichi77.keykey.android.InitialSelectionProbeInstrumentedTest#$scenario" \
+    tw.chichi77.keykey.android.test/androidx.test.runner.AndroidJUnitRunner
+done
+```
+
+實體兩案另在 `hw.keyboard=yes` 的 cold-boot 階段執行：
+
+```sh
+for scenario in rejectedCommitStopsBeforeReplacingTheRemainingComposition \
+  removedComposingSpanAndRealHostCaretMoveDoNotReplayOldComposition
+do
+  adb -s "$KEYKEY_TEST_SERIAL" shell am instrument -w -r \
+    -e keykey.isolatedDevice true \
+    -e class "tw.chichi77.keykey.android.HostTransactionSafetyInstrumentedTest#$scenario" \
+    tw.chichi77.keykey.android.test/androidx.test.runner.AndroidJUnitRunner
+done
+```
+
+保存各案實際文字、組字／候選、游標、marked range 與待確認意圖的結果及失敗證據；略過不算通過。這些案例只驗對應 FE 宿主契約，不宣稱第三方 App、長時間使用或完整裝置矩陣均已驗收。
+
 ## 每台必測矩陣
 
 以下 A 到 L 必須在六台 AVD 各跑一次。
@@ -149,7 +190,8 @@ adb -s emulator-XXXX shell dumpsys window | rg 'KeyKey candidate window|BadToken
   一般已有位置的打字流程不增加遠端查詢。另驗證同一 App 行程的欄位不會阻塞鍵盤。
 - 旋轉或重啟同一欄位時，即使 `EditorInfo` 仍回報舊的正數位置，也須依當前完整快照接續輸入。
   已有「你好」後再打注音或拼音，組字格、候選與宿主範圍都須正確；真正移動游標後不得沿用舊尾段的刪改權。
-  重啟校準與 marked-range 驗證共用一次快照，另保留缺少／不符快照及無連線的安全退路。
+  有效的重啟校準與 marked-range 驗證共用一次快照；重啟時快照尚不可用，不耗掉首次實際寫入前的一次定位機會，只有本地讀音時不增加查詢。另保留缺少／不符快照及無連線的安全退路。
+  以 Threads 型態的全文快照（`partialStartOffset = -1`、`partialEndOffset` 仍為文字長度）驗證：重開 App 後輸入「真」，首字與後續「得很貴」保留在可修改組字格；仍拒絕真正的部分更新、越界座標及舊連線回報。
 - 系統返回鍵與鍵盤「▼」都保留已完成中文字、取消未完成注音或字根；重新叫出後不重送舊內容。
   四種輸入法、好打省略聲調開／關、已有前段文字、重複收鍵盤回呼及失去輸入連線分別驗證；
   切換欄位／輸入法與旋轉的既有交接行為另測，不拿正常收鍵盤的規則代替。

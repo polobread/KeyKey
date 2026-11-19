@@ -8,6 +8,8 @@ KeyKey Android 的四種輸入法固定使用 Guanyinma Rust 核心。原有 Jav
 
 `HostInputEngine` 只處理宿主效果的所有權：原 `InputConnection` 接受本次文字、刪除、Return 與 `discardComposingText` 後，Service 才 `acknowledgeHostEffects()`。有待確認的效果時不接受下一筆輸入；沒有宿主、宿主已更換或拒絕交易時不重播，於真正新宿主邊界明確 `abandonHostEffects()`，清除前個欄位狀態並保留 FE 中英、暫時英文、Shift 與全半形政策。重複生命週期回呼不重送整句。
 
+一般實體鍵盤的宿主批次中，任一文字、刪除或定位操作被拒絕，立即停止後續操作，不再替換剩餘組字或移動游標；未接受的核心效果不 acknowledge、不重播。宿主已解除原 marked range 並真正移動游標時，只放棄舊組字所有權，保留 App 現有文字與新游標，不把已存在的舊組字再次 commit，也不結束宿主另建的 marked range。
+
 核心或模型無法開啟時明確回報失敗，停用該 session；不建立空字庫引擎、不回退 Java。之後重新進入文字欄位可重新建立 Rust session。清除舊宿主狀態失敗時關閉該 session，避免把舊組字送到新欄位。Service 銷毀時關閉核心、停止背景關聯詞載入、取消 callback 並關閉浮動窗。
 
 ## 三種互動 profile 與宿主文字
@@ -22,13 +24,21 @@ profile 由 frontend 的實際互動方式決定，Rust 不判斷 Android OS 或
 
 Service 先以舊策略完成組字，才改變實體／雙排 profile。硬體快捷鍵與半／全形辨識留在 FE，核心接收語意操作。倉頡候選選項仍有虛擬／實體兩組設定，每頁沿 Android 的九格候選。
 
+實體雙排的省略聲調讀取實體 profile，五種注音配置共用既有 `touch_phonetic`／phonetic grid 操作，不開啟其他桌面進階行為。雙排維持 `max_completed_syllables = 10`、`shift_at_limit = true`，對應九格與第十音節擠字；虛擬省略聲調仍保留十一格，第十二音節擠字。雙排內連續實體按鍵保留同一段待分音節讀音，切換實虛或單排／雙排時才以舊策略交接；設定與上限必須在新策略啟用時重新套用。
+
 觸控策略由 `TouchSmartHostTextState` 追蹤已插入宿主的可修改尾段；擠出的前段不再被 Backspace 或選詞修改。普通實體策略使用 `setComposingText` 與 UTF-16 caret。Service 的 `OwnSelectionTracker` 在目前連線世代內追蹤已接受、尚未回報的選取位置與 composing range，以精確座標分類延遲或合併的自有回呼，不以固定毫秒數判定所有權。已確認的歷史不再保留為可命中的意圖；真正的外部游標／範圍變動仍結束舊組字。宿主接受批次編輯時，最終座標完全未變的批次可不產生回報；宿主不支援批次時，仍保留各次寫入的待確認意圖。真正的新欄位會清除舊宿主狀態。
 
 真正的新欄位若未由 `EditorInfo` 提供初始選取位置，僅在該連線首次實際寫入前、批次之外取得一次完整 `ExtractedText`；新欄位位置已知或只有本地未完成讀音時不增加查詢。快照須核對文字長度、UTF-16 端點、`startOffset` 與連線世代，保留合法的反向選取；局部、缺少或越界快照不假設絕對位置，也不由舊 fallback 再查一次。較晚到達、與這份初始快照相同的初始通知，不得倒退已接受寫入的游標。
 
+若首次實際寫入的快照仍缺少或無效，普通觸控策略的已完成中文字暫以同一 marked range 顯示；只有真正符合範圍長度與句尾的自有 marked ACK 才建立絕對位置，再解除標記並保留可改選尾段。連打時替換這段暫時標記，不猜測位置，也不把未標記的普通移動當成自有 ACK。成功完成或取消該暫時範圍後，只清除其相對所有權意圖，避免殘留意圖誤認稍後回呼。
+
+ACK 前若使用者把游標移入暫時的中文字範圍，即使批次回報 old==new，也須識別這次移動。只有以有限的游標前後文字核對原範圍、中文內容及目前連線世代後，才解除標記並放棄舊組字；保留中文與使用者游標，後續輸入不得覆蓋原字。無法證明所有權或宿主拒絕解除時，阻止繼續寫入並提示重新進入欄位，不猜測或重送舊字。
+
 正常收起觸控鍵盤時，系統返回鍵與「▼」均透過既有 `finishCompositionForKeyboardHide()` 保留完成文字、取消未完成讀音或字根。`KEYCODE_BACK` 先交給 `InputMethodService`，避免進入一般實體鍵盤交接而提前送出讀音；欄位／輸入法切換及 configuration 重建仍使用各自的交接流程。未失敗的待組字在正常隱藏時若已失去連線，清除本地待送狀態而不確認或重播；已拒絕效果仍由既有失敗狀態保護，於真正宿主邊界 abandon。
 
-旋轉或重新啟動同一輸入欄位時，`EditorInfo.initialSelStart`／`initialSelEnd` 可能仍是最初進入欄位的位置。`onStartInput(restarting = true)` 經 `restoreMarkedComposition()` 取得一份完整 `ExtractedText` 校準當前游標，並與既有組字驗證共用，不於首次寫入時重複查詢；即使目前沒有 marked text，也不能沿用過期的正數位置。快照須通過端點、完整內容及連線世代檢查；缺少或無效快照不猜測位置。
+旋轉或重新啟動同一輸入欄位時，`EditorInfo.initialSelStart`／`initialSelEnd` 可能仍是最初進入欄位的位置。`onStartInput(restarting = true)` 經 `restoreMarkedComposition()` 取得完整 `ExtractedText` 校準當前游標，並與既有組字驗證共用；有效的重啟快照不於首次寫入時重複查詢。若連線重建期間快照尚不可用，不將這次探測視為已完成定位，保留首次實際寫入前的一次探測機會；只有本地未完成讀音時不查詢。即使目前沒有 marked text，也不能沿用過期的正數位置。快照須通過端點、完整內容及連線世代檢查；缺少或無效快照不猜測位置。
+
+Android `ExtractedText.partialStartOffset = -1` 表示全文，`partialEndOffset` 只描述部分更新的結束位置，不能因它仍帶有非負值而拒絕合法全文。Threads 會回傳這種全文快照；正確接受後，首次送字可建立自身選取更新的意圖，避免把正常回呼誤判為外部移動而清掉組字。真正的部分更新、越界位置、過期連線及外部游標移動仍依原規則處理。
 
 若 frontend 仍擁有 marked text，以 `startOffset` 換算原範圍，核對文字及範圍內的折疊選取。確認後只以 `setComposingRegion` 重新掛上原範圍，恢復核心的 UTF-16 caret，不重送文字；操作列為自有 selection 更新。普通觸控好打注音已送入 App、仍可改選的尾段，則須確認游標仍在重啟前已接受的折疊位置，且該位置前的文字與尾段相同，才能保留修改權。
 
@@ -105,6 +115,8 @@ host JVM JNI、APK 四 ABI 編譯、Android runtime 與真正 IME 宿主輸入�
 
 
 `OwnSelectionTrackerTest` 驗證自有回報、合併、反向選取、UTF-16、批次與拒絕操作的無 UI 契約。`CursorAnchorRequestsInstrumentedTest` 驗證同程序座標請求及過期工作；`InitialSelectionProbeInstrumentedTest` 使用真實同程序輸入欄位與 App 批次，確保未知位置的測試真的走到一次快照查詢。`KeyboardHideLifecycleInstrumentedTest` 驗證系統返回、真正觸控「▼」、重複回呼及重新開啟。這些宿主測試的 SDK 前置、跳過項目與無連線 fixture 必須明列，不能將全部略過當成通過。Android 的隱藏動畫可能先改 `WindowInsets` 可見旗標，必須等待 Service 與實際 IME 視窗均隱藏後，再檢查文字與組字；詳見 [模擬器測試計畫](ANDROID_VIRTUAL_DEVICE_TEST_PLAN.md)。
+
+未知快照下的首字保留、ACK 前 hide 與真實移動游標，由 `InitialSelectionProbeInstrumentedTest` 的三個精準案例驗證；桌面拒絕短路與宿主解除標記後不重送，由 `HostTransactionSafetyInstrumentedTest` 驗證。後者的拒絕案例使用同程序公開 IC 包裝，另一路使用真正 TextView／IMM 回呼；不是所有第三方 App 的拒絕行為驗收。五個 selector 與分階段入口見[宿主交易的精準回歸](ANDROID_VIRTUAL_DEVICE_TEST_PLAN.md#宿主交易的精準回歸)。
 
 ## 授權元件目錄
 
