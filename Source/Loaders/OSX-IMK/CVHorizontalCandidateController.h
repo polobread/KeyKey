@@ -5,7 +5,6 @@
 #import "CVTextDecoration.h"
 #import "CVFloatingBackground.h"
 #import "CVHorizontalCandidateControl.h"
-#import "CVSendKey.h"
 
 using namespace OpenVanilla;
 
@@ -26,7 +25,7 @@ using namespace OpenVanilla;
 	PVHorizontalCandidatePanel* _panel;
 	
 	BOOL _allowClick;
-	BOOL _sending;
+	id _selectionTarget;
 	float _candidateWindowScale;
 }
 

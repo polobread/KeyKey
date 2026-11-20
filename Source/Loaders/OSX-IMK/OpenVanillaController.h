@@ -32,6 +32,12 @@ using namespace OpenVanilla;
 }
 + (void)setActiveContext:(OpenVanillaController*)context sender:(id)sender;
 + (BOOL)hasPendingComposition;
+// Candidate clicks are routed to the displayed panel's original IMK client.
++ (id)candidateSelectionTargetForPanel:(PVOneDimensionalCandidatePanel*)panel;
++ (void)invalidateCandidateSelectionTarget:(id)target;
++ (BOOL)candidateSelectionTargetIsCurrent:(id)target;
++ (BOOL)selectCandidateAtIndex:(NSUInteger)index target:(id)target;
+- (void)_flushKeyEffectsToClient:(id)sender;
 #pragma mark Send string to client.
 + (void)sendComposedStringToCurrentlyActiveContext:(NSString*)text;
 - (void)sendComposedStringToClient:(NSString*)text sender:(id)sender;
