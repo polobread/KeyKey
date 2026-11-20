@@ -1809,6 +1809,16 @@ run_multi_app_case() {
 write_keykey_config
 reload_keykey_config
 
+for selected_case in "${selected_cases[@]}"; do
+  if [[ "$selected_case" == T10-X11-*-INPUT-CONTEXT-ISOLATION ]]; then
+    python3 "$(dirname -- "$config_helper")/fcitx5_focusout_dbus_test.py" \
+      --expected "$expected_keykey_config" \
+      --output "$KEYKEY_E2E_ARTIFACT_DIR/focusout-protocol"
+    verify_keykey_config focusout-protocol-restored
+    break
+  fi
+done
+
 if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
   set_bopomofo_layout Standard
   set_associated_phrase_collections McBopomofo

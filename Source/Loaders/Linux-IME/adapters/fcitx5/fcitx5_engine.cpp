@@ -406,7 +406,8 @@ public:
     void select(std::size_t displayedIndex, std::uint64_t view = 0);
     bool selectSmartCharacter(std::size_t preeditCharacterIndex);
     void reset();
-    bool commitAndReset(bool retireOnFailure = false);
+    bool commitAndReset(bool retireOnFailure = false,
+                        std::optional<fcitx::EventType> reason = std::nullopt);
     bool chineseMode() const noexcept { return chineseMode_; }
     bool usesGuanyinma() const noexcept { return rust_ != nullptr; }
     std::string errorMessage() const;
@@ -585,7 +586,7 @@ public:
     void deactivate(const fcitx::InputMethodEntry &entry,
                     fcitx::InputContextEvent &event) override {
         FCITX_UNUSED(entry);
-        event.inputContext()->propertyFor(&factory_)->commitAndReset(true);
+        event.inputContext()->propertyFor(&factory_)->commitAndReset(true, event.type());
     }
 
     void invokeActionImpl(const fcitx::InputMethodEntry &entry,
@@ -1212,11 +1213,15 @@ bool FcitxState::selectSmartCharacter(std::size_t preeditCharacterIndex) {
     return handled;
 }
 
-bool FcitxState::commitAndReset(bool retireOnFailure) {
+bool FcitxState::commitAndReset(bool retireOnFailure,
+                              std::optional<fcitx::EventType> reason) {
     if (effectsInProgress_) return false;
     const auto original = inputContext_->watch();
-    if (!inputContext_->hasFocus() && inputContext_->capabilityFlags().test(fcitx::CapabilityFlag::ClientUnfocusCommit)) {
-        // The frontend already committed its client preedit on focus-out.
+    if (reason == fcitx::EventType::InputContextFocusOut &&
+        (inputContext_->capabilityFlags().test(fcitx::CapabilityFlag::ClientUnfocusCommit) ||
+         !inputContext_->inputPanel().clientPreedit().toStringForCommit().empty())) {
+        // On FocusOut, the client handles its preedit or Fcitx already committed
+        // it in ReservedFirst. Server-side preedit still needs finish below.
         reset();
         return original.isValid();
     }

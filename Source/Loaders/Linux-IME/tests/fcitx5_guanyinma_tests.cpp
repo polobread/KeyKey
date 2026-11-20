@@ -215,13 +215,111 @@ void checkClientUnfocusCommitAndRepeatedReset() {
     capabilities |= fcitx::CapabilityFlag::ClientUnfocusCommit;
     f.context.setCapabilityFlags(capabilities);
     f.context.focusOut();
-    f.state.commitAndReset(true);
+    f.state.commitAndReset(true, fcitx::EventType::InputContextFocusOut);
     f.state.reset();
-    f.state.commitAndReset(true);
+    f.state.commitAndReset(true, fcitx::EventType::InputContextFocusOut);
     require(f.context.commits.empty(), "Client-unfocus preedit was committed a second time");
     f.context.focusIn();
     f.character('s');
     require(f.preedit() == "ㄋ", "Old composition revived after a new host boundary");
+}
+
+void checkFocusOutPreeditDelivery() {
+    enum class Delivery { Framework, Client, ServerUi };
+    struct Phrase { const char *keys; const char *text; const char *alternative; };
+    const Phrase phrases[] = {
+        {"su3cl3", "你好", "你好"},
+        {"z;4y945k41u0 ", "放在這邊", "放在這邊"},
+        {"fu/3ru84ul4fm4s83xu3j06sk7fm4c931u0 ",
+         "請假要去哪裡玩呢去海邊", "請假要去哪裡完呢去海邊"},
+    };
+    for (const auto &phrase : phrases) {
+        for (const auto delivery : {Delivery::Framework, Delivery::Client, Delivery::ServerUi}) {
+            Fixture f;
+            f.config.smartMode = true;
+            f.config.smart.learnCandidateOverrides = false;
+            f.config.smart.learnBigrams = false;
+            fcitx::CapabilityFlags flags;
+            if (delivery != Delivery::ServerUi) {
+                flags |= fcitx::CapabilityFlag::Preedit;
+                flags |= fcitx::CapabilityFlag::FormattedPreedit;
+            }
+            if (delivery == Delivery::Client) flags |= fcitx::CapabilityFlag::ClientUnfocusCommit;
+            f.context.setCapabilityFlags(flags);
+            f.request();
+            for (const char *key = phrase.keys; *key; ++key) {
+                if (*key == ' ') f.key(linux_ime::KeyCode::Space);
+                else f.character(*key);
+            }
+            f.key(linux_ime::KeyCode::Down);
+            const auto oldCandidates = f.context.inputPanel().candidateList();
+            require(oldCandidates && oldCandidates->size() > 0, "Focus-out fixture did not open candidates");
+            const auto pending = delivery == Delivery::ServerUi
+                ? f.context.inputPanel().preedit().toStringForCommit()
+                : f.context.inputPanel().clientPreedit().toStringForCommit();
+            const auto alreadyCommitted = f.allCommitted();
+            const auto original = alreadyCommitted + pending;
+            require(original == phrase.text || original == phrase.alternative,
+                    "Unexpected original composition in focus-out fixture: " + original);
+            const auto previousCalls = f.context.commits.size();
+            f.context.focusOut();
+            if (delivery == Delivery::Framework) {
+                // Model Fcitx's documented ReservedFirst phase. The native
+                // D-Bus smoke also exercises that real Instance event chain.
+                f.context.commitString(pending);
+            }
+            require(f.state.commitAndReset(true, fcitx::EventType::InputContextFocusOut),
+                    "Focus-out handoff did not retire its live owner");
+            const auto expected = delivery == Delivery::Client ? alreadyCommitted : original;
+            const auto expectedCalls = previousCalls + (delivery == Delivery::Client ? 0 : 1);
+            require(f.allCommitted() == expected && f.context.commits.size() == expectedCalls,
+                    "Focus-out duplicated or lost the pending composition: " + f.allCommitted());
+            require(f.context.inputPanel().clientPreedit().empty() &&
+                        f.context.inputPanel().preedit().empty() &&
+                        !f.context.inputPanel().candidateList(),
+                    "Focus-out retained preedit or candidates");
+            require(f.state.commitAndReset(true, fcitx::EventType::InputContextFocusOut),
+                    "Repeated focus-out did not finish quietly");
+            f.state.reset();
+            oldCandidates->candidate(0).select(&f.context);
+            require(f.allCommitted() == expected && f.context.commits.size() == expectedCalls,
+                    "Repeated focus-out/reset or an old candidate replayed a commit");
+            f.context.focusIn();
+            f.character('s');
+            const auto nextPreedit = delivery == Delivery::ServerUi
+                ? f.context.inputPanel().preedit().toString() : f.preedit();
+            require(nextPreedit == "ㄋ" && f.allCommitted() == expected,
+                    "A new focused composition inherited old text");
+        }
+    }
+
+    for (const auto reason : {std::optional<fcitx::EventType>{},
+                              std::optional<fcitx::EventType>{fcitx::EventType::InputContextSwitchInputMethod}}) {
+        Fixture f;
+        f.config.smartMode = true;
+        f.request();
+        f.type("su3cl3");
+        fcitx::CapabilityFlags flags(fcitx::CapabilityFlag::Preedit);
+        flags |= fcitx::CapabilityFlag::ClientUnfocusCommit;
+        f.context.setCapabilityFlags(flags);
+        f.context.focusOut();
+        require(f.state.commitAndReset(true, reason) && f.allCommitted() == "你好" &&
+                    f.context.commits.size() == 1,
+                "An explicit handoff was mistaken for an already delivered FocusOut");
+    }
+
+    {
+        Fixture f;
+        f.config.smartMode = true;
+        f.request();
+        f.type("su3cl3");
+        // Visible non-committable feedback is not a framework-delivered preedit.
+        f.context.inputPanel().setClientPreedit(fcitx::Text("提示", fcitx::TextFormatFlag::DontCommit));
+        f.context.focusOut();
+        require(f.state.commitAndReset(true, fcitx::EventType::InputContextFocusOut) &&
+                    f.allCommitted() == "你好" && f.context.commits.size() == 1,
+                "Non-committable client feedback suppressed a necessary finish");
+    }
 }
 
 void checkModeWidthAndEnglishPassThrough() {
@@ -706,7 +804,9 @@ void checkReentrantContextDestruction() {
                 context.reset();
             };
             auto *const active = state.get();
-            const bool finished = active->commitAndReset();
+            const bool finished = active->commitAndReset(false, clientUnfocus
+                ? std::optional<fcitx::EventType>{fcitx::EventType::InputContextFocusOut}
+                : std::nullopt);
             require(!original.isValid() && !finished && !state && !context,
                     "Handoff reported a live owner after reentrant reset/preedit destruction: clientUnfocus=" + std::to_string(clientUnfocus) +
                     ", updates=" + std::to_string(updates) + ", finished=" + std::to_string(finished));
@@ -751,6 +851,7 @@ int main() {
         checkCandidateOwnershipAndOneCommit();
         checkStaleViewAndPageClick();
         checkClientUnfocusCommitAndRepeatedReset();
+        checkFocusOutPreeditDelivery();
         checkModeWidthAndEnglishPassThrough();
         checkBopomofoWindowsLetterCase();
         checkInitializationFailureAndRetryBoundary();
