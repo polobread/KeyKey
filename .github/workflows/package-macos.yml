@@ -199,6 +199,10 @@ jobs:
         if: ${{ !cancelled() }}
         run: python3 Source/Loaders/OSX-IMK/Tests/run-input-mode-tests.py
 
+      - name: Test candidate clicks and focus ownership without installation
+        if: ${{ !cancelled() }}
+        run: python3 Source/Loaders/OSX-IMK/Tests/run-candidate-selection-tests.py
+
       - name: Test general settings defaults, persistence and localized layout
         if: ${{ !cancelled() }}
         run: python3 Source/Loaders/OSX-IMK/Tests/run-general-input-mode-tests.py

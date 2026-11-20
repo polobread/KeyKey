@@ -5,7 +5,6 @@
 #import "CVTextDecoration.h"
 #import "CVFloatingBackground.h"
 #import "CVFloatingTableView.h"
-#import "CVSendKey.h"
 
 using namespace OpenVanilla;
 
@@ -34,7 +33,7 @@ using namespace OpenVanilla;
 	float _fontHeight;
 	
 	BOOL _allowClick;
-	BOOL _sending;
+	id _selectionTarget;
 	
 	float _candidateTextHeight;
 	float _candidateWindowScale;
@@ -51,8 +50,7 @@ using namespace OpenVanilla;
 
 /*!
 	@method	sendKey:
-	@abstract Raises a keyboard event and send a key code as
-	simulating a key is pressed down.
+	@abstract Selects the displayed candidate in its original IMK client.
 	@param sender The Sender Object.
 */
 - (IBAction)sendKey:(id)sender;

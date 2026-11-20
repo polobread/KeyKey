@@ -106,3 +106,7 @@ macOS SDK 明定註冊的 IMK App 必須在 `/Library/Input Methods/` 或 `~/Lib
 `host-events.jsonl` 只記錄此工具自身 NSTextView 收到的 `keyDown`、`setMarkedText`、`insertText`、`unmarkText`、來源及 UI 控制結果；包括實際 characters／keyCode／modifiers／repeat，以及該文字欄的輸入情境來源、current context、焦點與視窗狀態，沒有全域鍵盤攔截或合成事件。範圍使用 AppKit 的 UTF-16 NSRange；不能直接當作 Rust scalar offset。候選視窗／設定版面需由實際 UI 截圖補證。
 
 完成後先還原來源、關閉隔離宿主與隔離 IMK，確認未再選取該來源，再移除精確的 test App 及其 tag 對應 profile。TIS 沒有一般的 unregister API，停用及移除後的來源清單更新由 macOS 管理；不要直接修改系統偏好資料。保留測試紀錄時只保留 local-builds 產物，不提交詞庫、畫面或事件記錄。
+
+## 候選點擊與焦點中斷
+
+候選滑鼠點擊的原生隔離回歸、Tart 真 IMK 結果與尚未重現的提示打斷情境，見 [macOS 候選與焦點調查](MACOS_CANDIDATE_FOCUS_INVESTIGATION.md)。候選 suite 使用 `Source/Loaders/OSX-IMK/Tests/run-candidate-selection-tests.py`，不連線已安裝的 IMK。

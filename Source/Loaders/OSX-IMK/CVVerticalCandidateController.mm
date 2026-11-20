@@ -1,6 +1,7 @@
 // [AUTO_HEADER]
 
 #import "CVVerticalCandidateController.h"
+#import "OpenVanillaController.h"
 #import "CVCandidateWindowGeometry.h"
 #import "CVCandidateWindowScale.h"
 #import "NSColor+LFColorExtensions.h"
@@ -62,6 +63,8 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 
 - (void)dealloc
 {
+    [OpenVanillaController invalidateCandidateSelectionTarget:_selectionTarget];
+    [_selectionTarget release];
 	[_candidateArray release];
 	[_displayedCandidateTexts release];
 	[_backgroundColor release];
@@ -140,7 +143,6 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 	[_previousButton setHidden:YES];
 	[_nextButton setHidden:YES];
 
-	_sending = NO;
 }
 - (void)setFontHeight:(float)newHeight
 {
@@ -151,13 +153,16 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 - (void)updateDisplay:(PVVerticalCandidatePanel*)panel
               atPoint:(NSPoint)position
 {
+    [OpenVanillaController invalidateCandidateSelectionTarget:_selectionTarget];
+    [_selectionTarget release];
+    _selectionTarget = nil;
+    _panel = panel;
     // hide if it's invisible--before update
     if (!panel->isVisible()) {
 		[self hide];
 		return;
 	}
 
-	_sending = NO;
 
     NSPoint newPosition = position;
 	NSPoint previousScrollPoint = [[_scrollView contentView] bounds].origin;
@@ -348,12 +353,19 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 	if (outlineChanged)
 		[window invalidateShadow];
     
+    _selectionTarget = [[OpenVanillaController candidateSelectionTargetForPanel:panel] retain];
+
     // show if it's visible--after update
 	if (panel->isVisible())
 		[[self window] orderFront:self];
 }
 - (void)hide
 {
+    [OpenVanillaController invalidateCandidateSelectionTarget:_selectionTarget];
+    [_selectionTarget release];
+    _selectionTarget = nil;
+    _panel = NULL;
+    _allowClick = NO;
 	[[self window] orderOut:self];
 	[_displayedCandidateTexts release];
 	_displayedCandidateTexts = nil;
@@ -366,15 +378,14 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 
 - (IBAction)sendKey:(id)sender
 {
-	if (_sending)
-		return;
-	int selectedItem = [_tableView selectedRow];
-	string keyString = _panel->candidateKeyAtIndex(selectedItem).receivedString();
-	[[CVSendKey sharedSendKey] typeString:[NSString stringWithUTF8String:keyString.c_str()]];
+    NSInteger selectedItem = [_tableView selectedRow];
+    if (selectedItem >= 0)
+        [OpenVanillaController selectCandidateAtIndex:(NSUInteger)selectedItem target:_selectionTarget];
 }
 
 - (IBAction)updateSelectedCandidate:(id)sender
 {
+    if (![OpenVanillaController candidateSelectionTargetIsCurrent:_selectionTarget]) return;
 	int selectedItem = [_tableView selectedRow];
 	_panel->setHighlightIndex((size_t)selectedItem);
 	NSPoint p = [[self window] frame].origin;
@@ -386,10 +397,10 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
               atPoint:(NSPoint)position;
 {
 	[self updateDisplay:panel atPoint:position];
-	_panel = panel;
 }
 - (IBAction)gotoNextPage:(id)sender
 {
+    if (![OpenVanillaController candidateSelectionTargetIsCurrent:_selectionTarget]) return;
 	_panel->goToNextPage();
 	NSPoint p = [[self window] frame].origin;
 	p.y = NSMaxY([[self window] frame]);
@@ -397,6 +408,7 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 }
 - (IBAction)gotoPreviousPage:(id)sender
 {
+    if (![OpenVanillaController candidateSelectionTargetIsCurrent:_selectionTarget]) return;
 	_panel->goToPreviousPage();
 	NSPoint p = [[self window] frame].origin;
 	p.y = NSMaxY([[self window] frame]);
