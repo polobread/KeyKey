@@ -192,9 +192,23 @@ public:
         m_sandwich->prepareShortcutContexts();
     }
     void invalidate() override {} // This sandwich lives until its service's barrier.
+    bool setHostCursor(const std::wstring& text, size_t cursor) {
+        if (!m_sandwich || m_sandwich->inputMethods.empty()) return false;
+        const bool changed = SetGuanyinmaWindowsHostCursor(m_sandwich->inputMethods.front(),
+            text, cursor, m_readingText, m_composingText, m_candidateService, m_loader->loaderService());
+        if (changed) m_focusedContext = nullptr; // set_cursor retires the old candidate owner.
+        return changed;
+    }
     void activate() override {
         m_candidateService->resetAll();
         m_sandwich->startAllContexts(m_loader->loaderService()); m_focusedContext=nullptr;
+    }
+    bool prepareSuspension() {
+        if (!m_sandwich || m_sandwich->inputMethods.empty() ||
+            !PrepareGuanyinmaWindowsResume(m_sandwich->inputMethods.front(),m_readingText,
+                m_composingText,m_candidateService,m_loader->loaderService())) return false;
+        m_focusedContext=nullptr;
+        return true;
     }
     void deactivate() override {
         m_sandwich->stopAllContexts(m_loader->loaderService());
@@ -729,6 +743,22 @@ EngineResult KeyKeyEngineSession::handleKey(const KeyEvent& event) {
     Snapshot(context_, result);
     result.committedText = previousComposition + result.committedText;
     return result;
+}
+
+bool KeyKeyEngineSession::setHostCursor(const std::wstring& text, size_t cursor) {
+    if (!context_) return false;
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
+    return static_cast<OrderedLoaderContext*>(context_)->setHostCursor(text, cursor);
+}
+
+bool KeyKeyEngineSession::prepareSuspension(EngineResult& view) {
+    if (!context_ || inputMethod_!="SmartMandarin") return false;
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
+    if (!static_cast<OrderedLoaderContext*>(context_)->prepareSuspension()) return false;
+    PVCombinedUTF16TextBuffer combined(*context_->composingText(),*context_->readingText());
+    view.compositionText=combined.wideComposedText();
+    view.compositionCursor=static_cast<LONG>(combined.wideCursorPosition());
+    return !view.compositionText.empty();
 }
 
 void KeyKeyEngineSession::reset() {

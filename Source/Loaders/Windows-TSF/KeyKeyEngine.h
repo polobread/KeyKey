@@ -69,6 +69,8 @@ public:
     bool hasComposition() const;
     bool wantsKey(const KeyEvent& event) const;
     EngineResult handleKey(const KeyEvent& event);
+    bool setHostCursor(const std::wstring& text, size_t cursor);
+    bool prepareSuspension(EngineResult& view);
     void reset();
 
 private:
