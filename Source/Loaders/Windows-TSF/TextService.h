@@ -188,6 +188,14 @@ private:
     bool projectedWidthMode() const;
     bool orderedPrintableKey(const KeyEvent& event) const;
     HRESULT retryInputResult(TfEditCookie cookie, ITfContext* context);
+    HRESULT reconcileHostSelection(TfEditCookie cookie, ITfContext* context);
+    void rememberCompositionSelection(TfEditCookie cookie, ITfContext* context);
+    struct SuspendedInput;
+    void suspendComposition(bool away);
+    void observeSuspendedFocus(ITfContext* context);
+    HRESULT restoreSuspendedInput(TfEditCookie cookie, ITfContext* context);
+    bool hasSuspendedInput() const;
+    void clearSuspendedInput();
     HRESULT publishChineseMode(bool enabled);
     void abandonComposition();
     void updateCandidateWindow(TfEditCookie editCookie, ITfContext* context,
@@ -264,6 +272,13 @@ private:
     Microsoft::WRL::ComPtr<ITfRange> retainedCommitRange_;
     Microsoft::WRL::ComPtr<ITfComposition> composition_;
     Microsoft::WRL::ComPtr<ITfContext> compositionContext_;
+    std::wstring compositionHostText_;
+    Microsoft::WRL::ComPtr<ITfRange> compositionHostSelection_;
+    HWND compositionOwner_ = nullptr;
+    HANDLE compositionOwnerToken_ = nullptr;
+    std::wstring resumePropertyName_;
+    std::vector<std::pair<HWND,HANDLE>> resumeOwners_;
+    std::vector<std::unique_ptr<SuspendedInput>> suspendedInput_;
     Microsoft::WRL::ComPtr<ITfContext> textEditContext_;
     Microsoft::WRL::ComPtr<ITfRange> candidateAnchor_;
     Microsoft::WRL::ComPtr<ITfContext> candidateContext_;

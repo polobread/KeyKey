@@ -256,6 +256,48 @@ public:
             throw std::runtime_error(LastError());
     }
     ~Context() override { guanyinma_session_close(&session_); }
+    bool setHostCursor(const std::wstring& text, size_t cursor, OVTextBuffer* reading,
+        OVTextBuffer* composing, OVCandidateService* candidates, OVLoaderService* service) {
+        try {
+            Apartment apartment;
+            if (!session_ || snapshot_.empty() || recoverView_) return false;
+            const auto snapshot = Json::Parse(winrt::to_hstring(snapshot_));
+            if (OVUTF16::FromUTF8(String(snapshot, L"visible_text")) != text ||
+                String(snapshot, L"method") != "smart" || !String(snapshot, L"reading").empty()) return false;
+            // A segment can contain a different number of characters/readings.
+            // Accept only an unambiguous native boundary; never split a surrogate.
+            size_t offset = 0, match = 0, matches = 0;
+            if (!cursor) { match = 0; ++matches; }
+            for (auto const& item : snapshot.GetNamedArray(L"segments")) {
+                const auto segment = item.GetObject();
+                const auto start = static_cast<size_t>(segment.GetNamedNumber(L"start"));
+                const auto span = static_cast<size_t>(segment.GetNamedNumber(L"span"));
+                const auto points = OVUTF8Helper::SplitStringByCodePoint(String(segment, L"text"));
+                size_t units = 0;
+                for (size_t i = 0; i < span; ++i) {
+                    if (i < points.size()) units += OVUTF16::FromUTF8(points[i]).size();
+                    if (i + 1 == span) units = OVUTF16::FromUTF8(String(segment, L"text")).size();
+                    if (offset + units == cursor) { match = start + i + 1; ++matches; }
+                }
+                offset += OVUTF16::FromUTF8(String(segment, L"text")).size();
+            }
+            if (matches != 1 || cursor > text.size()) return false;
+            auto operation = Operation("set_cursor"); Set(operation, L"index", static_cast<int>(match));
+            render(Apply(session_, operation), reading, composing, candidates, service, false);
+            return true;
+        } catch (...) { return false; }
+    }
+    bool prepareResume(OVTextBuffer* reading, OVTextBuffer* composing,
+        OVCandidateService* candidates, OVLoaderService* service) {
+        try {
+            Apartment apartment;
+            if (!session_ || snapshot_.empty() || recoverView_) return false;
+            const auto snapshot=Json::Parse(winrt::to_hstring(snapshot_));
+            if (String(snapshot,L"method")!="smart" || String(snapshot,L"reading").empty()) return false;
+            render(Apply(session_,Operation("close_candidates")),reading,composing,candidates,service,false);
+            return true;
+        } catch (...) { return false; }
+    }
     void clear(OVLoaderService* service) override {
         // Clear is called only after TSF has preserved/discarded the old view.
         // Reset must not leave an old graph available after a storage failure.
@@ -438,6 +480,19 @@ private:
     size_t pageSize_ = 1, page_ = 0, highlight_ = 0;
 };
 } // namespace
+
+bool SetGuanyinmaWindowsHostCursor(OVEventHandlingContext* context,
+    const std::wstring& text, size_t cursor, OVTextBuffer* reading, OVTextBuffer* composing,
+    OVCandidateService* candidates, OVLoaderService* service) {
+    auto* adapter = dynamic_cast<Context*>(context);
+    return adapter && adapter->setHostCursor(text, cursor, reading, composing, candidates, service);
+}
+
+bool PrepareGuanyinmaWindowsResume(OVEventHandlingContext* context, OVTextBuffer* reading,
+    OVTextBuffer* composing, OVCandidateService* candidates, OVLoaderService* service) {
+    auto* adapter=dynamic_cast<Context*>(context);
+    return adapter && adapter->prepareResume(reading,composing,candidates,service);
+}
 
 OVEventHandlingContext* CreateGuanyinmaWindowsContext(const std::string& method,
     const std::string& modelPath, OVLoaderService* service) {

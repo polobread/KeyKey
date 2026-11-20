@@ -8,9 +8,11 @@
 #include <algorithm>
 #include <array>
 #include <cwchar>
+#include <climits>
 #include <iterator>
 #include <new>
 #include <shellapi.h>
+#include <richedit.h>
 #include <utility>
 
 #include "Diagnostics.h"
@@ -346,6 +348,171 @@ struct TextService::InputOperation {
     HRESULT result=E_PENDING;
 };
 
+struct TextService::SuspendedInput {
+    ComPtr<ITfContext> context;
+    ComPtr<ITfRange> range,selection;
+    std::unique_ptr<KeyKeyEngineSession> engine;
+    EngineResult view;
+    HWND owner=nullptr;
+    HANDLE ownerToken=nullptr;
+    LONG nativeStart=0,nativeCaret=0;
+    bool away=false,fullWidth=false,simplified=false;
+    std::string method,settings;
+};
+
+namespace {
+bool NativeReadingOwner(HWND window) {
+    DWORD process=0;
+    if (!window || GetWindowThreadProcessId(window,&process)!=GetCurrentThreadId() || process!=GetCurrentProcessId()) return false;
+    wchar_t name[64]{}; GetClassNameW(window,name,static_cast<int>(std::size(name)));
+    return _wcsicmp(name,L"Edit")==0 || _wcsnicmp(name,L"RichEdit",8)==0;
+}
+bool NativeSelection(HWND window,LONG& start,LONG& end) {
+    if (!NativeReadingOwner(window)) return false;
+    DWORD first=0,last=0;
+    SendMessageW(window,EM_GETSEL,reinterpret_cast<WPARAM>(&first),reinterpret_cast<LPARAM>(&last));
+    if (first>LONG_MAX || last>LONG_MAX) return false;
+    start=static_cast<LONG>(first); end=static_cast<LONG>(last); return true;
+}
+bool NativeReadingText(HWND window,LONG start,const std::wstring& expected) {
+    if (!NativeReadingOwner(window) || start<0 || expected.empty()) return false;
+    wchar_t name[64]{}; GetClassNameW(window,name,static_cast<int>(std::size(name)));
+    if (_wcsicmp(name,L"Edit")==0) return false; // No range-read contract on plain EDIT.
+    std::wstring text(expected.size()+1,L'\0');
+    TEXTRANGEW range{{start,start+static_cast<LONG>(expected.size())},text.data()};
+    const auto count=SendMessageW(window,EM_GETTEXTRANGE,0,reinterpret_cast<LPARAM>(&range));
+    return count==static_cast<LRESULT>(expected.size()) && text.compare(0,expected.size(),expected)==0;
+}
+}
+
+void TextService::clearSuspendedInput() {
+    suspendedInput_.clear();
+    for (const auto& [owner,token] : resumeOwners_)
+        if (IsWindow(owner) && GetPropW(owner,resumePropertyName_.c_str())==token)
+            RemovePropW(owner,resumePropertyName_.c_str());
+    resumeOwners_.clear();
+}
+
+void TextService::observeSuspendedFocus(ITfContext* context) {
+    for (auto& saved : suspendedInput_)
+        if (!context || (saved->owner ? GetFocus()!=saved->owner : context!=saved->context.Get())) saved->away=true;
+}
+
+bool TextService::hasSuspendedInput() const {
+    return std::any_of(suspendedInput_.begin(),suspendedInput_.end(),[&](const auto& saved) {
+        return saved->away && (saved->owner ? GetFocus()==saved->owner &&
+            GetPropW(saved->owner,resumePropertyName_.c_str())==saved->ownerToken :
+            textEditContext_.Get()==saved->context.Get());
+    });
+}
+
+void TextService::suspendComposition(bool away) {
+    // Retain engine state, never a pending key/effect. Interrupted writes still
+    // use the cancellation path rather than being replayed after focus returns.
+    if (!composition_ || !engine_ || editingInput_ || !inputQueue_.empty() || retainedInputResult_) return;
+    const auto generation=inputGeneration_;
+    const auto composition=composition_;
+    const auto context=compositionContext_;
+    const auto owner=compositionOwner_;
+    const auto ownerToken=compositionOwnerToken_;
+    EngineResult view;
+    if (!engine_->prepareSuspension(view) || view.compositionText!=compositionHostText_) return;
+    auto saved=std::make_unique<SuspendedInput>();
+    saved->context=context; saved->view=std::move(view);
+    saved->selection=compositionHostSelection_; saved->away=away || !uiThreadFocused_;
+    saved->method=effectiveInputMethod_; saved->settings=effectiveSettingsSignature_;
+    saved->fullWidth=fullWidthMode_; saved->simplified=compositionSimplifiedOutput_;
+    TF_STATUS status{};
+    const bool transitory=SUCCEEDED(context->GetStatus(&status)) && (status.dwStaticFlags&TF_SS_TRANSITORY);
+    if (generation!=inputGeneration_ || composition_!=composition) return;
+    if (transitory) {
+        LONG first=0,last=0;
+        if (!owner || !NativeSelection(owner,first,last) || first!=last) return;
+        const LONG start=first-saved->view.compositionCursor;
+        if (!NativeReadingText(owner,start,saved->view.compositionText)) return;
+        saved->owner=owner; saved->ownerToken=ownerToken;
+        saved->nativeStart=start; saved->nativeCaret=first;
+    } else {
+        if (FAILED(composition->GetRange(&saved->range)) || !saved->range || !saved->selection) return;
+    }
+    if (generation!=inputGeneration_ || composition_!=composition) return;
+    auto replacement=KeyKeyEngineSession::CreateControlled(effectiveInputMethod_);
+    if (!replacement || !replacement->ready() || generation!=inputGeneration_ || composition_!=composition) return;
+    saved->engine=std::move(engine_); engine_=std::move(replacement);
+    suspendedInput_.erase(std::remove_if(suspendedInput_.begin(),suspendedInput_.end(),[&](const auto& old) {
+        return saved->owner ? old->owner==saved->owner : old->context==saved->context;
+    }),suspendedInput_.end());
+    if (suspendedInput_.size()>=8) suspendedInput_.erase(suspendedInput_.begin());
+    suspendedInput_.push_back(std::move(saved));
+    Trace("Suspended unfinished reading for original host");
+}
+
+HRESULT TextService::restoreSuspendedInput(TfEditCookie cookie,ITfContext* context) {
+    if (composition_ || retainedInputResult_ || !chineseMode_) return S_OK;
+    for (auto it=suspendedInput_.begin();it!=suspendedInput_.end();) {
+        const auto& candidate=**it;
+        if (candidate.owner && (!IsWindow(candidate.owner) || GetPropW(candidate.owner,resumePropertyName_.c_str())!=candidate.ownerToken)) {
+            it=suspendedInput_.erase(it); continue;
+        }
+        const bool target=candidate.owner ? GetFocus()==candidate.owner : candidate.context.Get()==context;
+        if (!target) { ++it; continue; }
+        // Even a selection/text query can reenter Deactivate. Own the snapshot
+        // before the first host call, not only before starting a composition.
+        auto held=std::move(*it);
+        suspendedInput_.erase(it);
+        auto& saved=*held;
+        const auto generation=inputGeneration_;
+        bool valid=saved.away && saved.context.Get()==context && saved.method==effectiveInputMethod_ &&
+            saved.settings==effectiveSettingsSignature_ && saved.fullWidth==fullWidthMode_ && saved.simplified==simplifiedOutput_;
+        if (saved.owner) {
+            LONG first=0,last=0;
+            valid=valid && NativeSelection(saved.owner,first,last) && first==last && first==saved.nativeCaret &&
+                NativeReadingText(saved.owner,saved.nativeStart,saved.view.compositionText);
+        } else if (valid) {
+            std::wstring text; TF_SELECTION selection{}; ULONG fetched=0;
+            auto status=context->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selection,&fetched);
+            ComPtr<ITfRange> selected; selected.Attach(selection.range); LONG start=1,end=1;
+            if (generation!=inputGeneration_) return E_ABORT;
+            valid=isFocusedContext(context) && SUCCEEDED(status) && fetched && selected &&
+                SUCCEEDED(RangeText(saved.range.Get(),cookie,text)) && text==saved.view.compositionText &&
+                SUCCEEDED(selected->CompareStart(cookie,saved.selection.Get(),TF_ANCHOR_START,&start)) && start==0 &&
+                SUCCEEDED(selected->CompareEnd(cookie,saved.selection.Get(),TF_ANCHOR_END,&end)) && end==0;
+        }
+        if (generation!=inputGeneration_) return E_ABORT;
+        if (!valid) return S_OK;
+        HRESULT status=S_OK;
+        if (saved.owner) {
+            // Only the verified original editor receives this selection. TSF's
+            // IMM bridge then replaces that text through its normal pipeline.
+            if (GetFocus()!=saved.owner || GetPropW(saved.owner,resumePropertyName_.c_str())!=saved.ownerToken) return E_ABORT;
+            SendMessageW(saved.owner,EM_SETSEL,saved.nativeStart,saved.nativeStart+saved.view.compositionText.size());
+            if (generation!=inputGeneration_ || GetFocus()!=saved.owner ||
+                GetPropW(saved.owner,resumePropertyName_.c_str())!=saved.ownerToken) return E_ABORT;
+            status=ensureComposition(cookie,context);
+            if (generation==inputGeneration_ && SUCCEEDED(status) && GetFocus()!=saved.owner) {
+                endComposition(cookie,false); return E_ABORT;
+            }
+            if (FAILED(status) && generation==inputGeneration_ && GetFocus()==saved.owner)
+                SendMessageW(saved.owner,EM_SETSEL,saved.nativeCaret,saved.nativeCaret);
+        } else {
+            ComPtr<ITfContextComposition> owner;
+            ComPtr<ITfComposition> resumed;
+            status=context->QueryInterface(IID_PPV_ARGS(&owner));
+            if (SUCCEEDED(status)) status=owner->StartComposition(cookie,saved.range.Get(),this,&resumed);
+            if (generation!=inputGeneration_) { if (resumed) resumed->EndComposition(cookie); return E_ABORT; }
+            if (SUCCEEDED(status) && !resumed) status=E_ACCESSDENIED;
+            if (SUCCEEDED(status)) { composition_=resumed; compositionContext_=context; }
+        }
+        if (generation!=inputGeneration_) return E_ABORT;
+        if (FAILED(status)) { suspendedInput_.push_back(std::move(held)); return status; }
+        engine_=std::move(saved.engine); compositionSimplifiedOutput_=saved.simplified;
+        compositionHostSelection_.Reset(); compositionHostText_.clear();
+        Trace("Resumed unfinished reading in verified original host");
+        return S_OK;
+    }
+    return S_OK;
+}
+
 class TextService::InputEditSession final : public ITfEditSession {
 public:
     InputEditSession(TextService* service,std::shared_ptr<InputOperation> operation)
@@ -539,7 +706,16 @@ HRESULT TextService::runInput(TfEditCookie cookie,const std::shared_ptr<InputOpe
         return S_FALSE;
     }
     if (context) {
+        if (op->kind==InputOperation::Kind::Key && !op->processed) {
+            const auto restored=restoreSuspendedInput(cookie,context);
+            if (op->completed || op->generation!=inputGeneration_ || activeInput_!=op) return S_FALSE;
+            if (FAILED(restored)) return restored;
+        }
+        const auto selection = reconcileHostSelection(cookie,context);
+        if (op->completed || op->generation!=inputGeneration_ || activeInput_!=op) return S_FALSE;
+        if (FAILED(selection)) return selection;
         const auto result=retryInputResult(cookie,context);
+        if (op->completed || op->generation!=inputGeneration_ || activeInput_!=op) return S_FALSE;
         if (FAILED(result)) return result;
     }
     if (op->kind==InputOperation::Kind::Key) {
@@ -577,6 +753,8 @@ HRESULT TextService::runInput(TfEditCookie cookie,const std::shared_ptr<InputOpe
         return committed;
     }
     if (op->kind==InputOperation::Kind::Commit) return S_OK;
+    if (op->change!=ModeChange::Host || op->enabled!=chineseMode_ || op->fullWidth!=fullWidthMode_)
+        clearSuspendedInput();
     invalidateSymbolTarget();
     switch (op->change) {
         case ModeChange::Chinese: return publishChineseMode(op->enabled);
@@ -627,6 +805,7 @@ HRESULT TextService::runInput(TfEditCookie cookie,const std::shared_ptr<InputOpe
 
 TextService::TextService() = default;
 TextService::~TextService() {
+    clearSuspendedInput();
     closeSymbols();
     if (symbolDispatchWindow_) DestroyWindow(symbolDispatchWindow_);
     if (modeWindow_) DestroyWindow(modeWindow_);
@@ -914,7 +1093,7 @@ STDMETHODIMP TextService::Deactivate() {
     Trace("Deactivate");
     closeSymbols();
     if (symbolDispatchWindow_) DestroyWindow(symbolDispatchWindow_);
-    cancelInput(false); abandonComposition();
+    cancelInput(false); abandonComposition(); clearSuspendedInput();
     if (modeWindow_) DestroyWindow(modeWindow_);
     unadviseFunctionProvider();
     unadviseSinks();
@@ -1503,7 +1682,7 @@ bool TextService::isPotentialKey(const KeyEvent& event) const {
     // belong to the host. Returning TRUE from OnTestKeyDown alone is enough
     // for some hosts to lose the key even if OnKeyDown later returns FALSE.
     if (!composition_ && !candidateActive_ && IsHostEditingKey(event.virtualKey)) {
-        return false;
+        return !event.control && !event.alt && hasSuspendedInput();
     }
     if (IsInputMethodControlKey(event,effectiveInputMethod_)) return true;
     return engine_->wantsKey(event);
@@ -1530,6 +1709,7 @@ STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
     keyEventSinkForeground_=foreground != FALSE;
     if (foreground) syncInputMethod();
     if (!foreground) {
+        suspendComposition(true); observeSuspendedFocus(nullptr);
         unpreserveSymbolShortcut();
         invalidateSymbolTarget();
         clearCandidateWindow();
@@ -1551,6 +1731,7 @@ bool TextService::isFocusedContext(ITfContext* context) const {
 
 STDMETHODIMP TextService::OnKillThreadFocus() {
     uiThreadFocused_=false;
+    observeSuspendedFocus(nullptr);
     invalidateSymbolTarget(); hideCandidateUi();
     shiftTogglePending_=false; shiftPressedAt_=0;
     // UI focus loss is not destruction of the host's composition. Keep text
@@ -1752,7 +1933,81 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
     return S_OK;
 }
 
+void TextService::rememberCompositionSelection(TfEditCookie cookie, ITfContext* context) {
+    const auto generation=inputGeneration_;
+    TF_SELECTION selection{}; ULONG fetched = 0;
+    if (SUCCEEDED(context->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selection,&fetched)) && fetched) {
+        ComPtr<ITfRange> selected; selected.Attach(selection.range);
+        // A host may retain/move the range supplied to SetSelection. Never use
+        // that live selection object as our remembered insertion target.
+        ComPtr<ITfRange> copy;
+        if (selected && SUCCEEDED(selected->Clone(&copy)) && generation==inputGeneration_ &&
+            composition_ && compositionContext_.Get()==context) compositionHostSelection_=copy;
+    }
+}
+
+HRESULT TextService::reconcileHostSelection(TfEditCookie cookie, ITfContext* context) {
+    if (!composition_ || compositionContext_.Get()!=context || !compositionHostSelection_) return S_OK;
+    const auto generation=inputGeneration_;
+    const auto composition=composition_;
+    const auto previousSelection=compositionHostSelection_;
+    const auto previousText=compositionHostText_;
+    const auto current=[&] {
+        return generation==inputGeneration_ && composition_==composition && compositionContext_.Get()==context;
+    };
+    TF_SELECTION selection{}; ULONG fetched = 0;
+    auto status=context->GetSelection(cookie,TF_DEFAULT_SELECTION,1,&selection,&fetched);
+    if (FAILED(status)) return status;
+    if (!fetched || !selection.range) return E_FAIL;
+    ComPtr<ITfRange> selected; selected.Attach(selection.range);
+    ComPtr<ITfRange> range;
+    status=composition->GetRange(&range); if (FAILED(status)) return status;
+    std::wstring text;
+    status=RangeText(range.Get(),cookie,text); if (FAILED(status)) return status;
+    LONG start=0,end=0;
+    status=selected->CompareStart(cookie,previousSelection.Get(),TF_ANCHOR_START,&start);
+    if (SUCCEEDED(status)) status=selected->CompareEnd(cookie,previousSelection.Get(),TF_ANCHOR_END,&end);
+    if (FAILED(status)) return status;
+    if (!current()) return E_ABORT;
+    if (text==previousText && start==0 && end==0) return S_OK;
+
+    BOOL empty=FALSE;
+    status=selected->IsEmpty(cookie,&empty); if (FAILED(status)) return status;
+    status=selected->CompareStart(cookie,range.Get(),TF_ANCHOR_START,&start);
+    if (SUCCEEDED(status)) status=selected->CompareEnd(cookie,range.Get(),TF_ANCHOR_END,&end);
+    if (FAILED(status)) return status;
+    if (empty && start>=0 && end<=0 && text==previousText && !retainedInputResult_) {
+        // Count actual UTF-16 text preceding the caret, not CompareStart's sign.
+        ComPtr<ITfRange> prefix;
+        status=range->Clone(&prefix); if (FAILED(status)) return status;
+        status=prefix->ShiftEndToRange(cookie,selected.Get(),TF_ANCHOR_START);
+        if (FAILED(status)) return status;
+        std::wstring before;
+        status=RangeText(prefix.Get(),cookie,before); if (FAILED(status)) return status;
+        if (!current()) return E_ABORT;
+        if (engine_ && engine_->setHostCursor(text,before.size())) {
+            clearCandidateWindow();
+            compositionHostSelection_=selected;
+            Trace("Host selection synchronized offset=%zu",before.size());
+            return S_OK;
+        }
+    }
+    // Preserve the host's current text and selection. A pending/processed key
+    // must not replay its old result after an external edit or target change.
+    if (!current()) return E_ABORT;
+    status=endComposition(cookie,false);
+    if (FAILED(status) || generation!=inputGeneration_) return FAILED(status)?status:E_ABORT;
+    clearCandidateWindow();
+    if (engine_) engine_->reset();
+    retainedInputResult_.reset(); retainedInputContext_.Reset(); retainedCommitRange_.Reset();
+    retainedCommitWritten_=false; retainedCommitCaretSet_=false; retainedCommitNeedsEnd_=false;
+    selection.range=selected.Get();
+    Trace("Host selection left safe composition boundary; preserving visible text");
+    return context->SetSelection(cookie,1,&selection);
+}
+
 HRESULT TextService::ensureComposition(TfEditCookie editCookie, ITfContext* context) {
+    const auto generation=inputGeneration_;
     if (composition_) return compositionContext_.Get() == context ? S_OK : E_UNEXPECTED;
     compositionSimplifiedOutput_ = simplifiedOutput_;
 
@@ -1779,37 +2034,66 @@ HRESULT TextService::ensureComposition(TfEditCookie editCookie, ITfContext* cont
               static_cast<unsigned long>(result));
         return result;
     }
-    result = compositionContext->StartComposition(editCookie, range.Get(), this,
-                                                   &composition_);
+    if (generation!=inputGeneration_) return E_ABORT;
+    ComPtr<ITfComposition> created;
+    result = compositionContext->StartComposition(editCookie, range.Get(), this,&created);
+    if (generation!=inputGeneration_) { if (created) created->EndComposition(editCookie); return E_ABORT; }
+    if (SUCCEEDED(result)) composition_=created;
     Trace("EnsureComposition Start hr=0x%08lX composition=%d",
           static_cast<unsigned long>(result), composition_ != nullptr);
     if (SUCCEEDED(result) && !composition_) return E_ACCESSDENIED;
-    if (SUCCEEDED(result)) compositionContext_ = context;
+    if (SUCCEEDED(result)) {
+        compositionContext_ = context;
+        compositionOwner_=nullptr; compositionOwnerToken_=nullptr;
+        const auto owner=GetFocus();
+        if (NativeReadingOwner(owner)) {
+            if (resumePropertyName_.empty()) resumePropertyName_=L"chichi77.KeyKey.Resume."+
+                std::to_wstring(GetCurrentProcessId())+L"."+std::to_wstring(reinterpret_cast<ULONG_PTR>(this));
+            static std::atomic<ULONG_PTR> nextOwner{0};
+            auto token=reinterpret_cast<HANDLE>(++nextOwner);
+            if (SetPropW(owner,resumePropertyName_.c_str(),token)) {
+                compositionOwner_=owner; compositionOwnerToken_=token;
+                resumeOwners_.erase(std::remove_if(resumeOwners_.begin(),resumeOwners_.end(),[&](const auto& item) {
+                    return !IsWindow(item.first) || GetPropW(item.first,resumePropertyName_.c_str())!=item.second;
+                }),resumeOwners_.end());
+                resumeOwners_.emplace_back(owner,token);
+            }
+        }
+    }
     return result;
 }
 
 HRESULT TextService::replaceCompositionText(TfEditCookie editCookie, ITfContext* context,
                                             const std::wstring& text, LONG cursor) {
+    const auto generation=inputGeneration_;
     HRESULT result = ensureComposition(editCookie, context);
+    if (generation!=inputGeneration_) return E_ABORT;
     if (FAILED(result) || !composition_) return FAILED(result) ? result : E_ACCESSDENIED;
     ComPtr<ITfRange> range;
     result = composition_->GetRange(&range);
+    if (generation!=inputGeneration_) return E_ABORT;
     if (FAILED(result)) {
         Trace("ReplaceComposition GetRange hr=0x%08lX",
               static_cast<unsigned long>(result));
         return result;
     }
     result = range->SetText(editCookie, 0, text.data(), static_cast<LONG>(text.size()));
+    if (generation!=inputGeneration_ || !composition_ || compositionContext_.Get()!=context) return E_ABORT;
     if (FAILED(result)) {
         Trace("ReplaceComposition SetText hr=0x%08lX",
               static_cast<unsigned long>(result));
         return result;
     }
 
+    compositionHostText_=text;
+    rememberCompositionSelection(editCookie,context);
+    if (generation!=inputGeneration_) return E_ABORT;
+
     if (compositionDisplayAttributeAtom_ != TF_INVALID_GUIDATOM) {
         ComPtr<ITfProperty> property;
         const HRESULT propertyResult = context->GetProperty(GUID_PROP_ATTRIBUTE,
                                                              &property);
+        if (generation!=inputGeneration_) return E_ABORT;
         if (SUCCEEDED(propertyResult)) {
             VARIANT value;
             VariantInit(&value);
@@ -1817,6 +2101,7 @@ HRESULT TextService::replaceCompositionText(TfEditCookie editCookie, ITfContext*
             value.lVal = static_cast<LONG>(compositionDisplayAttributeAtom_);
             const HRESULT attributeResult = property->SetValue(editCookie, range.Get(),
                                                                &value);
+            if (generation!=inputGeneration_) return E_ABORT;
             Trace("Composition underline hr=0x%08lX",
                   static_cast<unsigned long>(attributeResult));
         }
@@ -1835,11 +2120,14 @@ HRESULT TextService::replaceCompositionText(TfEditCookie editCookie, ITfContext*
                         std::clamp<LONG>(cursor, 0, static_cast<LONG>(text.size())),
                         &shifted, nullptr);
     selection->Collapse(editCookie, TF_ANCHOR_END);
+    if (generation!=inputGeneration_) return E_ABORT;
     TF_SELECTION tfSelection{};
     tfSelection.range = selection.Get();
     tfSelection.style.ase = TF_AE_NONE;
     tfSelection.style.fInterimChar = FALSE;
     result = context->SetSelection(editCookie, 1, &tfSelection);
+    if (generation!=inputGeneration_) return E_ABORT;
+    if (SUCCEEDED(result)) rememberCompositionSelection(editCookie,context);
     Trace("ReplaceComposition textLen=%zu cursor=%ld selectionHr=0x%08lX",
           text.size(), cursor, static_cast<unsigned long>(result));
     return result;
@@ -1916,6 +2204,7 @@ HRESULT TextService::endComposition(TfEditCookie editCookie, bool clearText) {
     if (SUCCEEDED(result)) {
         composition_.Reset();
         compositionContext_.Reset();
+        compositionHostSelection_.Reset(); compositionHostText_.clear();
     }
     return result;
 }
@@ -1980,6 +2269,7 @@ void TextService::abandonComposition() {
     ComPtr<ITfContext> oldContext = compositionContext_;
     composition_.Reset();
     compositionContext_.Reset();
+    compositionHostSelection_.Reset(); compositionHostText_.clear();
 
     if (!oldComposition || !oldContext || clientId_ == TF_CLIENTID_NULL) return;
     auto* session = new (std::nothrow) TerminateEditSession(oldComposition.Get(), compositionSimplifiedOutput_);
@@ -2010,7 +2300,13 @@ HRESULT TextService::updateComposition(TfEditCookie editCookie, ITfContext* cont
 HRESULT TextService::retryInputResult(TfEditCookie cookie,ITfContext* context) {
     if (!retainedInputResult_) return S_OK;
     if (retainedInputContext_.Get()!=context) return E_ABORT;
-    const auto& result=*retainedInputResult_;
+    // Host writes may reenter a focus/cancellation sink. Keep the result alive
+    // locally and stop before publishing stages or using a retired composition.
+    const auto result=*retainedInputResult_;
+    const auto generation=inputGeneration_;
+    const auto current=[&] {
+        return generation==inputGeneration_ && retainedInputResult_ && retainedInputContext_.Get()==context;
+    };
     HRESULT status=S_OK;
     if (!retainedCommitWritten_) {
         retainedCommitNeedsEnd_=composition_ && compositionContext_.Get()==context && !result.committedText.empty();
@@ -2018,13 +2314,22 @@ HRESULT TextService::retryInputResult(TfEditCookie cookie,ITfContext* context) {
             const auto text=ConvertOutput(result.committedText,retainedCommitNeedsEnd_ ? compositionSimplifiedOutput_ : simplifiedOutput_);
             if (retainedCommitNeedsEnd_) {
                 status=composition_->GetRange(&retainedCommitRange_);
-                if (SUCCEEDED(status)) status=retainedCommitRange_->SetText(cookie,0,text.data(),static_cast<LONG>(text.size()));
+                const auto range=retainedCommitRange_;
+                if (!current()) return E_ABORT;
+                if (SUCCEEDED(status)) status=range->SetText(cookie,0,text.data(),static_cast<LONG>(text.size()));
             } else {
                 ComPtr<ITfInsertAtSelection> insertion;
                 status=context->QueryInterface(IID_PPV_ARGS(&insertion));
+                if (!current()) return E_ABORT;
                 if (SUCCEEDED(status)) status=insertion->InsertTextAtSelection(cookie,0,text.data(),static_cast<LONG>(text.size()),&retainedCommitRange_);
             }
+            if (!current()) return E_ABORT;
             if (FAILED(status)) return status;
+        }
+        if (retainedCommitNeedsEnd_) {
+            compositionHostText_=ConvertOutput(result.committedText,compositionSimplifiedOutput_);
+            rememberCompositionSelection(cookie,context);
+            if (!current()) return E_ABORT;
         }
         // Persist immediately after the write, before Clone/Collapse/selection.
         // A host may accept insertion yet reject the following caret operation.
@@ -2037,19 +2342,25 @@ HRESULT TextService::retryInputResult(TfEditCookie cookie,ITfContext* context) {
             if (SUCCEEDED(status)) status=caret->Collapse(cookie,TF_ANCHOR_END);
             if (SUCCEEDED(status)) {
                 TF_SELECTION selection{}; selection.range=caret.Get(); selection.style.ase=TF_AE_NONE;
+                if (!current()) return E_ABORT;
                 status=context->SetSelection(cookie,1,&selection);
             }
+            if (!current()) return E_ABORT;
             if (FAILED(status)) return status;
             retainedCommitCaretSet_=true;
+            if (retainedCommitNeedsEnd_) rememberCompositionSelection(cookie,context);
+            if (!current()) return E_ABORT;
         }
         if (retainedCommitNeedsEnd_) {
             status=endComposition(cookie,false); if (FAILED(status)) return status;
+            if (!current()) return E_ABORT;
             retainedCommitNeedsEnd_=false;
         }
     }
     if (!result.compositionText.empty()) {
         status=replaceCompositionText(cookie,context,result.compositionText,result.compositionCursor);
     } else if (composition_ && result.committedText.empty()) status=endComposition(cookie,true);
+    if (!current()) return E_ABORT;
     if (FAILED(status)) return status;
     updateCandidateWindow(cookie,context,result);
     retainedInputResult_.reset(); retainedInputContext_.Reset(); retainedCommitWritten_=false;
@@ -2227,6 +2538,9 @@ STDMETHODIMP TextService::OnEndEdit(ITfContext* context, TfEditCookie editCookie
 STDMETHODIMP TextService::OnCompositionTerminated(TfEditCookie editCookie,
                                                    ITfComposition* composition) {
     if (composition_.Get() == composition) {
+        const auto generation=inputGeneration_;
+        if (!endingComposition_) suspendComposition(false);
+        if (generation!=inputGeneration_ || composition_.Get()!=composition) return S_OK;
         if (!endingComposition_ && compositionSimplifiedOutput_) {
             ComPtr<ITfRange> range;
             if (SUCCEEDED(composition->GetRange(&range))) {
@@ -2239,6 +2553,7 @@ STDMETHODIMP TextService::OnCompositionTerminated(TfEditCookie editCookie,
         }
         composition_.Reset();
         compositionContext_.Reset();
+        compositionHostSelection_.Reset(); compositionHostText_.clear();
         if (!endingComposition_) {
             cancelInput();
             clearCandidateWindow();
@@ -2260,8 +2575,9 @@ STDMETHODIMP TextService::OnUninitDocumentMgr(ITfDocumentMgr* documentManager) {
 STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused,ITfDocumentMgr*) {
     invalidateSymbolTarget(); ComPtr<ITfContext> context;
     if (focused) focused->GetTop(&context);
+    observeSuspendedFocus(context.Get());
     auto previous=inputContext();
-    if (previous && previous.Get()!=context.Get()) { cancelInput(); abandonComposition(); }
+    if (previous && previous.Get()!=context.Get()) { suspendComposition(true); cancelInput(); abandonComposition(); }
     adviseTextEditSink(context.Get());
     if (focused) syncInputMethod();
     return S_OK;

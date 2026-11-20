@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <vector>
 #include <deque>
+#include <functional>
 #include <thread>
 #include <dwmapi.h>
 #include "InputMethods.h"
@@ -103,6 +104,7 @@ struct Document {
     int failReadAfter = -1, reads = 0;
     int malformedReadAt = -1;
     ULONG malformedCount = 1025;
+    std::function<void()> afterWrite;
 };
 class Range final : public ITfRange {
 public:
@@ -127,7 +129,9 @@ public:
         if (document->failWrite) return E_FAIL;
         std::wstring replacement = text ? std::wstring(text,count) : L"";
         document->text.replace(start,end-start,replacement); end = start+count;
-        document->writes.push_back(replacement); return S_OK;
+        document->writes.push_back(replacement);
+        auto callback=std::move(document->afterWrite); if (callback) callback();
+        return S_OK;
     }
     STDMETHODIMP Clone(ITfRange** copy) override { *copy = new Range(document,start,end); return S_OK; }
     STDMETHODIMP Collapse(TfEditCookie, TfAnchor anchor) override {
@@ -144,7 +148,12 @@ public:
     STDMETHODIMP GetEmbedded(TfEditCookie,REFGUID,REFIID,IUnknown**) override { return E_NOTIMPL; }
     STDMETHODIMP InsertEmbedded(TfEditCookie,DWORD,IDataObject*) override { return E_NOTIMPL; }
     STDMETHODIMP ShiftStartToRange(TfEditCookie,ITfRange*,TfAnchor) override { return E_NOTIMPL; }
-    STDMETHODIMP ShiftEndToRange(TfEditCookie,ITfRange*,TfAnchor) override { return E_NOTIMPL; }
+    STDMETHODIMP ShiftEndToRange(TfEditCookie,ITfRange* other,TfAnchor anchor) override {
+        auto* range=static_cast<Range*>(other);
+        end=anchor==TF_ANCHOR_START ? range->start : range->end;
+        if (end<start) start=end;
+        return S_OK;
+    }
     STDMETHODIMP ShiftStartRegion(TfEditCookie,TfShiftDir,BOOL*) override { return E_NOTIMPL; }
     STDMETHODIMP ShiftEndRegion(TfEditCookie,TfShiftDir,BOOL*) override { return E_NOTIMPL; }
     STDMETHODIMP IsEmpty(TfEditCookie,BOOL* empty) override { *empty = start == end; return S_OK; }
@@ -248,6 +257,7 @@ public:
     STDMETHODIMP SetSelection(TfEditCookie,ULONG count,const TF_SELECTION* selections) override {
         if (document->failSelection) return E_FAIL;
         if (count != 1) return E_INVALIDARG;
+        if (reuseSelection) liveSelection=selections[0].range;
         document->caret = static_cast<Range*>(selections[0].range)->end; return S_OK;
     }
     STDMETHODIMP InsertTextAtSelection(TfEditCookie,DWORD flags,const WCHAR* text,LONG count,ITfRange** range) override {
@@ -260,11 +270,17 @@ public:
     }
     STDMETHODIMP StartComposition(TfEditCookie,ITfRange* range,ITfCompositionSink* sink,ITfComposition** composition) override {
         if (rejectComposition) { *composition=nullptr; return S_OK; }
-        *composition = new Composition(range,sink); return S_OK;
+        *composition = new Composition(range,sink);
+        auto callback=std::move(afterStart); if (callback) callback(); return S_OK;
     }
     STDMETHODIMP GetProperty(REFGUID,ITfProperty** property) override { *property=nullptr; return E_NOINTERFACE; }
     STDMETHODIMP InWriteSession(TfClientId,BOOL*) override { return E_NOTIMPL; }
     STDMETHODIMP GetSelection(TfEditCookie,ULONG,ULONG,TF_SELECTION* selection,ULONG* fetched) override {
+        auto callback=std::move(afterReadSelection); if (callback) callback();
+        if (reuseSelection && liveSelection) {
+            auto* range=static_cast<Range*>(liveSelection.Get()); range->start=range->end=document->caret;
+            selection->range=liveSelection.Get(); selection->range->AddRef(); *fetched=1; return S_OK;
+        }
         selection->range=new Range(document,document->caret,document->caret); *fetched=1; return S_OK;
     }
     STDMETHODIMP GetStart(TfEditCookie,ITfRange**) override { return E_NOTIMPL; }
@@ -283,7 +299,10 @@ public:
         if (cookie==2) layoutSink.Reset(); return S_OK;
     }
     STDMETHODIMP EnumViews(IEnumTfContextViews**) override { return E_NOTIMPL; }
-    STDMETHODIMP GetStatus(TF_STATUS* result) override { *result={}; result->dwDynamicFlags=readOnly ? TF_SD_READONLY : 0; return S_OK; }
+    STDMETHODIMP GetStatus(TF_STATUS* result) override {
+        auto callback=std::move(afterStatus); if (callback) callback();
+        *result={}; result->dwDynamicFlags=readOnly ? TF_SD_READONLY : 0; return S_OK;
+    }
     STDMETHODIMP GetAppProperty(REFGUID,ITfReadOnlyProperty**) override { return E_NOTIMPL; }
     STDMETHODIMP TrackProperties(const GUID**,ULONG,const GUID**,ULONG,ITfReadOnlyProperty**) override { return E_NOTIMPL; }
     STDMETHODIMP EnumProperties(IEnumTfProperties**) override { return E_NOTIMPL; }
@@ -306,6 +325,11 @@ public:
     ComPtr<ITfTextLayoutSink> layoutSink;
     ComPtr<ITfEditSession> pending;
     std::deque<ComPtr<ITfEditSession>> queued;
+    bool reuseSelection=false;
+    ComPtr<ITfRange> liveSelection;
+    std::function<void()> afterStart;
+    std::function<void()> afterReadSelection;
+    std::function<void()> afterStatus;
 private: ULONG references = 1;
 };
 ITfThreadMgr* MakeFocusManager(ITfContext* context);
@@ -1281,9 +1305,119 @@ void TestControlledBoundaries() {
     { std::ofstream restore(settings,std::ios::binary); restore<<original; }
     std::cout<<"Controlled named config before activation, same-timestamp content reload and non-primary learning-reset retirement passed\n";
 }
+void TestHostCaretBeforeInput() {
+    // Deliberately do not send OnEndEdit: native hosts need not notify before
+    // the next key. Use the real Windows engine and the ordered edit session.
+    { Fixture f(L"",false,false); Fresh(f); f.context->reuseSelection=true; Type(f,L"su3cl3");
+      f.document->caret=1; Type(f,L"a");
+      Check(f.document->text==L"你ㄇ好" && f.document->caret==2,
+            "Host caret inside composition was overwritten by the old engine cursor"); }
+    { Fixture f(L"",false,false); Fresh(f);
+      f.document->text=L"\U0001F600 "; f.document->caret=3; Type(f,L"su3cl3");
+      f.document->caret=4; Type(f,L"a");
+      Check(f.document->text==L"\U0001F600 你ㄇ好","Host cursor counted committed UTF-16 prefix as readings"); }
+    { Fixture f(L"",false,false); Fresh(f);
+      f.document->text=L"x "; f.document->caret=2; Type(f,L"su3cl3");
+      f.document->caret=0; Type(f,L"a");
+      Check(f.document->text==L"ㄇx 你好" && f.document->caret==1,
+            "Outside host caret received old composition or moved to its tail"); }
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl");
+      const auto visible=f.document->text;
+      f.document->caret=0; Type(f,L"a");
+      Check(f.document->text==L"ㄇ"+visible,"Unsafe pending reading was lost or replayed"); }
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl3");
+      f.document->text=L"您好"; Type(f,L"a");
+      Check(f.document->text==L"您好ㄇ","External host edit was replaced by stale engine text"); }
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl3");
+      Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),Special(VK_DOWN)),"Open candidates before host caret");
+      f.document->caret=1; Type(f,L"2");
+      Check(f.document->text==L"你ㄉ好" && !TextServiceTestAccess::candidateActive(*f.service.Get()),
+            "Host caret movement reused old candidate selection"); }
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl3");
+      f.document->failSelection=true; Type(f,L"a");
+      Check(TextServiceTestAccess::retained(*f.service.Get()),"Retain a processed key after host caret rejection");
+      f.document->failSelection=false; Type(f,L"j");
+      Check(f.document->text==L"你好ㄇㄨ","Retry mistook its own failed caret for an external move or replayed a key"); }
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl3");
+      f.document->failSelection=true; Type(f,L"a");
+      const auto visible=f.document->text;
+      f.document->caret=0; f.document->failSelection=false; Type(f,L"j");
+      Check(f.document->text==L"ㄨ"+visible && !TextServiceTestAccess::retained(*f.service.Get()),
+            "Pending old result overrode a moved host caret or replayed its accepted key"); }
+    for (bool commit : {false,true}) { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl3");
+      f.document->afterWrite=[&] { f.service->OnSetFocus(FALSE); };
+      Type(f,commit ? L"\r" : L"a");
+      Check(!TextServiceTestAccess::retained(*f.service.Get()) &&
+            !TextServiceTestAccess::composition(*f.service.Get()) &&
+            !TextServiceTestAccess::candidateActive(*f.service.Get()),
+            "Reentrant focus loss republished a retired result");
+      auto document=std::make_shared<Document>(); ComPtr<Context> other; other.Attach(new Context(document));
+      Check(TextServiceTestAccess::key(*f.service.Get(),other.Get(),Character(L'j')) && document->text==L"ㄨ",
+            "Reentrant write replayed old text into another context"); }
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl3");
+      f.document->afterWrite=[&] { f.context->afterReadSelection=[&] { f.service->Deactivate(); }; };
+      Type(f,L"a");
+      Check(f.document->text==L"你好ㄇ" && f.document->caret==2 &&
+            !TextServiceTestAccess::composition(*f.service.Get()),
+            "Post-write selection query changed the caret after reentrant deactivation"); }
+    std::cout<<"Host caret without OnEndEdit: inside/outside, prefix, pending reading, external edit, candidates and retained results passed\n";
+}
+
+void TestInterruptedReadingResume() {
+    const auto interrupt=[](Fixture& f) {
+        auto* composition=TextServiceTestAccess::composition(*f.service.Get());
+        Check(composition!=nullptr,"Interrupt original composition");
+        Success(composition->EndComposition(1),"Host ends interrupted composition");
+        Success(f.service->OnSetFocus(nullptr,nullptr),"Host leaves original document");
+        Success(TextServiceTestAccess::track(*f.service.Get(),f.context.Get()),"Return original context");
+    };
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl"); interrupt(f);
+      auto document=std::make_shared<Document>(); ComPtr<Context> prompt; prompt.Attach(new Context(document));
+      for (auto c:std::wstring(L"su3cl3\r")) Check(TextServiceTestAccess::key(*f.service.Get(),prompt.Get(),Character(c)),"Prompt input");
+      Check(document->text==L"你好" && f.document->text==L"你ㄏㄠ","Prompt mixed original reading");
+      Type(f,L"3");
+      Check(f.document->text==L"你好" && document->text==L"你好","Returned tone failed to resume original engine or duplicated text"); }
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl"); interrupt(f);
+      Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),Special(VK_BACK)),"Resume with Backspace");
+      Check(f.document->text==L"你ㄏ","Returned Backspace edited committed text instead of pending reading"); }
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl"); interrupt(f);
+      f.document->text=L"你ㄏX"; Type(f,L"3");
+      Check(f.document->text==L"你ㄏXˇ","Resume overwrote externally modified original text"); }
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl"); interrupt(f);
+      f.document->caret=0; Type(f,L"3");
+      Check(f.document->text==L"ˇ你ㄏㄠ","Resume followed a changed host caret"); }
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl");
+      Success(TextServiceTestAccess::composition(*f.service.Get())->EndComposition(1),"Host finishes without leaving field");
+      Type(f,L"3");
+      Check(f.document->text==L"你ㄏㄠˇ","Ordinary host termination unexpectedly resumed without interruption"); }
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl"); interrupt(f);
+      f.service->toggleChineseMode(); f.service->toggleChineseMode(); Type(f,L"3");
+      Check(f.document->text==L"你ㄏㄠˇ","Explicit mode change revived a suspended reading"); }
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl"); interrupt(f);
+      f.context->afterStart=[&] { f.service->OnSetFocus(FALSE); };
+      TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),Character(L'3'));
+      Check(f.document->text==L"你ㄏㄠ" && !TextServiceTestAccess::composition(*f.service.Get()),
+            "Reentrant resume start republished a cancelled composition"); }
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl"); interrupt(f);
+      f.context->afterReadSelection=[&] { f.service->Deactivate(); };
+      TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),Character(L'3'));
+      Check(f.document->text==L"你ㄏㄠ" && !TextServiceTestAccess::composition(*f.service.Get()) &&
+            !TextServiceTestAccess::retained(*f.service.Get()),
+            "Reentrant selection query reused a retired suspended input"); }
+    { Fixture f(L"",false,false); Fresh(f); Type(f,L"su3cl");
+      f.context->afterStatus=[&] { f.service->Deactivate(); };
+      Success(TextServiceTestAccess::composition(*f.service.Get())->EndComposition(1),"Reentrant suspension status");
+      Check(f.document->text==L"你ㄏㄠ" && !TextServiceTestAccess::composition(*f.service.Get()) &&
+            !TextServiceTestAccess::engineComposition(*f.service.Get()),
+            "Suspension query resurrected an engine after deactivation"); }
+    std::cout<<"Interrupted reading: isolated prompt, returned tone/Backspace, changed text/caret, explicit termination/mode passed\n";
+}
+
 void TestOrderedInput() {
     const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/std::to_string(GetCurrentProcessId());
     SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",profile.c_str());
+    TestHostCaretBeforeInput();
+    TestInterruptedReadingResume();
     { Fixture f(L"",false,false); Fresh(f);
       f.context->rejectComposition=true;
       Check(!TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),Character(L'1')),"Refused StartComposition must leave sync key uneaten");
